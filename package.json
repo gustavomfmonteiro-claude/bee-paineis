@@ -1,0 +1,14 @@
+{
+  "name": "painel-bee",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Painel dos pedidos do dia na API da Bee Franchising, atualizado a cada 10 minutos (somente GET).",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

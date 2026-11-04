@@ -1,0 +1,1686 @@
+<title>Radar Operacional Bee</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Open+Sans:ital,wght@0,300;1,400&display=swap">
+<style>
+:root{
+  color-scheme: dark;
+  /* preto neutro levemente quente para o amarelo Bee respirar */
+  --ground:#0A0A09; --panel:#141412; --panel2:#1C1B18; --line:#27261F; --line2:#38362C;
+  --ink:#F3F1E8; --ink2:#B7B3A3; --ink3:#7E7A6B;
+  --bee:#FFD200; --bee-d:rgba(255,210,0,.12); --bee-ink:#111008;
+  --cyan:#35D6EE; --cyan-d:rgba(53,214,238,.12);
+  --ok:#34E0A1; --ok-d:rgba(52,224,161,.13);
+  --bad:#FF5F6D; --bad-d:rgba(255,95,109,.13);
+  --warn:#FF9A3C; --warn-d:rgba(255,154,60,.14);
+  --violet:#9C8CFF;
+  /* séries de OTD (geral, ponta 1, ponta 2) — validadas no fundo #141412: CVD ΔE 14, visão normal ΔE 19,8,
+     e a ≥ 15 de todas as cores de status; não reaproveitar para outra coisa */
+  --s-geral:#ab8704; --s-p1:#5590f3; --s-p2:#b25e98;
+  --honey:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 0v34' fill='none' stroke='rgba(0,0,0,.09)' stroke-width='1.5'/%3E%3C/svg%3E");
+  --honey-dark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 0v34' fill='none' stroke='rgba(255,210,0,.045)' stroke-width='1'/%3E%3C/svg%3E");
+  --display:"Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink); font-family:var(--body); font-size:14px; line-height:1.45;
+  background-image:var(--honey-dark);
+}
+.wrap{max-width:1320px; margin:0 auto; padding-inline:20px; padding-block:18px 48px; display:grid; gap:18px}
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--display); margin:0; text-wrap:balance; letter-spacing:.01em}
+.eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink3)}
+
+/* topo */
+.top{
+  display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:14px 28px;
+  background:var(--bee); background-image:var(--honey); color:var(--bee-ink);
+  border-radius:10px; padding:16px 24px; box-shadow:0 10px 40px -18px rgba(255,210,0,.45);
+}
+.logo{display:block; width:132px; height:auto}
+.logo text{fill:var(--bee-ink)}
+.ttl{border-left:2px solid rgba(17,16,8,.18); padding-left:24px; display:grid; gap:2px}
+.ttl .eyebrow{color:rgba(17,16,8,.62)}
+.top h1{font-size:clamp(24px,3.2vw,34px); font-weight:700; line-height:1.05; color:var(--bee-ink)}
+.live{display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:12px; flex-wrap:wrap; justify-content:flex-end}
+.top .chip{background:var(--bee-ink); color:var(--bee); border:0; padding:5px 10px; border-radius:999px; font-weight:500}
+.top .chip.live-chip{display:inline-flex; align-items:center; gap:8px}
+.top .chip.att{display:inline-flex; align-items:center; gap:6px; cursor:pointer; font-family:var(--mono); font-size:12px; background:#fff; color:var(--bee-ink); box-shadow:inset 0 0 0 2px var(--bee-ink)}
+.top .chip.att:hover{background:var(--bee-ink); color:var(--bee)}
+.top .chip.att:focus-visible{outline:2px solid var(--bee-ink); outline-offset:2px}
+.top .chip.att:disabled{opacity:.7; cursor:progress}
+.top .chip.att svg{width:14px; height:14px}
+.top .chip.att.girando svg{animation:gira .8s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.top .chip.att.girando svg{animation:none}}
+.att-aviso{flex-basis:100%; text-align:right; font-family:var(--body); font-size:12px; color:rgba(17,16,8,.75)}
+.att-falha{flex-basis:100%; text-align:right; font-family:var(--body); font-size:12px; font-weight:600; color:#7A1B00}
+.att-falha::before{content:"⚠ "}
+@media (max-width: 760px){ .att-aviso,.att-falha{text-align:left} }
+@media (max-width: 760px){
+  .top{grid-template-columns:auto 1fr; padding:14px 16px}
+  .ttl{padding-left:16px}
+  .live{grid-column:1 / -1; justify-content:flex-start}
+  .logo{width:104px}
+}
+.dot{width:9px; height:9px; border-radius:50%; background:var(--ok); box-shadow:0 0 0 0 rgba(52,224,161,.6); animation:pulse 2s infinite}
+.dot.stale{background:var(--warn); animation:none}
+@keyframes pulse{70%{box-shadow:0 0 0 8px rgba(52,224,161,0)}100%{box-shadow:0 0 0 0 rgba(52,224,161,0)}}
+@media (prefers-reduced-motion: reduce){.dot{animation:none}}
+.chip{border:1px solid var(--line2); padding:3px 8px; border-radius:4px; color:var(--ink2)}
+
+/* painéis */
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:16px; position:relative; min-width:0}
+.panel.hud::before,.panel.hud::after{content:""; position:absolute; width:10px; height:10px; border:2px solid var(--bee); opacity:.85}
+.panel.hud::before{top:-1px; left:-1px; border-right:0; border-bottom:0; border-top-left-radius:6px}
+.panel.hud::after{bottom:-1px; right:-1px; border-left:0; border-top:0; border-bottom-right-radius:6px}
+
+/* alerta: sem rede / grupo regional buscando há mais de 5 min */
+.alerta{transition:border-color .3s, box-shadow .3s}
+.alerta.ativo{border-color:var(--bad); box-shadow:0 0 0 1px var(--bad), 0 0 26px -6px rgba(255,95,109,.55); animation:pulsa 1.8s ease-in-out infinite}
+@keyframes pulsa{50%{box-shadow:0 0 0 1px var(--bad), 0 0 42px -4px rgba(255,95,109,.85)}}
+@media (prefers-reduced-motion: reduce){.alerta.ativo{animation:none}}
+.al-ctl{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.chip.som{cursor:pointer; font-family:var(--mono); font-size:12px; background:var(--panel2); color:var(--ink2)}
+.chip.som[aria-pressed="true"]{border-color:var(--ok); color:var(--ok)}
+.chip.som:focus-visible{outline:2px solid var(--bee); outline-offset:2px}
+.al-topo{display:flex; align-items:baseline; gap:12px; margin-bottom:10px; flex-wrap:wrap}
+.al-num{font-family:var(--mono); font-size:38px; font-weight:700; line-height:1; color:var(--bad)}
+.al-calmo{display:flex; align-items:center; gap:10px; padding:4px 2px; color:var(--ok); font-size:14px}
+.al-calmo span{color:var(--ink3); font-size:12px}
+.al-erro{font-size:12px; color:var(--warn); margin-top:8px}
+.al-tbl td.esp{font-weight:700}
+.al-tbl tbody tr[data-prox]{cursor:pointer}
+.al-tbl tbody tr.aberta > td{background:rgba(255,210,0,.06)}
+.prox-btn{font:600 11.5px var(--mono); color:var(--ink); background:var(--panel2); border:1px solid var(--line2); border-radius:6px; padding:4px 9px; cursor:pointer; white-space:nowrap}
+.prox-btn:hover,.prox-btn[aria-expanded="true"]{border-color:var(--bee); color:var(--bee)}
+.prox-btn:focus-visible{outline:2px solid var(--bee); outline-offset:2px}
+.al-tbl td.al-prox{white-space:normal; text-align:left; font-family:var(--body); padding:10px 12px 14px; background:rgba(0,0,0,.22)}
+.al-prox-top{display:flex; flex-wrap:wrap; gap:4px 14px; align-items:baseline; margin-bottom:8px; font-size:12.5px; color:var(--ink2)}
+.al-prox-top b{font-family:var(--mono); color:var(--ink)}
+.al-prox-top span:last-child{margin-left:auto; color:var(--ink3); font-size:11.5px}
+.al-lista{display:grid; grid-template-columns:repeat(auto-fill, minmax(min(250px, 100%), 1fr)); gap:6px; max-height:264px; overflow-y:auto; padding-right:4px}
+.al-ent{display:grid; grid-template-columns:1fr auto; gap:1px 10px; align-items:baseline; border:1px solid var(--line2); border-radius:7px; padding:6px 10px; background:var(--panel)}
+.al-ent b{font-size:13px; font-weight:500; min-width:0; overflow-wrap:anywhere}
+.al-ent .km{font:700 13px var(--mono); color:var(--ink)}
+.al-ent small{font-size:11px; color:var(--ink3)}
+.al-ent .st{font:600 10.5px var(--mono); justify-self:end}
+.al-ent .st.livre{color:var(--ok)} .al-ent .st.ocupado{color:var(--cyan)}
+.al-ent .tel{grid-column:1 / -1; margin-top:3px; font:600 12.5px var(--mono); color:var(--ink); text-decoration:none; justify-self:start}
+.al-ent a.tel:hover{color:var(--bee); text-decoration:underline}
+.al-ent a.tel:focus-visible{outline:2px solid var(--bee); outline-offset:2px}
+.al-ent span.tel{color:var(--ink3); font-weight:400}
+.al-acoes{grid-column:1 / -1; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px 8px}
+.zap-btn{font:600 11px var(--mono); color:var(--ok); background:var(--panel2); border:1px solid var(--line2); border-radius:6px; padding:4px 8px; margin-top:3px; cursor:pointer; white-space:nowrap}
+.zap-btn:hover:not(:disabled){border-color:var(--ok)}
+.zap-btn:focus-visible{outline:2px solid var(--bee); outline-offset:2px}
+.zap-btn:disabled{color:var(--ink3); cursor:default}
+.zap-erro{grid-column:1 / -1; font-size:11px; color:var(--bad); margin-top:2px}
+#zapDlg{background:var(--panel); color:var(--ink); border:1px solid var(--line2); border-radius:10px; padding:18px; width:min(420px, calc(100vw - 32px))}
+#zapDlg::backdrop{background:rgba(0,0,0,.6)}
+#zapDlg h3{margin:0 0 4px; font-size:15px; font-weight:600}
+#zapDlg p{margin:0 0 10px; font-size:12.5px; color:var(--ink2)}
+#zapDlg blockquote{margin:0 0 12px; padding:9px 11px; border-left:3px solid var(--ok); background:var(--panel2); font-size:13px; line-height:1.4}
+#zapDlg label{display:block; font-size:12px; color:var(--ink2); margin-bottom:12px}
+#zapDlg input{display:block; width:100%; box-sizing:border-box; margin-top:4px; padding:8px; font-size:16px; color:var(--ink); background:var(--panel2); border:1px solid var(--line2); border-radius:6px}
+#zapDlg .zap-acoes{display:flex; justify-content:flex-end; gap:8px}
+#zapDlg button{font:600 12px var(--mono); padding:8px 12px; border-radius:6px; border:1px solid var(--line2); background:var(--panel2); color:var(--ink); cursor:pointer}
+#zapDlg button[type=submit]{background:var(--bee); border-color:var(--bee); color:#111}
+.al-vazia{font-size:13px; color:var(--ink2); padding:2px 0}
+.ph{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px}
+.ph h2{font-size:17px; font-weight:600}
+.ph .sub{font-size:12px; color:var(--ink3)}
+
+/* linha global */
+.global{display:grid; grid-template-columns:1.25fr 1fr; gap:18px}
+.kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:6px; overflow:hidden}
+.kpi{background:var(--panel); padding:14px 16px; display:grid; gap:4px; align-content:start}
+.kpi .v{font-family:var(--mono); font-size:clamp(26px,3vw,36px); font-weight:700; line-height:1.05; font-variant-numeric:tabular-nums}
+.kpi .l{font-size:12px; color:var(--ink2)}
+.kpi .f{font-family:var(--mono); font-size:11px; color:var(--ink3)}
+.kpi.total{background:var(--bee); background-image:var(--honey)} .kpi.total .v{color:var(--bee-ink)} .kpi.total .l{color:rgba(17,16,8,.72); font-weight:600} .kpi.total .f{color:rgba(17,16,8,.6)}
+.kpi.fin .v{color:var(--ok)}
+.kpi.canc .v{color:var(--bad)}
+
+.frota{display:grid; gap:12px}
+.frota-top{display:flex; gap:18px; flex-wrap:wrap; align-items:baseline}
+.frota-top .big{font-family:var(--mono); font-size:30px; font-weight:700}
+.frota-top .lab{font-size:12px; color:var(--ink2)}
+.legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--ink2)}
+.legend i{display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:6px; vertical-align:-1px}
+.modal{display:grid; grid-template-columns:64px 1fr 76px; gap:10px; align-items:center; font-size:13px}
+.modal .nm{font-family:var(--display); font-weight:600; letter-spacing:.03em}
+.bar{height:12px; background:var(--panel2); border-radius:4px; display:flex; gap:2px; overflow:hidden; box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}
+.bar span{display:block; height:100%; transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.bar span:last-child{border-radius:0 4px 4px 0}
+.bar span[style*="width:0%"]{display:none}
+.bar .a{background:var(--ok)} .bar .e{background:var(--cyan)}
+.modal .q{font-family:var(--mono); font-size:12px; text-align:right; color:var(--ink2)}
+
+/* abas de segmento */
+.seg{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+.tabs{display:inline-flex; background:var(--panel); border:1px solid var(--line2); border-radius:6px; padding:3px}
+.tabs button{font-family:var(--display); font-size:14px; font-weight:600; letter-spacing:.04em; color:var(--ink2); background:none; border:0; padding:8px 18px; border-radius:4px; cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--bee); color:var(--bee-ink)}
+.tabs button:focus-visible,.sorts button:focus-visible,.layers button:focus-visible{outline:2px solid var(--bee); outline-offset:2px}
+.seg .note{font-size:12px; color:var(--ink3)}
+
+/* gráficos — marcas finas (linha 2px, ponta 4px, folga 2px na cor da superfície), grade fina sólida,
+   tooltip em toda marca; a cor é da série, o texto fica nas cores de texto */
+.plot{position:relative; border-radius:6px; padding:6px 4px 2px;
+  background-image:radial-gradient(rgba(255,255,255,.045) 1px, transparent 1.2px); background-size:14px 14px; background-position:-7px -7px}
+.plot svg{display:block; width:100%; height:auto; overflow:visible}
+.plot .hit{cursor:crosshair}
+.legend i.ln{width:14px; height:3px; border-radius:2px; vertical-align:2px}
+.tip{position:fixed; z-index:60; pointer-events:none; min-width:160px; max-width:280px; padding:9px 11px; border-radius:7px;
+  background:rgba(12,12,10,.92); border:1px solid var(--line2); color:var(--ink); font:12px/1.5 var(--body);
+  box-shadow:0 10px 30px rgba(0,0,0,.5), 0 0 0 1px rgba(255,210,0,.05), 0 0 24px -8px rgba(85,144,243,.35);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); opacity:0; transform:translateY(4px); transition:opacity .12s, transform .12s}
+.tip.on{opacity:1; transform:none}
+.tip .h{font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3); margin-bottom:5px}
+.tip .r{display:flex; justify-content:space-between; align-items:center; gap:14px}
+.tip .r span{display:inline-flex; align-items:center; gap:7px; color:var(--ink2)}
+.tip .r i{display:inline-block; width:12px; height:3px; border-radius:2px}
+.tip .r i.sq{width:9px; height:9px; border-radius:2px}
+.tip .r b{font-family:var(--mono); font-weight:600; font-variant-numeric:tabular-nums}
+.tip .sep{height:1px; background:var(--line2); margin:5px 0}
+@media (prefers-reduced-motion: reduce){ .tip,.bar span,.meter .fill{transition:none} }
+
+/* medidores (lojas em observação) */
+.meters{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+.meter{display:grid; gap:6px}
+.meter .mtop{display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:12px; color:var(--ink2)}
+.meter .mtop span{display:inline-flex; align-items:center; gap:7px}
+.meter .mtop b{font-family:var(--mono); font-size:16px; color:var(--ink); font-variant-numeric:tabular-nums}
+.meter .trk{position:relative; height:8px; border-radius:4px; background:var(--panel2); box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}
+.meter .fill{position:absolute; inset:0 auto 0 0; border-radius:0 4px 4px 0; transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.meter .goal{position:absolute; top:-3px; bottom:-3px; width:2px; border-radius:1px; background:var(--ink2); box-shadow:0 0 0 2px var(--panel)}
+.meter .sub{font-family:var(--mono); font-size:10.5px; color:var(--ink3)}
+.compo{display:grid; gap:6px}
+.compo .bar{height:10px}
+.canc-obs{display:grid; gap:10px; border-top:1px solid var(--line); padding-top:12px}
+.canc-obs .ch{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap}
+.canc-obs .ch b{font-size:14px; font-weight:600}
+.canc-obs .ch span{font-family:var(--mono); font-size:11.5px; color:var(--ink3)}
+.canc-obs .fases{display:flex; gap:8px; flex-wrap:wrap}
+.canc-obs .fases span{border:1px solid var(--line2); border-radius:4px; padding:3px 9px; font-size:12px; color:var(--ink2)}
+.canc-obs .fases b{font-family:var(--mono); color:var(--ink)}
+.mots{display:grid; gap:6px}
+.mot{display:grid; grid-template-columns:minmax(150px, 40%) 1fr 34px; gap:10px; align-items:center; font-size:12.5px; color:var(--ink2)}
+.mot .q{font-family:var(--mono); text-align:right; color:var(--ink)}
+@media (max-width: 620px){ .mot{grid-template-columns:1fr 60px 28px} }
+@media (max-width: 620px){ .meters{grid-template-columns:1fr} }
+
+/* OTD */
+.otd{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+.otd .chart{grid-column:1 / -1; padding-top:14px; border-top:1px solid var(--line)}   /* linha do dia na largura toda, embaixo dos velocímetros */
+.gauge{display:grid; justify-items:center; gap:4px; text-align:center}
+.gauge svg{width:100%; max-width:180px; height:auto; overflow:visible}
+.gauge .pill{min-width:0; font-family:var(--mono); font-size:11px}
+.gauge .t{font-family:var(--display); font-weight:600; font-size:14px}
+.gauge .d{font-size:12px; color:var(--ink3); max-width:22ch}
+.gauge .m{font-family:var(--mono); font-size:12px; color:var(--ink2)}
+.chart svg{width:100%; height:auto; display:block}
+.rd{display:grid; grid-template-columns:1fr 1.3fr; gap:18px; margin-top:18px; padding-top:16px; border-top:1px solid var(--line)}
+.tempos{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:4px; overflow:hidden; align-content:start}
+.tempos div{background:var(--panel2); padding:10px 12px; display:grid; gap:2px}
+.tempos b{font-family:var(--mono); font-size:20px; font-weight:700; font-variant-numeric:tabular-nums}
+.tempos span{font-size:11.5px; color:var(--ink3)}
+.ofc{color:var(--bad)}
+@media (max-width: 1000px){ .rd{grid-template-columns:1fr} }
+@media (max-width: 620px){ .tempos{grid-template-columns:1fr 1fr} }
+
+/* seções */
+.duo{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+.obs{display:grid; grid-template-columns:1fr; gap:18px}   /* uma loja embaixo da outra: as tabelas cabem inteiras */
+.obs-loja{border:1px solid var(--line2); border-radius:6px; padding:14px; display:grid; gap:12px; min-width:0; align-content:start}
+.obs-loja .nome{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap}
+.obs-loja .nome b{font-size:15px; font-weight:600}
+.obs-loja .nome span{font-family:var(--mono); font-size:11px; color:var(--ink3)}
+.obs-loja .kpi .v{font-size:clamp(20px,2.2vw,26px)}
+@media (max-width: 620px){ .obs-loja .kpis{grid-template-columns:1fr 1fr} }
+.sectitle{display:flex; align-items:center; gap:10px}
+.sectitle .tag{font-family:var(--mono); font-size:11px; padding:2px 7px; border-radius:3px; letter-spacing:.08em}
+.tag.ok{background:var(--ok-d); color:var(--ok)} .tag.bad{background:var(--bad-d); color:var(--bad)}
+.sorts{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px}
+.sorts button,.layers button{font-family:var(--mono); font-size:11px; letter-spacing:.04em; color:var(--ink2); background:var(--panel2); border:1px solid var(--line2); padding:5px 9px; border-radius:4px; cursor:pointer}
+.sorts button[aria-pressed="true"],.layers button[aria-pressed="true"]{border-color:var(--bee); color:var(--bee); background:var(--bee-d)}
+.tbl{overflow-x:auto}
+table{width:100%; border-collapse:collapse; font-size:13px}
+th{font-family:var(--mono); font-size:10.5px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3); text-align:right; padding:6px 8px; border-bottom:1px solid var(--line2); white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td{padding:7px 8px; border-bottom:1px solid var(--line); text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+td:first-child{font-family:var(--body); white-space:normal; min-width:130px}
+td .rk{display:inline-block; width:22px; color:var(--ink3); font-family:var(--mono); font-size:11px}
+tr.hl td{background:rgba(255,210,0,.05)}
+.pill{display:inline-block; min-width:52px; padding:1px 6px; border-radius:3px; font-weight:500}
+.pill.g{background:var(--ok-d); color:var(--ok)} .pill.y{background:var(--warn-d); color:var(--warn)} .pill.r{background:var(--bad-d); color:var(--bad)} .pill.n{color:var(--ink3)}
+.busca{display:grid; grid-template-columns:minmax(260px,340px) 1fr; gap:18px; align-items:start}
+.busca-kpis{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:6px; overflow:hidden}
+.busca-kpis .faixas{grid-column:1 / -1; background:var(--panel); padding:12px 16px; display:grid; gap:7px}
+.faixa{display:grid; grid-template-columns:78px 1fr 34px; gap:8px; align-items:center; font-size:12px; color:var(--ink2)}
+.faixa .q{font-family:var(--mono); text-align:right; color:var(--ink)}
+.faixa .bar span{background:var(--warn)}
+.faixa.crit .bar span{background:var(--bad)}
+.espera{font-weight:600}
+@media (max-width: 1000px){ .busca{grid-template-columns:1fr} }
+.grupos{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:12px}
+.grupos button{display:grid; gap:2px; text-align:left; background:var(--panel2); border:1px solid var(--line2); border-radius:6px; padding:10px 12px; cursor:pointer; color:var(--ink)}
+.grupos button b{font-family:var(--display); font-size:14px; font-weight:600; letter-spacing:.02em}
+.grupos button span{font-size:11.5px; color:var(--ink3)}
+.grupos button:hover{border-color:var(--bee)}
+.grupos button[aria-selected="true"]{background:var(--bee); background-image:var(--honey); border-color:var(--bee); color:var(--bee-ink)}
+.grupos button[aria-selected="true"] span{color:rgba(17,16,8,.65)}
+.grupos button:focus-visible{outline:2px solid var(--bee); outline-offset:2px}
+.resumo{display:grid; grid-template-columns:repeat(5,auto); justify-content:start; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:4px; overflow:hidden; margin-bottom:12px}
+.resumo div{background:var(--panel2); padding:8px 14px; display:grid; gap:1px}
+.resumo b{font-family:var(--mono); font-size:18px; font-weight:700; font-variant-numeric:tabular-nums}
+.resumo span{font-size:11px; color:var(--ink3)}
+@media (max-width: 760px){ .grupos{grid-template-columns:1fr 1fr} .resumo{grid-template-columns:repeat(2,1fr)} }
+.minibar{display:inline-block; height:6px; border-radius:2px; vertical-align:middle; margin-right:6px}
+.foot{font-size:11.5px; color:var(--ink3); margin-top:8px}
+
+/* mapa */
+.map{display:grid; grid-template-columns:1fr 280px; gap:18px}
+.canvas-box{position:relative; background:#060605; border:1px solid var(--line); border-radius:4px; overflow:hidden; aspect-ratio: 4 / 3; max-width:100%}
+.canvas-box canvas{position:absolute; inset:0; width:100%; height:100%}
+.scale{display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:11px; color:var(--ink3)}
+.scale .grad{flex:1; height:8px; border-radius:2px}
+.layers{display:flex; flex-wrap:wrap; gap:6px}
+.side{display:grid; gap:14px; align-content:start}
+.side ol{margin:0; padding:0; list-style:none; display:grid; gap:6px}
+.side li{display:flex; justify-content:space-between; gap:10px; font-size:13px; border-bottom:1px dashed var(--line); padding-bottom:5px}
+.side li .num{color:var(--ink2)}
+
+/* volume por hora */
+.hours svg{width:100%; height:auto; display:block}
+
+@media (max-width: 1000px){
+  .global,.duo,.map{grid-template-columns:1fr}
+  .otd{grid-template-columns:repeat(3,1fr)}
+  .otd .chart{grid-column:1 / -1}
+}
+@media (max-width: 620px){
+  .wrap{padding-inline:16px}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .otd{grid-template-columns:1fr 1fr}
+  .tabs button{padding:8px 12px}
+}
+
+/* ==========================================================================================
+   Tema "central de comando" — camada final, sobrescreve o acabamento acima.
+   Mantém a identidade Bee (amarelo + fundo quase preto) e as cores de dados validadas;
+   muda só superfícies, bordas, brilho e movimento. Para voltar ao visual antigo, apague este bloco.
+   ========================================================================================== */
+:root{ --edge:rgba(255,255,255,.075); --edge2:rgba(255,255,255,.12); --glass-a:rgba(30,29,25,.80); --glass-b:rgba(15,15,13,.86); --glow-bee:rgba(255,210,0,.32) }
+body{
+  background-color:#070706;
+  background-image:
+    radial-gradient(1100px 560px at 8% -8%, rgba(255,210,0,.10), transparent 62%),
+    radial-gradient(900px 600px at 100% 4%, rgba(85,144,243,.09), transparent 60%),
+    radial-gradient(900px 700px at 50% 112%, rgba(178,94,152,.07), transparent 60%),
+    linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+  background-size:auto, auto, auto, 44px 44px, 44px 44px;
+  background-attachment:fixed;
+}
+/* linhas de varredura bem leves, por cima de tudo, sem pegar clique */
+body::after{content:""; position:fixed; inset:0; pointer-events:none; z-index:90;
+  background:repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px)}
+::selection{background:rgba(255,210,0,.35); color:#fff}
+*{scrollbar-width:thin; scrollbar-color:#3a382e transparent}
+
+/* cabeçalho: brilho que atravessa de tempos em tempos */
+.top{border-radius:14px; position:relative; overflow:hidden; box-shadow:0 0 0 1px rgba(255,210,0,.55), 0 18px 60px -22px rgba(255,210,0,.6)}
+.top::after{content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(105deg, transparent 38%, rgba(255,255,255,.38) 50%, transparent 62%);
+  transform:translateX(-120%); animation:brilho 9s ease-in-out infinite}
+@keyframes brilho{0%,72%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.top .chip{box-shadow:0 2px 10px -4px rgba(0,0,0,.6)}
+
+/* painéis de vidro com borda clara e cantos de mira */
+.panel{
+  background:linear-gradient(180deg, var(--glass-a), var(--glass-b));
+  border:1px solid var(--edge); border-radius:14px; padding:18px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 24px 48px -28px rgba(0,0,0,.9);
+  -webkit-backdrop-filter:blur(10px) saturate(1.15); backdrop-filter:blur(10px) saturate(1.15);
+  transition:border-color .25s, box-shadow .25s;
+}
+.panel:hover{border-color:rgba(255,210,0,.20); box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 0 0 1px rgba(255,210,0,.05), 0 28px 56px -28px rgba(0,0,0,.95), 0 0 46px -24px var(--glow-bee)}
+.panel.hud::before,.panel.hud::after{width:16px; height:16px; border-color:var(--bee); filter:drop-shadow(0 0 5px var(--glow-bee))}
+.panel.hud::before{border-top-left-radius:14px}
+.panel.hud::after{border-bottom-right-radius:14px}
+.alerta.ativo,.alerta.ativo:hover{border-color:var(--bad); box-shadow:0 0 0 1px var(--bad), 0 0 30px -6px rgba(255,95,109,.6)}
+
+/* títulos de seção: barra de destaque à esquerda e etiqueta com brilho */
+.ph{padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,.05); margin-bottom:14px}
+.ph h2{font-size:17px; letter-spacing:.02em}
+.panel > .ph > h2::before,.ph > h2:first-child::before{content:""; display:inline-block; width:3px; height:.95em; margin-right:10px; vertical-align:-1px; border-radius:2px; background:var(--bee); box-shadow:0 0 10px var(--glow-bee)}
+.sectitle .tag{border-radius:5px; padding:3px 8px; box-shadow:0 0 14px -4px currentColor, inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent)}
+
+/* indicadores: cartões soltos, faixa de cor no topo, rótulo técnico */
+.kpis{background:transparent; border:0; gap:12px; overflow:visible}
+.kpis > .kpi{border:1px solid var(--edge); border-radius:12px; padding:14px 16px 13px; position:relative; overflow:hidden;
+  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.012)), var(--panel)}
+.kpis > .kpi::before{content:""; position:absolute; inset:0 0 auto 0; height:2px; background:linear-gradient(90deg, transparent, var(--k, var(--ink3)), transparent); opacity:.9}
+.kpis > .kpi.fin{--k:var(--ok)} .kpis > .kpi.canc{--k:var(--bad)} .kpis > .kpi:not(.fin):not(.canc):not(.total){--k:var(--s-p1)}
+.kpis > .kpi.total{background:var(--bee); background-image:var(--honey), linear-gradient(160deg, #FFE45C, #FFD200 55%, #F2C200); border-color:rgba(255,210,0,.7); box-shadow:0 0 34px -12px rgba(255,210,0,.7); --k:rgba(17,16,8,.5)}
+.kpi .l{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink3)}
+.kpi.total .l{color:rgba(17,16,8,.68)}
+.kpi.fin .v{text-shadow:0 0 22px rgba(52,224,161,.35)}
+.kpi.canc .v{text-shadow:0 0 22px rgba(255,95,109,.35)}
+.frota-top .big{text-shadow:0 0 22px currentColor}
+.frota-top .lab{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink3)}
+.tempos{border-radius:10px; border-color:var(--edge)}
+.tempos div{background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01)), var(--panel2)}
+
+/* tabelas: cabeçalho fixo, linhas com realce e marcador amarelo no hover */
+.tbl{border-radius:10px}
+th{background:rgba(14,14,12,.92); position:sticky; top:0; z-index:1; border-bottom-color:rgba(255,255,255,.1)}
+td{border-bottom-color:rgba(255,255,255,.045)}
+tbody tr{transition:background-color .15s}
+tbody tr:hover > td{background:rgba(255,210,0,.045)}
+tbody tr:hover > td:first-child{box-shadow:inset 3px 0 0 var(--bee)}
+
+/* abas e botões */
+.tabs{border-radius:12px; border-color:var(--edge2); background:rgba(18,18,16,.75); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px)}
+.tabs button{border-radius:9px; transition:background-color .2s, color .2s, box-shadow .2s}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected="true"]{box-shadow:0 0 22px -4px rgba(255,210,0,.75)}
+.sorts button,.layers button{border-radius:7px; transition:border-color .15s, color .15s, background-color .15s}
+.sorts button:hover,.layers button:hover{border-color:rgba(255,210,0,.5); color:var(--ink)}
+.pill{border-radius:5px}
+.chip{border-radius:6px}
+.canvas-box{border-radius:10px; border-color:var(--edge)}
+.obs-loja{border-radius:12px; border-color:var(--edge); background:linear-gradient(180deg, rgba(255,255,255,.025), transparent)}
+
+/* entrada da página: blocos sobem em sequência (uma vez, no carregamento) */
+@keyframes entra{from{opacity:0; transform:translateY(10px)}to{opacity:1; transform:none}}
+.wrap > *{animation:entra .55s cubic-bezier(.2,.8,.2,1) both}
+.wrap > *:nth-child(2){animation-delay:.05s} .wrap > *:nth-child(3){animation-delay:.1s} .wrap > *:nth-child(4){animation-delay:.15s}
+.wrap > *:nth-child(5){animation-delay:.2s} .wrap > *:nth-child(6){animation-delay:.25s} .wrap > *:nth-child(n+7){animation-delay:.3s}
+@media (prefers-reduced-motion: reduce){ .top::after,.wrap > *{animation:none} body::after{display:none} }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <svg class="logo" viewBox="0 0 200 118" role="img" aria-label="bee Delivery">
+      <text x="100" y="74" text-anchor="middle" style="font:italic 400 92px 'Open Sans', 'Segoe UI', sans-serif; letter-spacing:-2px">bee</text>
+      <text x="101" y="106" text-anchor="middle" style="font:300 19px 'Open Sans', 'Segoe UI', sans-serif; letter-spacing:5.5px">DELIVERY</text>
+    </svg>
+    <div class="ttl">
+      <div class="eyebrow">Franquia Fortaleza/CE · API ao vivo</div>
+      <h1>Radar Operacional</h1>
+    </div>
+    <div class="live">
+      <span class="chip live-chip"><span class="dot" id="dot"></span><span id="stamp">—</span></span>
+      <span class="chip" id="diaChip">—</span>
+      <span class="chip" id="fonte">snapshot embutido</span>
+      <button type="button" class="chip att" id="btnAtualizar" title="Pedir uma leitura nova da API da Bee"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Atualizar agora</button>
+      <span class="att-aviso" id="attAviso" role="status" hidden></span>
+      <span class="att-falha" id="attFalha" role="status" hidden></span>
+    </div>
+  </header>
+
+  <!-- alerta: entregas de lojas sem rede e de grupos regionais buscando entregador há mais de 5 min.
+       Leitura própria a cada 1 min (live/alerta); a espera conta ao vivo na página; som opcional. -->
+  <section class="panel alerta" id="alertaBox" style="margin-bottom:18px">
+    <div class="ph"><div class="sectitle"><span class="tag bad">ALERTA</span><h2>Sem rede e grupos regionais buscando há mais de 5 min</h2></div>
+      <div class="al-ctl"><span class="sub" id="alertaSub">aguardando a primeira leitura…</span><button type="button" class="chip som" id="btnSom" aria-pressed="false">🔕 Som desligado</button></div></div>
+    <div id="alertaCorpo"></div>
+    <div class="foot">Entregas com status "buscando" de lojas sem rede (sem key account e sem grupo regional no cadastro) e de grupos regionais, lidas da API a cada 1 min. Espera contada do início da busca e atualizada a cada segundo — uma entrega aceita entre duas leituras sai da lista na leitura seguinte. Com o som ligado, cada entrega que passa de 5 min toca o alerta; enquanto houver entregas na lista, um bipe curto a cada 2 min. Clique em uma entrega para ver os entregadores online até 3 km da loja, em linha reta, pela última posição enviada pelo app.</div>
+  </section>
+
+  <!-- visão da franquia inteira -->
+  <section class="global">
+    <div class="panel hud">
+      <div class="ph"><h2>Pedidos do dia</h2><span class="sub">total = finalizadas + canceladas · todas as lojas</span></div>
+      <div class="kpis">
+        <div class="kpi total"><span class="l">Total de pedidos</span><span class="v" id="gTotal">—</span><span class="f" id="gTotalF">—</span></div>
+        <div class="kpi fin"><span class="l">Finalizadas</span><span class="v" id="gFin">—</span><span class="f" id="gFinF">—</span></div>
+        <div class="kpi canc"><span class="l">Canceladas</span><span class="v" id="gCanc">—</span><span class="f" id="gCancF">—</span></div>
+        <div class="kpi"><span class="l">Em andamento</span><span class="v" id="gAnd">—</span><span class="f">ainda não fechadas</span></div>
+      </div>
+    </div>
+    <div class="panel hud frota">
+      <div class="ph" style="margin-bottom:0"><h2>Entregadores online</h2><span class="sub" id="frotaSub">agora</span></div>
+      <div class="frota-top">
+        <div><div class="big num" id="fTotal">—</div><div class="lab">online</div></div>
+        <div><div class="big num" style="color:var(--ok)" id="fDisp">—</div><div class="lab">disponíveis</div></div>
+        <div><div class="big num" style="color:var(--cyan)" id="fEnt">—</div><div class="lab">com entrega</div></div>
+        <div><div class="big num" style="color:var(--ink2)" id="fOcup">—</div><div class="lab">ocupação</div></div>
+      </div>
+      <div id="modais" style="display:grid; gap:8px"></div>
+      <div class="legend"><span><i style="background:var(--ok)"></i>disponível</span><span><i style="background:var(--cyan)"></i>com entrega</span></div>
+    </div>
+  </section>
+
+  <!-- buscando entregador -->
+  <section class="panel hud" id="buscaBox">
+    <div class="ph"><div class="sectitle"><span class="tag bad" style="background:var(--warn-d); color:var(--warn)">BUSCANDO</span><h2>Entregas buscando entregador</h2></div><span class="sub" id="buscaSub">—</span></div>
+    <div class="busca">
+      <div class="busca-kpis">
+        <div class="kpi"><span class="l">Buscando agora</span><span class="v" id="bTotal" style="color:var(--warn)">—</span><span class="f" id="bSplit">—</span></div>
+        <div class="kpi"><span class="l">Espera média</span><span class="v" id="bMedia">—</span><span class="f" id="bMax">—</span></div>
+        <div class="faixas" id="bFaixas"></div>
+      </div>
+      <div class="tbl" style="max-height:340px; overflow-y:auto"><table id="bTbl"></table></div>
+    </div>
+    <div class="foot">Pedidos ainda sem entregador (status "buscando") no momento da coleta. Espera contada do início da busca — agendados e D+1 só começam a buscar na hora marcada. Retrato da última coleta, não tempo real.</div>
+  </section>
+
+  <!-- D+1 e agendadas -->
+  <section class="panel" id="agendBox">
+    <div class="ph"><div class="sectitle"><span class="tag ok" style="background:var(--bee-d); color:var(--bee)">AGENDAMENTOS</span><h2>D+1 e agendadas</h2></div><span class="sub" id="agendSub">—</span></div>
+    <div class="tbl"><table id="agendTbl"></table></div>
+    <div class="foot">D+1 = modalidade da Drogasil para entrega no dia seguinte. Agendada = modalidade "AGENDADO" da Drogasil ou pedido com horário marcado em qualquer loja. Finalizadas e canceladas contam pelo dia de fechamento; "aguardando horário" são as que ainda não começaram a buscar entregador (status agendado).</div>
+  </section>
+
+  <!-- tipos de entrega -->
+  <section class="panel" id="tiposBox">
+    <div class="ph"><div class="sectitle"><span class="tag ok" style="background:var(--bee-d); color:var(--bee)">TIPOS DE ENTREGA</span><h2>Modalidade, veículo e formato</h2></div><span class="sub" id="tiposSub">—</span></div>
+    <div class="tbl"><table id="tiposMod"></table></div>
+    <div class="duo" style="margin-top:16px">
+      <div><div class="eyebrow" style="margin-bottom:8px">Veículo que fez a entrega · finalizadas</div><div class="tbl"><table id="tiposVeic"></table></div></div>
+      <div><div class="eyebrow" style="margin-bottom:8px">Formato · finalizadas</div><div class="tbl"><table id="tiposFmt"></table></div></div>
+    </div>
+    <div class="foot">Modalidade da Drogasil = marcação de serviço que vem da integração da RD; "Drogasil sem modalidade" são os pedidos lançados direto no painel da Bee. As demais lojas não informam modalidade: "padrão" é a entrega sob demanda e "agendada" a que tem horário marcado. Finalizadas e canceladas contam pelo dia de fechamento; em andamento são as abertas de hoje.</div>
+  </section>
+
+  <div class="seg">
+    <div class="tabs" role="tablist" aria-label="Segmento">
+      <button role="tab" id="tab-drogasil" aria-selected="true" data-seg="drogasil">Drogasil</button>
+      <button role="tab" id="tab-pmef" aria-selected="false" data-seg="pmef">Pague Menos / Extrafarma</button>
+      <button role="tab" id="tab-americanas" aria-selected="false" data-seg="americanas">Americanas</button>
+      <button role="tab" id="tab-demais" aria-selected="false" data-seg="demais">Demais lojas</button>
+    </div>
+    <span class="note" id="segNote">—</span>
+  </div>
+
+  <!-- OTD -->
+  <section class="panel hud">
+    <div class="ph"><h2 id="otdTitle">Eficiência — regra RD</h2><span class="sub" id="otdSub">—</span></div>
+    <div class="otd">
+      <div class="gauge" id="g3"></div>
+      <div class="gauge" id="g1"></div>
+      <div class="gauge" id="g2"></div>
+      <div class="chart">
+        <div class="eyebrow" style="margin-bottom:6px">On time por hora de finalização</div>
+        <div class="plot" id="otdHora"></div>
+        <div class="legend" style="margin-top:6px"><span><i class="ln" style="background:var(--s-geral)"></i>on time geral</span><span><i class="ln" style="background:var(--s-p1)"></i>ponta 1</span><span><i class="ln" style="background:var(--s-p2)"></i>ponta 2</span><span><i class="ln" style="background:var(--ink2)"></i>meta 80%</span></div>
+      </div>
+    </div>
+    <div class="rd">
+      <div class="tempos" id="tempos"></div>
+      <div class="tbl"><table id="modTbl"></table></div>
+    </div>
+  </section>
+
+  <!-- KPIs do segmento -->
+  <section class="kpis" id="segKpis"></section>
+
+  <!-- finalizações e cancelamentos -->
+  <section class="duo">
+    <div class="panel">
+      <div class="ph"><div class="sectitle"><span class="tag ok">FINALIZAÇÃO</span><h2>Bairros</h2></div><span class="sub" id="finSub">—</span></div>
+      <div class="sorts" id="finSorts">
+        <button aria-pressed="true" data-k="fin">Mais finalizações</button>
+        <button aria-pressed="false" data-k="total">Maior demanda</button>
+        <button aria-pressed="false" data-k="aceite">Aceite mais rápido</button>
+        <button aria-pressed="false" data-k="otd">Melhor OTD</button>
+      </div>
+      <div class="tbl"><table id="finTbl"></table></div>
+      <div class="foot">Demanda = finalizadas + canceladas do bairro. Rankings de aceite e OTD só com 8+ pedidos no bairro.</div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="sectitle"><span class="tag bad">CANCELAMENTO</span><h2>Bairros</h2></div><span class="sub" id="cancSub">—</span></div>
+      <div class="sorts" id="cancSorts">
+        <button aria-pressed="true" data-k="canc">Mais cancelamentos</button>
+        <button aria-pressed="false" data-k="taxa">Maior taxa</button>
+        <button aria-pressed="false" data-k="total">Maior demanda</button>
+        <button aria-pressed="false" data-k="menor">Pior demanda</button>
+      </div>
+      <div class="tbl"><table id="cancTbl"></table></div>
+      <div class="foot">Aceite médio dos cancelados considera só os que chegaram a ser aceitos; "sem aceite" morreu buscando entregador. Taxa e "pior demanda" com 8+ pedidos.</div>
+    </div>
+  </section>
+
+  <!-- lojas -->
+  <section class="panel">
+    <div class="ph"><div class="sectitle"><span class="tag ok" style="background:var(--bee-d); color:var(--bee)">LOJAS</span><h2 id="lojasTitle">—</h2></div><span class="sub" id="lojasSub">—</span></div>
+    <div class="grupos" id="lojasSel" role="tablist" aria-label="Grupo de lojas">
+      <button role="tab" aria-selected="true" data-k="drogasil"><b>Drogasil</b><span>20 com mais demanda</span></button>
+      <button role="tab" aria-selected="false" data-k="pmef"><b>Pague Menos / Extrafarma</b><span>20 com mais demanda</span></button>
+      <button role="tab" aria-selected="false" data-k="americanas"><b>Americanas</b><span>20 com mais demanda</span></button>
+      <button role="tab" aria-selected="false" data-k="srgr"><b>Sem rede / Grupo regional</b><span>20 com mais entregas</span></button>
+      <button role="tab" aria-selected="false" data-k="todas"><b>Todas as outras</b><span>30 com mais entregas</span></button>
+    </div>
+    <div class="resumo" id="lojasResumo"></div>
+    <div class="tbl"><table id="lojasTbl"></table></div>
+    <div class="foot" id="lojasFoot">—</div>
+  </section>
+
+  <!-- agentes -->
+  <section class="panel hud">
+    <div class="ph"><div class="sectitle"><span class="tag ok" style="background:var(--bee-d); color:var(--bee)">AGENTES</span><h2 id="agTitle">Cancelamentos por agente</h2></div><span class="sub" id="agSub">—</span></div>
+    <div class="grupos" id="agSel" role="tablist" aria-label="Período dos agentes" style="grid-template-columns:repeat(2,1fr)">
+      <button role="tab" aria-selected="true" data-k="hoje"><b>Hoje</b><span>ao vivo, a cada coleta</span></button>
+      <button role="tab" aria-selected="false" data-k="periodo"><b id="agPerTit">01/10 a hoje</b><span id="agPerSub">acumulado do mês</span></button>
+    </div>
+    <div class="resumo" id="agOrigem"></div>
+    <div class="tbl"><table id="agTbl"></table></div>
+    <div class="foot" id="agFoot">—</div>
+  </section>
+
+  <!-- mapa -->
+  <section class="panel hud">
+    <div class="ph"><h2>Mapa de calor</h2><span class="sub" id="mapSub">coordenadas do destino de cada pedido</span></div>
+    <div class="map">
+      <div style="display:grid; gap:10px; min-width:0">
+        <div class="layers" id="layers">
+          <button aria-pressed="true" data-l="fin">Finalizadas</button>
+          <button aria-pressed="false" data-l="canc">Canceladas</button>
+          <button aria-pressed="false" data-l="ent">Entregadores agora</button>
+        </div>
+        <div class="canvas-box"><canvas id="heat"></canvas></div>
+        <div class="scale"><span>baixa</span><span class="grad" id="grad"></span><span>alta concentração</span></div>
+      </div>
+      <div class="side">
+        <div>
+          <div class="eyebrow" style="margin-bottom:8px" id="sideTitle">Pontos quentes</div>
+          <ol id="hot"></ol>
+        </div>
+        <div class="foot" id="mapFoot"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- volume por hora -->
+  <section class="panel">
+    <div class="ph"><h2>Volume por hora</h2><span class="sub">finalizadas e canceladas pela hora em que fecharam</span></div>
+    <div class="hours plot" id="horas"></div>
+    <div class="legend" style="margin-top:6px"><span><i style="background:var(--ok)"></i>finalizadas</span><span><i style="background:var(--bad)"></i>canceladas</span><span style="color:var(--ink3)">passe o mouse nas colunas para ver os números</span></div>
+  </section>
+
+  <!-- lojas em observação (LOJAS_OBSERVACAO no .env do painel-bee) — no fim da página, a pedido -->
+  <section class="panel hud" id="obsBox" hidden>
+    <div class="ph"><div class="sectitle"><span class="tag ok" style="background:var(--bee-d); color:var(--bee)">OBSERVAÇÃO</span><h2>Lojas em observação</h2></div><span class="sub" id="obsSub">—</span></div>
+    <div class="obs" id="obsLojas"></div>
+    <div class="foot">Finalizadas e canceladas contam pelo dia de fechamento; em andamento = abertas criadas hoje. Aceite = início da busca → aceite do entregador. On time = ponta 1 (criação → chegada à loja) + ponta 2 (saída da loja → chegada ao cliente) dentro de 2× o limite por ponta (15 min; Drogasil Turbo120: 45 min; Americanas: 30 min). Modalidade: Drogasil pelo badge do pedido; Pague Menos e Extrafarma pelo prazo do pedido (Super Expressa 30 min, Expressa 60 min, Econômica 24 h); demais lojas "Padrão" (sob demanda) ou "Agendada" (horário marcado). Transporte: veículo do entregador que pegou o pedido; "sem entregador" são as canceladas antes do aceite e as que ainda estão buscando. Cancelamentos: tempo = criação do pedido → cancelamento; fase = antes do aceite, na loja (aceito, não saiu) ou em rota; motivo e quem cancelou vêm do evento de cancelamento na API (GET /orders/{id}/events).</div>
+  </section>
+
+  <div class="foot">
+    Fonte: API oficial Bee (<span class="num">GET /orders</span> e <span class="num">/dashboard</span>), coletada localmente e gravada no banco deste painel.
+    OTD pela regra da RD ("Eficiência Transportadora", conferida número a número contra o painel deles de 22/09): ponta 1 = <em>criação</em> → <em>chegada à loja</em>; ponta 2 = <em>saída da loja</em> → <em>chegada ao cliente</em>; limite por ponta de 15 min no Turbo60 e 45 min no Turbo120; <strong>on time geral = ponta 1 + ponta 2 dentro de 2× o limite</strong>. Conta pelo dia da finalização.
+    Drogasil D+1, agendado, Turbo90 e sem modalidade ficam fora do OTD. Demais lojas: mesmo cálculo com 15 min por ponta para todo pedido; Americanas: 30 min por ponta (on time = soma em até 60 min).
+    Tempo de aceite nos bairros = início da busca → aceite. Horários em America/Fortaleza.
+  </div>
+</div>
+
+<script>
+var SNAP = /*__DADOS__*/null;
+var state = { geral: SNAP && SNAP.geral, drogasil: SNAP && SNAP.drogasil, pmef: SNAP && SNAP.pmef, americanas: SNAP && SNAP.americanas, demais: SNAP && SNAP.demais, seg: 'drogasil', finK: 'fin', cancK: 'canc', layer: 'fin' };
+try { var s = localStorage.getItem('radar-seg'); if (s === 'demais' || s === 'drogasil' || s === 'pmef' || s === 'americanas') state.seg = s; } catch (e) {}
+
+var $ = function (id) { return document.getElementById(id); };
+var fmt = function (n) { return n == null ? '—' : Number(n).toLocaleString('pt-BR'); };
+var fmt1 = function (n) { return n == null ? '—' : Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); };
+var minTxt = function (n) { return n == null ? '—' : fmt1(n) + ' min'; };
+var MIN = 8;
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function otdPill(v) {
+  if (v == null) return '<span class="pill n">—</span>';
+  var c = v >= 80 ? 'g' : v >= 65 ? 'y' : 'r';
+  return '<span class="pill ' + c + '">' + fmt1(v) + '%</span>';
+}
+function taxaPill(v) {
+  if (v == null) return '<span class="pill n">—</span>';
+  var c = v <= 8 ? 'g' : v <= 15 ? 'y' : 'r';
+  return '<span class="pill ' + c + '">' + fmt1(v) + '%</span>';
+}
+function hhmm(iso) { return iso ? new Date(iso).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza', hour: '2-digit', minute: '2-digit' }) : '—'; }
+function diaBR(d) { return d ? d.split('-').reverse().join('/') : '—'; }
+
+// ------------------------------------------------------------------ geral
+function renderGeral() {
+  var g = state.geral; if (!g) return;
+  var t = g.totais;
+  $('gTotal').textContent = fmt(t.total);
+  $('gTotalF').textContent = fmt(t.finalizadas) + ' + ' + fmt(t.canceladas);
+  $('gFin').textContent = fmt(t.finalizadas);
+  $('gFinF').textContent = t.total ? fmt1(100 * t.finalizadas / t.total) + '% do total' : '—';
+  $('gCanc').textContent = fmt(t.canceladas);
+  $('gCancF').textContent = t.total ? fmt1(100 * t.canceladas / t.total) + '% de cancelamento' : '—';
+  $('gAnd').textContent = fmt(t.emAndamento);
+  $('stamp').textContent = 'atualizado ' + hhmm(g.gerado_em) + ' · ' + idadeTxt();
+  $('diaChip').textContent = diaBR(g.dia);
+  var idade = (Date.now() - new Date(g.gerado_em)) / 60000;
+  $('dot').className = 'dot' + (idade > 25 ? ' stale' : '');
+
+  var e = g.entregadores;
+  if (!e) { $('frotaSub').textContent = 'sem leitura de entregadores nesta coleta'; return; }
+  $('fTotal').textContent = fmt(e.total);
+  $('fDisp').textContent = fmt(e.disponiveis);
+  $('fEnt').textContent = fmt(e.emEntrega);
+  $('fOcup').textContent = e.total ? Math.round(100 * e.emEntrega / e.total) + '%' : '—';
+  $('frotaSub').textContent = 'leitura das ' + hhmm(g.gerado_em);
+  var nomes = { moto: 'Moto', bike: 'Bike', carro: 'Carro', outro: 'Outro' };
+  var max = 0; Object.keys(e.modal).forEach(function (k) { var m = e.modal[k]; max = Math.max(max, m.disponiveis + m.emEntrega); });
+  $('modais').innerHTML = ['moto', 'bike', 'carro', 'outro'].filter(function (k) { return e.modal[k]; }).map(function (k) {
+    var m = e.modal[k], tot = m.disponiveis + m.emEntrega;
+    var tip = '<div class="h">' + nomes[k] + ' · ' + fmt(tot) + ' online</div>' + linhaTip('var(--ok)', 'disponíveis', fmt(m.disponiveis), 'sq') + linhaTip('var(--cyan)', 'com entrega', fmt(m.emEntrega), 'sq') +
+      linhaTip('transparent', 'ocupação', tot ? Math.round(100 * m.emEntrega / tot) + '%' : '—');
+    return '<div class="modal"><span class="nm">' + nomes[k] + '</span><div class="bar" data-tip="' + esc(tip) + '">' +
+      '<span class="a" style="width:' + (100 * m.disponiveis / max) + '%"></span><span class="e" style="width:' + (100 * m.emEntrega / max) + '%"></span></div>' +
+      '<span class="q">' + tot + ' · <span style="color:var(--cyan)">' + m.emEntrega + '</span></span></div>';
+  }).join('');
+}
+
+// ------------------------------------------------------------------ OTD
+// ------------------------------------------------------------------ camada de tooltip
+// Um tooltip só para a página. Gráficos SVG chamam dica(evento, html); elementos HTML com
+// data-tip (barras de veículo, faixas de espera) usam o mesmo tooltip sem código próprio.
+var TIP = document.createElement('div');
+TIP.className = 'tip'; TIP.setAttribute('role', 'tooltip');
+document.body.appendChild(TIP);
+function dica(ev, html) {
+  if (!html) { TIP.classList.remove('on'); return; }
+  TIP.innerHTML = html; TIP.classList.add('on');
+  var w = TIP.offsetWidth, h = TIP.offsetHeight, x = ev.clientX + 16, y = ev.clientY + 14;
+  if (x + w > window.innerWidth - 8) x = ev.clientX - w - 16;
+  if (y + h > window.innerHeight - 8) y = ev.clientY - h - 14;
+  TIP.style.left = Math.max(8, x) + 'px'; TIP.style.top = Math.max(8, y) + 'px';
+}
+function linhaTip(cor, rot, val, forma) { return '<div class="r"><span><i class="' + (forma || '') + '" style="background:' + cor + '"></i>' + rot + '</span><b>' + val + '</b></div>'; }
+document.addEventListener('mousemove', function (ev) {
+  var el = ev.target.closest && ev.target.closest('[data-tip]');
+  if (el) dica(ev, el.getAttribute('data-tip'));
+  else if (!ev.target.closest || !ev.target.closest('.plot')) dica(ev, null);
+});
+// rolar a página tira o mouse de cima do gráfico sem gerar mousemove: esconde o tooltip
+window.addEventListener('scroll', function () { TIP.classList.remove('on'); }, { passive: true });
+// converte o x do mouse para a coordenada do viewBox do SVG
+function svgX(svg, ev, W) { var r = svg.getBoundingClientRect(); return (ev.clientX - r.left) * W / r.width; }
+var statusTxt = function (v) { return v == null ? 'sem dados' : v >= 80 ? '✓ na meta' : v >= 65 ? '▲ atenção' : '✕ abaixo da meta'; };
+var statusOtd = function (v) {
+  return v == null ? '<span class="pill n">sem dados</span>'
+    : v >= 80 ? '<span class="pill g">✓ na meta</span>' : v >= 65 ? '<span class="pill y">▲ atenção</span>' : '<span class="pill r">✕ abaixo da meta</span>';
+};
+
+// Velocímetro de 270° em estilo instrumento: escala de 10 em 10, marca da meta (80%), arco na cor
+// da série. O número fica em cor de texto; o estado vem no selo com ícone, nunca só na cor.
+function gauge(el, pct, titulo, desc, media, n, cor) {
+  var C0 = 90, R = 64, Cc = 2 * Math.PI * R, arco = 0.75, v = pct == null ? 0 : Math.max(0, Math.min(100, pct)) / 100;
+  var pt = function (f, r) { var a = (135 + 270 * f) * Math.PI / 180; return [C0 + r * Math.cos(a), C0 + r * Math.sin(a)]; };
+  var escala = '';
+  for (var i = 0; i <= 20; i++) {
+    var f = i / 20, maior = i % 5 === 0, a = pt(f, R + 10), b = pt(f, R + (maior ? 17 : 13));
+    escala += '<line x1="' + a[0].toFixed(1) + '" y1="' + a[1].toFixed(1) + '" x2="' + b[0].toFixed(1) + '" y2="' + b[1].toFixed(1) + '" stroke="' + (f <= v && pct != null ? cor : '#38362C') + '" stroke-width="' + (maior ? 1.6 : 1) + '" stroke-linecap="round" opacity="' + (f <= v && pct != null ? .9 : 1) + '"/>';
+    if (maior) { var t = pt(f, R + 27); escala += '<text x="' + t[0].toFixed(1) + '" y="' + (t[1] + 3).toFixed(1) + '" text-anchor="middle" fill="#7E7A6B" style="font:500 8.5px JetBrains Mono, monospace">' + (i * 5) + '</text>'; }
+  }
+  var g1 = pt(0.8, R - 8), g2 = pt(0.8, R + 8);
+  var ponta = pt(v, R);
+  el.innerHTML =
+    '<svg viewBox="-12 -10 204 190" role="img" aria-label="' + titulo + ': ' + (pct == null ? 'sem dados' : fmt1(pct) + '%') + ', meta 80%">' +
+    escala +
+    '<circle cx="' + C0 + '" cy="' + C0 + '" r="' + R + '" fill="none" stroke="#211F19" stroke-width="9" stroke-dasharray="' + (Cc * arco) + ' ' + Cc + '" transform="rotate(135 ' + C0 + ' ' + C0 + ')" stroke-linecap="round"/>' +
+    (pct == null ? '' :
+      '<circle cx="' + C0 + '" cy="' + C0 + '" r="' + R + '" fill="none" stroke="' + cor + '" stroke-width="9" stroke-dasharray="' + (Cc * arco * v) + ' ' + Cc + '" transform="rotate(135 ' + C0 + ' ' + C0 + ')" stroke-linecap="round" style="filter:drop-shadow(0 0 5px ' + cor + ')"/>' +
+      '<circle cx="' + ponta[0].toFixed(1) + '" cy="' + ponta[1].toFixed(1) + '" r="5" fill="' + cor + '" stroke="#141412" stroke-width="2"/>') +
+    '<line x1="' + g1[0].toFixed(1) + '" y1="' + g1[1].toFixed(1) + '" x2="' + g2[0].toFixed(1) + '" y2="' + g2[1].toFixed(1) + '" stroke="#F3F1E8" stroke-width="2.4" stroke-linecap="round"><title>meta 80%</title></line>' +
+    '<text x="' + C0 + '" y="' + (C0 + 6) + '" text-anchor="middle" fill="#F3F1E8" style="font:700 30px JetBrains Mono, monospace">' + (pct == null ? '—' : fmt1(pct)) + '<tspan style="font-size:14px" fill="#B7B3A3">%</tspan></text>' +
+    '<text x="' + C0 + '" y="' + (C0 + 24) + '" text-anchor="middle" fill="#7E7A6B" style="font:500 10px JetBrains Mono, monospace; letter-spacing:.06em">' + fmt(n) + ' PEDIDOS</text>' +
+    '</svg>' + statusOtd(pct) + '<div class="t">' + titulo + '</div><div class="d">' + desc + '</div>' + (media != null ? '<div class="m">média ' + (typeof media === 'string' ? media : minTxt(media)) + '</div>' : '');
+}
+
+// On time por hora: linhas de 2px, área suave só na série principal (geral), meta 80% como linha
+// sólida de referência, valor só na ponta da série principal; o resto vem do tooltip (linha-guia).
+function linhaOtd(horas) {
+  var W = 1000, H = 230, L = 40, Rr = 56, T = 14, B = 26;
+  var hs = horas.filter(function (h) { return h.otd != null; }); // horas com menos de 5 pedidos vêm nulas do coletor
+  if (!hs.length) { $('otdHora').innerHTML = '<div class="foot">Sem finalizações ainda.</div>'; return; }
+  var h0 = hs[0].h, h1 = hs[hs.length - 1].h, span = Math.max(1, h1 - h0);
+  var x = function (h) { return L + (W - L - Rr) * (h - h0) / span; };
+  var lo = Math.max(0, Math.floor((Math.min.apply(null, hs.map(function (h) { return Math.min(h.otd, h.otd1 == null ? 100 : h.otd1, h.otd2 == null ? 100 : h.otd2); })) - 5) / 25) * 25);
+  var y = function (v) { return T + (H - T - B) * (1 - (v - lo) / (100 - lo)); };
+  var grid = '';
+  for (var g = lo; g <= 100; g += 25) grid += '<line x1="' + L + '" x2="' + (W - Rr) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#27261F" stroke-width="1"/><text x="' + (L - 8) + '" y="' + (y(g) + 3) + '" text-anchor="end" fill="#7E7A6B" style="font:10px JetBrains Mono, monospace">' + g + '%</text>';
+  var meta = '<line x1="' + L + '" x2="' + (W - Rr) + '" y1="' + y(80) + '" y2="' + y(80) + '" stroke="#B7B3A3" stroke-width="1" opacity=".7"/>' +
+    '<text x="' + (L + 6) + '" y="' + (y(80) - 5) + '" fill="#B7B3A3" style="font:500 9.5px JetBrains Mono, monospace">meta 80%</text>';
+  var passo = span > 12 ? 2 : 1, xs = '';
+  for (var h = h0; h <= h1; h += passo) xs += '<text x="' + x(h) + '" y="' + (H - 7) + '" text-anchor="middle" fill="#7E7A6B" style="font:10px JetBrains Mono, monospace">' + h + 'h</text>';
+  var S = [['otd', 'var(--s-geral)', 'on time geral'], ['otd1', 'var(--s-p1)', 'ponta 1'], ['otd2', 'var(--s-p2)', 'ponta 2']];
+  function serie(k, cor, principal) {
+    var pts = hs.filter(function (h) { return h[k] != null; });
+    if (!pts.length) return '';
+    var d = pts.map(function (p, i) { return (i ? 'L' : 'M') + x(p.h).toFixed(1) + ' ' + y(p[k]).toFixed(1); }).join(' ');
+    var last = pts[pts.length - 1];
+    var area = principal ? '<path d="' + d + ' L' + x(last.h).toFixed(1) + ' ' + y(lo) + ' L' + x(pts[0].h).toFixed(1) + ' ' + y(lo) + ' Z" fill="url(#gradArea)"/>' : '';
+    return area + '<path d="' + d + '" fill="none" stroke="' + cor + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"' + (principal ? ' style="filter:drop-shadow(0 0 4px rgba(171,135,4,.55))"' : ' opacity=".95"') + '/>' +
+      '<circle cx="' + x(last.h) + '" cy="' + y(last[k]) + '" r="4" fill="' + cor + '" stroke="#141412" stroke-width="2"/>' +
+      (principal ? '<text x="' + (x(last.h) + 9) + '" y="' + (y(last[k]) - 8) + '" fill="#F3F1E8" style="font:700 11px JetBrains Mono, monospace">' + fmt1(last[k]) + '%</text>' : '');
+  }
+  var defs = '<defs><linearGradient id="gradArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ab8704" stop-opacity=".22"/><stop offset="1" stop-color="#ab8704" stop-opacity="0"/></linearGradient></defs>';
+  var cursor = '<g id="otdCur" style="display:none"><line id="otdCurL" y1="' + T + '" y2="' + (H - B) + '" stroke="#B7B3A3" stroke-width="1" opacity=".5"/>' +
+    S.map(function (s) { return '<circle data-k="' + s[0] + '" r="4.5" fill="' + s[1] + '" stroke="#141412" stroke-width="2"/>'; }).join('') + '</g>';
+  var el = $('otdHora');
+  el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="On time por hora de finalização">' + defs + grid + meta + xs +
+    serie('otd1', 'var(--s-p1)') + serie('otd2', 'var(--s-p2)') + serie('otd', 'var(--s-geral)', true) + cursor +
+    '<rect class="hit" x="' + L + '" y="' + T + '" width="' + (W - L - Rr) + '" height="' + (H - T - B) + '" fill="transparent"/></svg>';
+  var svg = el.querySelector('svg'), cur = el.querySelector('#otdCur');
+  var hit = el.querySelector('.hit');
+  hit.addEventListener('mousemove', function (ev) {
+    var hx = h0 + Math.round((svgX(svg, ev, W) - L) / (W - L - Rr) * span);
+    var p = hs.filter(function (q) { return q.h === hx; })[0];
+    if (!p) { cur.style.display = 'none'; dica(ev, null); return; }
+    cur.style.display = '';
+    el.querySelector('#otdCurL').setAttribute('x1', x(p.h)); el.querySelector('#otdCurL').setAttribute('x2', x(p.h));
+    cur.querySelectorAll('circle').forEach(function (c) {
+      var v = p[c.getAttribute('data-k')];
+      c.style.display = v == null ? 'none' : ''; if (v != null) { c.setAttribute('cx', x(p.h)); c.setAttribute('cy', y(v)); }
+    });
+    dica(ev, '<div class="h">' + p.h + 'h – ' + (p.h + 1) + 'h · ' + fmt(p.n) + ' pedidos com regra</div>' +
+      S.map(function (s) { return linhaTip(s[1], s[2], p[s[0]] == null ? '—' : fmt1(p[s[0]]) + '%'); }).join('') +
+      '<div class="sep"></div>' + linhaTip('var(--ink2)', 'meta', '80%'));
+  });
+  hit.addEventListener('mouseleave', function (ev) { cur.style.display = 'none'; dica(ev, null); });
+}
+
+// ------------------------------------------------------------------ segmento
+function seg() { return state[state.seg]; }
+
+// Eficiência no formato do painel RD, para a modalidade escolhida (Drogasil abre em Turbo60)
+var MOD = { drogasil: 'Turbo60', pmef: 'Todas', americanas: 'Todas', demais: 'Todas' };
+function mmss(min) {
+  if (min == null) return '—';
+  var s = Math.round(min * 60), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
+  var p = function (v) { return String(v).padStart(2, '0'); };
+  return (h ? p(h) + ':' : '') + p(m) + ':' + p(ss);
+}
+function renderRd() {
+  var d = seg(), nome = ({ drogasil: 'Drogasil', pmef: 'Pague Menos / Extrafarma', americanas: 'Americanas', demais: 'Demais lojas' }[state.seg]);
+  var mods = d.modalidades || [];
+  var m = mods.filter(function (x) { return x.tipo === MOD[state.seg] && x.limite != null; })[0] || mods.filter(function (x) { return x.limite != null; })[0];
+  if (!m) { $('otdTitle').textContent = 'Eficiência ' + nome; $('otdSub').textContent = 'sem finalizações com regra de OTD ainda'; ['g1', 'g2', 'g3'].forEach(function (g) { $(g).innerHTML = ''; }); $('tempos').innerHTML = ''; $('modTbl').innerHTML = ''; return; }
+  var L = m.limite, off = m.n - m.on;
+  $('otdTitle').textContent = 'Eficiência ' + nome + (m.tipo !== 'Todas' ? ' · ' + m.tipo : '');
+  $('otdSub').textContent = fmt(m.n) + ' entregas finalizadas com tempo calculável · limite ' + L + ' min por ponta';
+  gauge($('g3'), m.otd, 'On time geral', 'ponta 1 + ponta 2 em até ' + (2 * L) + ' min · ' + fmt(off) + ' off time', mmss(m.medias.entrega), m.n, 'var(--s-geral)');
+  gauge($('g1'), m.otd1, 'Ponta 1', 'criação → chegada à loja em até ' + L + ' min · ' + fmt(m.n - m.on1) + ' off', mmss(m.medias.p1), m.n, 'var(--s-p1)');
+  gauge($('g2'), m.otd2, 'Ponta 2', 'saída da loja → chegada ao cliente em até ' + L + ' min · ' + fmt(m.n - m.on2) + ' off', mmss(m.medias.p2), m.n, 'var(--s-p2)');
+  $('tempos').innerHTML = [
+    [mmss(m.medias.entrega), 'média tempo entrega'], [mmss(m.medias.p1), 'média ponta 1'], [mmss(m.medias.p2), 'média ponta 2'],
+    [mmss(m.medias.aceite), 'média tempo aceite'], [mmss(m.medias.chegada), 'média chegada à origem'], [mmss(m.medias.espera), 'média espera em loja']
+  ].map(function (x) { return '<div><b>' + x[0] + '</b><span>' + x[1] + '</span></div>'; }).join('');
+  $('modTbl').innerHTML = '<thead><tr><th>Modalidade</th><th>Finalizadas</th><th>Limite</th><th>On time</th><th>Ponta 1</th><th>Ponta 2</th></tr></thead><tbody>' +
+    mods.map(function (x) {
+      var sel = x === m, com = x.limite != null;
+      return '<tr' + (sel ? ' class="hl"' : '') + (com ? ' data-mod="' + esc(x.tipo) + '" style="cursor:pointer" title="Ver esta modalidade"' : '') + '><td>' + (sel ? '▸ ' : '') + esc(x.tipo) + '</td><td>' + fmt(x.fin) + '</td>' +
+        (com ? '<td>' + x.limite + ' min</td><td>' + otdPill(x.otd) + '</td><td>' + otdPill(x.otd1) + '</td><td>' + otdPill(x.otd2) + '</td>'
+             : '<td colspan="4" style="color:var(--ink3); text-align:right">fora do OTD</td>') + '</tr>';
+    }).join('') + '</tbody>';
+}
+$('modTbl').addEventListener('click', function (ev) {
+  var tr = ev.target.closest('tr[data-mod]'); if (!tr) return;
+  MOD[state.seg] = tr.getAttribute('data-mod'); renderRd();
+});
+
+function renderSeg() {
+  var d = seg(); if (!d) return;
+  var k = d.kpis, nome = ({ drogasil: 'Drogasil', pmef: 'Pague Menos / Extrafarma', americanas: 'Americanas', demais: 'Demais lojas' }[state.seg]);
+  $('segNote').textContent = nome + ' · ' + fmt(k.lojas) + ' lojas com pedido fechado hoje · ' + fmt(d.bairros.length) + ' bairros';
+  renderRd();
+  linhaOtd(d.horas);
+
+  $('segKpis').innerHTML = [
+    ['total', 'Pedidos ' + nome, fmt(k.total), fmt(k.finalizadas) + ' fin. + ' + fmt(k.canceladas) + ' canc.'],
+    ['fin', 'Finalizadas', fmt(k.finalizadas), fmt(k.emAndamento) + ' em andamento'],
+    ['canc', 'Cancelamento', fmt1(k.taxaCanc) + '%', fmt(k.canceladas) + ' canceladas · ' + fmt(k.cancSemAceite) + ' sem aceite'],
+    ['', 'Tempo médio de aceite', minTxt(k.aceiteFin), 'mediana ' + minTxt(k.aceiteFinMediana) + ' · canc. ' + minTxt(k.aceiteCanc)]
+  ].map(function (x) { return '<div class="kpi ' + x[0] + '"><span class="l">' + x[1] + '</span><span class="v">' + x[2] + '</span><span class="f">' + x[3] + '</span></div>'; }).join('');
+
+  renderFin(); renderCanc(); renderLojas(); renderAgentes(); renderMapa(); renderHoras();
+}
+
+// Rankings de loja: Drogasil tem um; demais lojas têm três recortes comerciais
+var RANK = {
+  drogasil: { titulo: 'As 20 Drogasil com mais demanda', sub: 'ordenadas por demanda (finalizadas + canceladas)', demanda: true },
+  pmef: { titulo: 'As 20 Pague Menos / Extrafarma com mais demanda', sub: 'ordenadas por demanda (finalizadas + canceladas)', demanda: true },
+  americanas: { titulo: 'As 20 Americanas com mais demanda', sub: 'ordenadas por demanda (finalizadas + canceladas)', demanda: true },
+  srgr: { titulo: 'As 20 lojas sem rede / grupo regional com mais entregas', sub: 'ordenadas por entregas finalizadas', demanda: false, tipo: true },
+  todas: { titulo: 'As 30 lojas das demais redes com mais entregas', sub: 'ordenadas por entregas finalizadas · fora da Drogasil, da Pague Menos / Extrafarma e da Americanas', demanda: false, tipo: true }
+};
+var rankDemais = 'pmef';
+rankDemais = 'drogasil';
+try { var rk = localStorage.getItem('radar-grupo'); if (RANK[rk]) rankDemais = rk; } catch (e) {}
+function tipoChip(l) {
+  if (l.classe === 'pmef') return '<span class="pill n">' + esc(l.grupo === 'EXTRAFARMA' ? 'Extrafarma' : 'Pague Menos') + '</span>';
+  if (l.classe === 'gr') return '<span class="pill y" title="' + esc(l.grupo || '') + '">Grupo regional</span>';
+  if (l.classe === 'sr') return '<span class="pill g">Sem rede</span>';
+  if (l.classe === 'rede') return '<span class="pill n" title="' + esc(l.grupo || '') + '">' + esc(l.grupo || 'Rede') + '</span>';
+  return '<span class="pill n">—</span>';
+}
+// O bloco de lojas tem seu próprio seletor de grupo, independente da aba Drogasil / Demais
+function resumoGrupo(k) {
+  var dr = state.drogasil, dm = state.demais, pm = state.pmef;
+  var clsPm = ((pm && pm.classes) || []).reduce(function (o, c) { o[c.classe] = c; return o; }, {});
+  var cls = ((dm && dm.classes) || []).reduce(function (o, c) { o[c.classe] = c; return o; }, {});
+  var soma = function (lista) { return lista.reduce(function (a, c) { c = cls[c] || { lojas: 0, fin: 0, canc: 0 }; return { lojas: a.lojas + c.lojas, fin: a.fin + c.fin, canc: a.canc + c.canc }; }, { lojas: 0, fin: 0, canc: 0 }); };
+  if (k === 'drogasil') return dr ? { lojas: dr.kpis.lojas, fin: dr.kpis.finalizadas, canc: dr.kpis.canceladas } : null;
+  if (k === 'pmef') return pm ? { lojas: pm.kpis.lojas, fin: pm.kpis.finalizadas, canc: pm.kpis.canceladas } : null;
+  if (k === 'americanas') { var am = state.americanas; return am ? { lojas: am.kpis.lojas, fin: am.kpis.finalizadas, canc: am.kpis.canceladas } : null; }
+  if (k === 'srgr') { var r = soma(['sr', 'gr']); r.det = fmt((cls.sr || {}).lojas || 0) + ' sem rede · ' + fmt((cls.gr || {}).lojas || 0) + ' grupo regional'; return r; }
+  return soma(['rede', 'gr', 'sr', '?']);
+}
+function renderLojas() {
+  var k = rankDemais, cfg = RANK[k], d = k === 'drogasil' ? state.drogasil : k === 'pmef' ? (state.pmef || state.demais) : k === 'americanas' ? state.americanas : state.demais;
+  var L = (d && d.rankings && d.rankings[k]) || [];
+  $('lojasSel').querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.k === k)); });
+  $('lojasTitle').textContent = cfg.titulo;
+  $('lojasSub').textContent = cfg.sub;
+  var r = resumoGrupo(k);
+  $('lojasResumo').innerHTML = r ? [
+    [fmt(r.lojas), r.det || 'lojas operaram hoje'],
+    [fmt(r.fin), 'finalizadas'],
+    [fmt(r.canc), 'canceladas'],
+    [(r.fin + r.canc ? fmt1(100 * r.canc / (r.fin + r.canc)) : '—') + '%', 'taxa de cancelamento'],
+    [L[0] ? esc(L[0].loja.length > 34 ? L[0].loja.slice(0, 33) + '…' : L[0].loja) : '—', L[0] ? 'líder · ' + fmt(cfg.demanda ? L[0].total : L[0].fin) + (cfg.demanda ? ' pedidos' : ' entregas') : 'líder']
+  ].map(function (x, i) { return '<div><b' + (i === 4 ? ' style="font-family:var(--body); font-size:14px; font-weight:600"' : '') + '>' + x[0] + '</b><span>' + x[1] + '</span></div>'; }).join('') : '';
+  var drog = k === 'drogasil';
+  var mx = Math.max.apply(null, L.map(function (l) { return cfg.demanda ? l.total : l.fin; }).concat(1));
+  var cols = cfg.tipo ? 10 : 9;
+  $('lojasTbl').innerHTML = '<thead><tr><th>Loja</th>' + (cfg.tipo ? '<th>Tipo</th>' : '') + '<th>' + (cfg.demanda ? 'Demanda' : 'Entregas') + '</th><th>' + (cfg.demanda ? 'Finalizadas' : 'Demanda') + '</th><th>Canceladas</th><th>Taxa canc.</th><th>Aceite médio</th><th>Ponta 1</th><th>Ponta 2</th><th>On time</th></tr></thead><tbody>' +
+    (L.length ? L.map(function (l, i) {
+      var v = cfg.demanda ? l.total : l.fin;
+      return '<tr' + (i < 3 ? ' class="hl"' : '') + '><td><span class="rk">' + (i + 1) + '</span>' + esc(l.loja) + (l.classe === 'gr' && l.grupo ? '<div style="font-size:11px; color:var(--ink3); padding-left:22px">' + esc(l.grupo) + '</div>' : '') + '</td>' +
+        (cfg.tipo ? '<td>' + tipoChip(l) + '</td>' : '') +
+        '<td><span class="minibar" style="width:' + Math.round(56 * v / mx) + 'px; background:var(--bee)"></span>' + fmt(v) + '</td>' +
+        '<td>' + fmt(cfg.demanda ? l.fin : l.total) + '</td><td>' + fmt(l.canc) + '</td><td>' + taxaPill(l.taxa) + '</td>' +
+        '<td>' + minTxt(l.aceite) + '</td><td>' + mmss(l.p1) + '</td><td>' + mmss(l.p2) + '</td>' +
+        '<td title="' + fmt(l.otdN) + ' entregas com regra de OTD">' + otdPill(l.otd) + '</td></tr>';
+    }).join('') : '<tr><td colspan="' + cols + '">Sem pedidos fechados ainda.</td></tr>') + '</tbody>';
+  $('lojasFoot').textContent = drog
+    ? 'On time e médias das pontas pela regra RD (só Turbo60 e Turbo120 entram). Passe o mouse no on time para ver quantas entregas contaram.'
+    : k === 'americanas' ? 'On time com 30 min por ponta (on time = ponta 1 + ponta 2 em até 60 min).'
+    : 'On time pela mesma regra, com 15 min por ponta (on time = ponta 1 + ponta 2 em até 30 min). Classificação pelo cadastro da loja na Bee: rede (key account) Pague Menos/Extrafarma, grupo regional, ou sem rede quando não tem nenhum dos dois.';
+}
+$('lojasSel').addEventListener('click', function (ev) {
+  var b = ev.target.closest('button'); if (!b) return;
+  rankDemais = b.dataset.k;
+  try { localStorage.setItem('radar-grupo', rankDemais); } catch (e) {}
+  renderLojas();
+});
+
+// ------------------------------------------------------------------ agentes
+// Só o que existe na API: quem cancelou cada pedido de hoje (finalizada_by do evento de
+// cancelamento, lido pela torre de cancelamentos). Finalização por agente não aparece —
+// a API só a revela lendo o evento de cada entrega, o que não cabe no limite de requisições.
+var ORIGEM_ROT = { agente: 'agentes da equipe', ia: 'IA', loja: 'painel da loja', integracao: 'integração do cliente', sistema: 'sistema (automático)', entregador: 'entregador no app', outro: 'outros', sem_registro: 'sem registro' };
+function chipsOrigem(o, total, extra) {
+  var ordem = ['agente', 'ia', 'loja', 'integracao', 'sistema', 'entregador', 'outro', 'sem_registro'];
+  return ordem.filter(function (k) { return o && o[k]; }).map(function (k) {
+    return '<div><b' + (k === 'agente' ? ' style="color:var(--bee)"' : '') + '>' + fmt(o[k]) + '</b><span>' + ORIGEM_ROT[k] + (total ? ' · ' + fmt1(100 * o[k] / total) + '%' : '') + '</span></div>';
+  }).join('') + (extra || '');
+}
+var agK = 'hoje';
+try { var agk = localStorage.getItem('radar-agentes'); if (agk === 'hoje' || agk === 'periodo') agK = agk; } catch (e) {}
+function renderAgentes() {
+  var g = state.geral, per = g && g.agentesPeriodo;
+  $('agSel').querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.k === agK)); });
+  if (per) {
+    $('agPerTit').textContent = diaBR(per.de).slice(0, 5) + ' a ' + diaBR(per.ate).slice(0, 5);
+    $('agPerSub').textContent = fmt(per.canceladas) + ' cancelamentos em ' + per.diasLidos + ' dias';
+  }
+  if (agK === 'periodo') return renderAgentesPeriodo(per);
+  var a = g && g.agentes;
+  if (!a) {
+    $('agSub').textContent = 'sem leitura dos cancelamentos nesta coleta';
+    $('agOrigem').innerHTML = ''; $('agTbl').innerHTML = '';
+    $('agFoot').textContent = 'Os cancelamentos por agente vêm dos eventos dos pedidos na API, lidos pela torre de cancelamentos; o arquivo dela não estava disponível na última coleta.';
+    return;
+  }
+  $('agSub').textContent = fmt(a.lidos) + ' de ' + fmt(a.canceladas) + ' cancelamentos de hoje com autor identificado';
+  $('agOrigem').innerHTML = chipsOrigem(a.origem, a.lidos, a.semLeitura ? '<div><b>' + fmt(a.semLeitura) + '</b><span>ainda sem leitura</span></div>' : '');
+  var mx = Math.max.apply(null, a.lista.map(function (x) { return x.canc; }).concat(1));
+  $('agTbl').innerHTML = '<thead><tr><th>Agente</th><th>Cancelamentos</th><th>Drogasil</th><th>Demais</th><th>Antes do aceite</th><th>Já em rota</th><th>Motivo mais usado</th></tr></thead><tbody>' +
+    (a.lista.length ? a.lista.map(function (x, i) {
+      return '<tr' + (i < 3 ? ' class="hl"' : '') + '><td><span class="rk">' + (i + 1) + '</span>' + esc(x.nome) + (x.ia ? ' <span class="pill n">IA</span>' : '') + '</td>' +
+        '<td><span class="minibar" style="width:' + Math.round(56 * x.canc / mx) + 'px; background:var(--bad)"></span>' + fmt(x.canc) + '</td>' +
+        '<td>' + fmt(x.drog) + '</td><td>' + fmt(x.demais) + '</td><td>' + fmt(x.antesAceite) + '</td><td>' + fmt(x.emRota) + '</td>' +
+        '<td style="white-space:normal; text-align:left; font-family:var(--body); min-width:180px">' + (x.motivo ? esc(x.motivo) + ' <span style="color:var(--ink3)">(' + fmt(x.motivoN) + ')</span>' : '—') + '</td></tr>';
+    }).join('') : '<tr><td colspan="7">Nenhum cancelamento feito por agente hoje até agora.</td></tr>') + '</tbody>';
+  $('agFoot').textContent = 'Fonte: API da Bee — autor e motivo do evento de cancelamento de cada pedido (leitura das ' + hhmm(a.cacheEm) + '). Cancelamentos mais recentes aparecem como "ainda sem leitura" até a próxima leitura dos eventos. Finalizações por agente não são exibidas: a API não as informa sem ler o evento de cada entrega.';
+}
+function renderAgentesPeriodo(p) {
+  if (!p) {
+    $('agSub').textContent = 'sem dados do período nesta coleta';
+    $('agOrigem').innerHTML = ''; $('agTbl').innerHTML = ''; $('agFoot').textContent = '';
+    return;
+  }
+  var lidos = 0; Object.keys(p.origem).forEach(function (k) { lidos += p.origem[k]; });
+  $('agSub').textContent = diaBR(p.de) + ' a ' + diaBR(p.ate) + ' · ' + fmt(p.canceladas) + ' cancelamentos · ' + fmt((p.origem.agente || 0)) + ' feitos por agentes';
+  $('agOrigem').innerHTML = chipsOrigem(p.origem, lidos);
+  var mx = Math.max.apply(null, p.lista.map(function (x) { return x.canc; }).concat(1));
+  $('agTbl').innerHTML = '<thead><tr><th>Agente</th><th>Cancelamentos</th><th>Drogasil</th><th>Demais</th><th>Antes do aceite</th><th>Entregador na loja</th><th>Já em rota</th><th>Dias</th><th>Motivo mais usado</th></tr></thead><tbody>' +
+    (p.lista.length ? p.lista.map(function (x, i) {
+      return '<tr' + (i < 3 ? ' class="hl"' : '') + '><td><span class="rk">' + (i + 1) + '</span>' + esc(x.nome) + (x.ia ? ' <span class="pill n">IA</span>' : '') + '</td>' +
+        '<td><span class="minibar" style="width:' + Math.round(56 * x.canc / mx) + 'px; background:var(--bad)"></span>' + fmt(x.canc) + '</td>' +
+        '<td>' + fmt(x.drog) + '</td><td>' + fmt(x.demais) + '</td><td>' + fmt(x.antesAceite) + '</td><td>' + fmt(x.naLoja) + '</td><td>' + fmt(x.emRota) + '</td><td>' + fmt(x.diasAtivos) + '</td>' +
+        '<td style="white-space:normal; text-align:left; font-family:var(--body); min-width:180px">' + (x.motivo ? esc(x.motivo) + ' <span style="color:var(--ink3)">(' + fmt(x.motivoN) + ')</span>' : '—') + '</td></tr>';
+    }).join('') : '<tr><td colspan="9">Nenhum cancelamento feito por agente no período.</td></tr>') + '</tbody>';
+  $('agFoot').textContent = 'Fonte: API da Bee — cancelamentos de cada dia lidos pela torre de cancelamentos, com o autor e o motivo do evento de cancelamento. ' +
+    (p.semNome ? fmt(p.semNome) + ' cancelamento(s) de agente sem nome registrado. ' : '') +
+    '"Dias" = dias com ao menos um cancelamento do agente. Recalculado a cada coleta; finalizações por agente não são exibidas porque a API não as informa sem ler o evento de cada entrega.';
+}
+$('agSel').addEventListener('click', function (ev) {
+  var b = ev.target.closest('button'); if (!b) return;
+  agK = b.dataset.k;
+  try { localStorage.setItem('radar-agentes', agK); } catch (e) {}
+  renderAgentes();
+});
+
+function renderFin() {
+  var d = seg(), k = state.finK, L = d.bairros.slice();
+  var f = { fin: function (a, b) { return b.fin - a.fin; }, total: function (a, b) { return b.total - a.total; },
+    aceite: function (a, b) { return a.aceiteFin - b.aceiteFin; }, otd: function (a, b) { return b.otd - a.otd || b.otdN - a.otdN; } }[k];
+  if (k === 'aceite') L = L.filter(function (b) { return b.total >= MIN && b.aceiteFin != null; });
+  if (k === 'otd') L = L.filter(function (b) { return b.otdN >= MIN && b.otd != null; });
+  L = L.sort(f).slice(0, 12);
+  var mx = Math.max.apply(null, d.bairros.map(function (b) { return b.fin; }).concat(1));
+  $('finSub').textContent = fmt(d.kpis.finalizadas) + ' finalizadas';
+  $('finTbl').innerHTML = '<thead><tr><th>Bairro</th><th>Finalizadas</th><th>Demanda</th><th>Aceite médio</th><th>OTD</th></tr></thead><tbody>' +
+    L.map(function (b, i) {
+      return '<tr' + (i < 3 ? ' class="hl"' : '') + '><td><span class="rk">' + (i + 1) + '</span>' + esc(b.b) + '</td>' +
+        '<td><span class="minibar" style="width:' + Math.round(46 * b.fin / mx) + 'px; background:var(--ok)"></span>' + fmt(b.fin) + '</td>' +
+        '<td>' + fmt(b.total) + '</td><td>' + minTxt(b.aceiteFin) + '</td><td title="perna 1: ' + fmt1(b.otd1) + '% · perna 2: ' + fmt1(b.otd2) + '%">' + otdPill(b.otd) + '</td></tr>';
+    }).join('') + '</tbody>';
+}
+
+function renderCanc() {
+  var d = seg(), k = state.cancK, L = d.bairros.slice();
+  if (k === 'canc') L = L.filter(function (b) { return b.canc > 0; }).sort(function (a, b) { return b.canc - a.canc || b.taxa - a.taxa; });
+  if (k === 'taxa') L = L.filter(function (b) { return b.total >= MIN; }).sort(function (a, b) { return b.taxa - a.taxa || b.canc - a.canc; });
+  if (k === 'total') L = L.sort(function (a, b) { return b.total - a.total; });
+  // pior demanda: bairros com pouco pedido, entre os que têm volume para ler taxa
+  if (k === 'menor') L = L.filter(function (b) { return b.total >= MIN; }).sort(function (a, b) { return a.total - b.total || b.taxa - a.taxa; });
+  L = L.slice(0, 12);
+  var mx = Math.max.apply(null, d.bairros.map(function (b) { return b.canc; }).concat(1));
+  $('cancSub').textContent = fmt(d.kpis.canceladas) + ' canceladas · ' + fmt1(d.kpis.taxaCanc) + '%';
+  $('cancTbl').innerHTML = '<thead><tr><th>Bairro</th><th>Canceladas</th><th>Taxa</th><th>Demanda</th><th>Aceite médio</th><th>Sem aceite</th></tr></thead><tbody>' +
+    (L.length ? L.map(function (b, i) {
+      return '<tr' + (i < 3 ? ' class="hl"' : '') + '><td><span class="rk">' + (i + 1) + '</span>' + esc(b.b) + '</td>' +
+        '<td><span class="minibar" style="width:' + Math.round(46 * b.canc / mx) + 'px; background:var(--bad)"></span>' + fmt(b.canc) + '</td>' +
+        '<td>' + taxaPill(b.taxa) + '</td><td>' + fmt(b.total) + '</td><td>' + minTxt(b.aceiteCanc) + '</td><td>' + fmt(b.semAceite) + '</td></tr>';
+    }).join('') : '<tr><td colspan="6">Nenhum bairro com volume suficiente ainda.</td></tr>') + '</tbody>';
+}
+
+// ------------------------------------------------------------------ mapa de calor
+var PAL = [[4, 7, 11, 0], [18, 60, 110, 150], [30, 140, 200, 200], [53, 214, 238, 225], [247, 181, 69, 240], [255, 95, 109, 250], [255, 235, 220, 255]];
+var LUT = (function () {
+  var out = new Uint8ClampedArray(256 * 4);
+  for (var i = 0; i < 256; i++) {
+    var t = i / 255 * (PAL.length - 1), a = Math.floor(t), b = Math.min(PAL.length - 1, a + 1), f = t - a;
+    for (var c = 0; c < 4; c++) out[i * 4 + c] = PAL[a][c] + (PAL[b][c] - PAL[a][c]) * f;
+  }
+  return out;
+})();
+$('grad').style.background = 'linear-gradient(90deg,' + PAL.slice(1).map(function (p) { return 'rgba(' + p[0] + ',' + p[1] + ',' + p[2] + ',' + (p[3] / 255) + ')'; }).join(',') + ')';
+
+function limites() {
+  // enquadra a cidade pelos pontos de todos os segmentos (percentis cortam outliers)
+  var la = [], lo = [];
+  ['drogasil', 'pmef', 'americanas', 'demais'].forEach(function (s) { (state[s] ? state[s].heat : []).forEach(function (p) { la.push(p[0]); lo.push(p[1]); }); });
+  if (state.geral && state.geral.entregadores) state.geral.entregadores.pts.forEach(function (p) { la.push(p[0]); lo.push(p[1]); });
+  if (la.length < 10) return { la0: -3.89, la1: -3.69, lo0: -38.65, lo1: -38.43 };
+  la.sort(function (a, b) { return a - b; }); lo.sort(function (a, b) { return a - b; });
+  var q = function (a, p) { return a[Math.floor(p * (a.length - 1))]; };
+  var r = { la0: q(la, .01), la1: q(la, .99), lo0: q(lo, .01), lo1: q(lo, .99) };
+  var pl = (r.la1 - r.la0) * .06, pn = (r.lo1 - r.lo0) * .06;
+  return { la0: r.la0 - pl, la1: r.la1 + pl, lo0: r.lo0 - pn, lo1: r.lo1 + pn };
+}
+
+function renderMapa() {
+  var cv = $('heat'), box = cv.parentNode, dpr = Math.min(2, window.devicePixelRatio || 1);
+  var W = Math.max(200, box.clientWidth), H = Math.max(150, box.clientHeight);
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  var ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  var lim = limites();
+  // projeção equiretangular com correção de cos(lat), centrada na caixa
+  var kx = Math.cos(3.78 * Math.PI / 180), sx = (lim.lo1 - lim.lo0) * kx, sy = lim.la1 - lim.la0;
+  var esc_ = Math.min(W / sx, H / sy), ox = (W - sx * esc_) / 2, oy = (H - sy * esc_) / 2;
+  var P = function (lat, lng) { return [ox + (lng - lim.lo0) * kx * esc_, oy + (lim.la1 - lat) * esc_]; };
+
+  ctx.fillStyle = '#060605'; ctx.fillRect(0, 0, W, H);
+  // grade de coordenadas a cada 0,05°
+  ctx.strokeStyle = 'rgba(255,210,0,.07)'; ctx.lineWidth = 1; ctx.font = '10px JetBrains Mono, monospace'; ctx.fillStyle = 'rgba(126,122,107,.85)';
+  for (var g = Math.ceil(lim.lo0 / .05) * .05; g < lim.lo1; g += .05) { var p = P(lim.la0, g); ctx.beginPath(); ctx.moveTo(p[0], 0); ctx.lineTo(p[0], H); ctx.stroke(); ctx.fillText(g.toFixed(2) + '°', p[0] + 3, H - 5); }
+  for (var g2 = Math.ceil(lim.la0 / .05) * .05; g2 < lim.la1; g2 += .05) { var q2 = P(g2, lim.lo0); ctx.beginPath(); ctx.moveTo(0, q2[1]); ctx.lineTo(W, q2[1]); ctx.stroke(); ctx.fillText(g2.toFixed(2) + '°', 4, q2[1] - 3); }
+
+  var d = seg(), layer = state.layer, pts;
+  if (layer === 'ent') pts = state.geral && state.geral.entregadores ? state.geral.entregadores.pts : [];
+  else pts = d.heat.filter(function (p) { return p[2] === (layer === 'canc' ? 1 : 0); });
+
+  // acumula intensidade em tela separada e coloriza pela paleta
+  var off = document.createElement('canvas'); off.width = cv.width; off.height = cv.height;
+  var o = off.getContext('2d'); o.setTransform(dpr, 0, 0, dpr, 0, 0);
+  var rad = Math.max(10, Math.min(W, H) / (layer === 'canc' ? 22 : 30));
+  var alpha = Math.min(.5, Math.max(.07, 9 / Math.sqrt(pts.length + 1)));
+  pts.forEach(function (p) {
+    var c = P(p[0], p[1]);
+    var gr = o.createRadialGradient(c[0], c[1], 0, c[0], c[1], rad);
+    gr.addColorStop(0, 'rgba(0,0,0,' + alpha + ')'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    o.fillStyle = gr; o.fillRect(c[0] - rad, c[1] - rad, rad * 2, rad * 2);
+  });
+  var img = o.getImageData(0, 0, off.width, off.height), px = img.data;
+  for (var i = 0; i < px.length; i += 4) {
+    var a = px[i + 3]; if (!a) continue;
+    px[i] = LUT[a * 4]; px[i + 1] = LUT[a * 4 + 1]; px[i + 2] = LUT[a * 4 + 2]; px[i + 3] = LUT[a * 4 + 3];
+  }
+  o.putImageData(img, 0, 0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(off, 0, 0); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  if (layer === 'ent') {
+    pts.forEach(function (p) {
+      var c = P(p[0], p[1]);
+      ctx.beginPath(); ctx.arc(c[0], c[1], 2.2, 0, Math.PI * 2);
+      ctx.fillStyle = p[2] ? '#35D6EE' : '#34E0A1'; ctx.fill();
+    });
+  }
+
+  // rótulos dos bairros mais relevantes na camada atual, no centro dos pontos
+  var key = layer === 'canc' ? 'canc' : 'fin';
+  var top = d.bairros.filter(function (b) { return b.c && b[key] > 0; }).sort(function (a, b) { return b[key] - a[key]; }).slice(0, layer === 'ent' ? 10 : 12);
+  ctx.font = '600 11px "IBM Plex Sans", system-ui, sans-serif'; ctx.textAlign = 'center';
+  var usados = [];
+  top.forEach(function (b) {
+    var c = P(b.c[0], b.c[1]);
+    if (usados.some(function (u) { return Math.abs(u[0] - c[0]) < 70 && Math.abs(u[1] - c[1]) < 16; })) return;
+    usados.push(c);
+    ctx.fillStyle = '#F3F1E8'; ctx.beginPath(); ctx.arc(c[0], c[1], 2, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(6,6,5,.85)'; ctx.strokeText(b.b, c[0], c[1] - 7);
+    ctx.fillText(b.b, c[0], c[1] - 7);
+  });
+
+  var nome = ({ drogasil: 'Drogasil', pmef: 'Pague Menos / Extrafarma', americanas: 'Americanas', demais: 'Demais lojas' }[state.seg]);
+  if (layer === 'ent') {
+    var e = state.geral && state.geral.entregadores;
+    $('mapSub').textContent = 'última posição dos entregadores online · franquia inteira';
+    $('sideTitle').textContent = 'Entregadores agora';
+    $('hot').innerHTML = e ? '<li><span><i class="minibar" style="width:10px;background:var(--ok)"></i>Disponíveis</span><span class="num">' + fmt(e.disponiveis) + '</span></li><li><span><i class="minibar" style="width:10px;background:var(--cyan)"></i>Com entrega</span><span class="num">' + fmt(e.emEntrega) + '</span></li><li><span>Com posição no mapa</span><span class="num">' + fmt(e.pts.length) + '</span></li>' : '<li>Sem leitura</li>';
+    $('mapFoot').textContent = 'Pontos verdes estão livres, azuis estão em entrega. O calor mostra onde a frota está concentrada; os rótulos são os bairros com mais finalizações de ' + nome + '.';
+  } else {
+    $('mapSub').textContent = fmt(pts.length) + ' ' + (layer === 'canc' ? 'cancelamentos' : 'finalizações') + ' de ' + nome + ' com coordenada de destino';
+    $('sideTitle').textContent = layer === 'canc' ? 'Onde mais cancela' : 'Onde mais entrega';
+    $('hot').innerHTML = top.slice(0, 10).map(function (b) { return '<li><span>' + esc(b.b) + '</span><span class="num">' + fmt(b[key]) + '</span></li>'; }).join('');
+    $('mapFoot').textContent = 'Cada pedido é um ponto no destino; a cor sobe do azul ao vermelho conforme os pontos se sobrepõem. Compare com a camada de entregadores para ver onde falta oferta.';
+  }
+}
+
+function renderHoras() {
+  var hs = seg().horas; var el = $('horas');
+  if (!hs.length) { el.innerHTML = '<div class="foot">Sem pedidos fechados ainda.</div>'; return; }
+  // colunas empilhadas: finalizadas na base, canceladas em cima, folga de 2px entre os dois,
+  // ponta de 4px arredondada só no topo da pilha, largura limitada a 22; hover destaca a hora
+  var W = 1000, H = 210, L = 38, R = 8, T = 22, B = 26;
+  var h0 = hs[0].h, h1 = hs[hs.length - 1].h, n = h1 - h0 + 1;
+  var by = {}; hs.forEach(function (h) { by[h.h] = h; });
+  var mx = Math.max.apply(null, hs.map(function (h) { return h.fin + h.canc; }));
+  var passoY = mx > 200 ? 100 : mx > 80 ? 50 : mx > 40 ? 20 : 10, nice = Math.max(passoY, Math.ceil(mx / passoY) * passoY);
+  var bw = (W - L - R) / n, y = function (v) { return T + (H - T - B) * (1 - v / nice); };
+  var w = Math.min(22, bw * .58), GAP = 2, RAD = 4;
+  // retângulo com só os cantos de cima arredondados (a base fica reta, na linha de base)
+  var topo = function (x, y0, w, h, r) { r = Math.min(r, h, w / 2); return 'M' + x + ' ' + (y0 + h) + 'V' + (y0 + r) + 'Q' + x + ' ' + y0 + ' ' + (x + r) + ' ' + y0 + 'H' + (x + w - r) + 'Q' + (x + w) + ' ' + y0 + ' ' + (x + w) + ' ' + (y0 + r) + 'V' + (y0 + h) + 'Z'; };
+  var s = '<defs><linearGradient id="gradFin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34E0A1"/><stop offset="1" stop-color="#34E0A1" stop-opacity=".55"/></linearGradient></defs>';
+  for (var v = 0; v <= nice; v += passoY) s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#27261F" stroke-width="1"/><text x="' + (L - 8) + '" y="' + (y(v) + 3) + '" text-anchor="end" fill="#7E7A6B" style="font:10px JetBrains Mono, monospace">' + (v >= 1000 ? fmt1(v / 1000) + 'K' : v) + '</text>';
+  var pico = hs.reduce(function (a, b) { return b.fin + b.canc > a.fin + a.canc ? b : a; });
+  for (var h = h0; h <= h1; h++) {
+    var r = by[h] || { fin: 0, canc: 0 }, cx = L + (h - h0) * bw + bw / 2, x = cx - w / 2;
+    s += '<rect class="band" data-h="' + h + '" x="' + (L + (h - h0) * bw + 1) + '" y="' + T + '" width="' + (bw - 2) + '" height="' + (H - T - B) + '" rx="4" fill="#FFD200" opacity="0"/>';
+    var hf = y(0) - y(r.fin), hc = y(0) - y(r.fin + r.canc) - hf;
+    if (r.canc) {
+      s += '<rect x="' + x + '" y="' + y(r.fin) + '" width="' + w + '" height="' + Math.max(0, hf) + '" fill="url(#gradFin)"/>';
+      s += '<path d="' + topo(x, y(r.fin + r.canc), w, Math.max(1, hc - GAP), RAD) + '" fill="#FF5F6D"/>';
+    } else if (r.fin) s += '<path d="' + topo(x, y(r.fin), w, hf, RAD) + '" fill="url(#gradFin)"/>';
+    if (h === pico.h) s += '<text x="' + cx + '" y="' + (y(r.fin + r.canc) - 7) + '" text-anchor="middle" fill="#F3F1E8" style="font:700 11px JetBrains Mono, monospace">' + fmt(r.fin + r.canc) + '</text>';
+    s += '<text x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle" fill="#7E7A6B" style="font:10px JetBrains Mono, monospace">' + h + 'h</text>';
+  }
+  s += '<rect class="hit" x="' + L + '" y="' + T + '" width="' + (W - L - R) + '" height="' + (H - T - B) + '" fill="transparent"/>';
+  el.innerHTML = '<div style="overflow-x:auto"><svg viewBox="0 0 ' + W + ' ' + H + '" style="min-width:560px" role="img" aria-label="Volume por hora: finalizadas e canceladas">' + s + '</svg></div>';
+  var svg = el.querySelector('svg'), bands = el.querySelectorAll('.band'), hit = el.querySelector('.hit');
+  hit.addEventListener('mousemove', function (ev) {
+    var hx = h0 + Math.floor((svgX(svg, ev, W) - L) / bw);
+    bands.forEach(function (b) { b.setAttribute('opacity', +b.getAttribute('data-h') === hx ? .07 : 0); });
+    var r = by[hx];
+    if (!r) { dica(ev, '<div class="h">' + hx + 'h – ' + (hx + 1) + 'h</div>Nenhum pedido fechado'); return; }
+    var tot = r.fin + r.canc;
+    dica(ev, '<div class="h">' + hx + 'h – ' + (hx + 1) + 'h</div>' +
+      linhaTip('#34E0A1', 'finalizadas', fmt(r.fin), 'sq') + linhaTip('#FF5F6D', 'canceladas', fmt(r.canc), 'sq') +
+      '<div class="sep"></div>' + linhaTip('transparent', 'total', fmt(tot)) + linhaTip('transparent', '% cancelamento', tot ? fmt1(100 * r.canc / tot) + '%' : '—') +
+      (r.otd != null ? linhaTip('var(--s-geral)', 'on time geral', fmt1(r.otd) + '%') : ''));
+  });
+  hit.addEventListener('mouseleave', function (ev) { bands.forEach(function (b) { b.setAttribute('opacity', 0); }); dica(ev, null); });
+}
+
+// ------------------------------------------------------------------ interação
+function bindSorts(id, prop, render) {
+  $(id).addEventListener('click', function (ev) {
+    var b = ev.target.closest('button'); if (!b) return;
+    state[prop] = b.dataset.k;
+    $(id).querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    render();
+  });
+}
+bindSorts('finSorts', 'finK', renderFin);
+bindSorts('cancSorts', 'cancK', renderCanc);
+$('layers').addEventListener('click', function (ev) {
+  var b = ev.target.closest('button'); if (!b) return;
+  state.layer = b.dataset.l;
+  $('layers').querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+  renderMapa();
+});
+document.querySelectorAll('.tabs button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    state.seg = b.dataset.seg;
+    try { localStorage.setItem('radar-seg', state.seg); } catch (e) {}
+    document.querySelectorAll('.tabs button').forEach(function (x) { x.setAttribute('aria-selected', String(x === b)); });
+    renderSeg();
+  });
+  b.setAttribute('aria-selected', String(b.dataset.seg === state.seg));
+});
+var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(renderMapa, 150); });
+
+// ------------------------------------------------------------------ buscando entregador
+function renderBusca() {
+  var g = state.geral, b = g && g.buscando;
+  if (!b) {
+    $('buscaSub').textContent = 'sem leitura nesta coleta';
+    ['bTotal', 'bMedia'].forEach(function (id) { $(id).textContent = '—'; });
+    $('bSplit').textContent = ''; $('bMax').textContent = ''; $('bFaixas').innerHTML = ''; $('bTbl').innerHTML = '';
+    return;
+  }
+  $('buscaSub').textContent = 'retrato das ' + hhmm(b.em) + ' · todas as lojas';
+  $('bTotal').textContent = fmt(b.total);
+  $('bSplit').textContent = fmt(b.drog) + ' Drogasil · ' + fmt(b.demais) + ' demais';
+  $('bMedia').textContent = b.mediaMin == null ? '—' : fmt1(b.mediaMin) + ' min';
+  $('bMax').textContent = b.maxMin == null ? 'nenhuma esperando' : 'a mais antiga há ' + fmt1(b.maxMin) + ' min';
+  var F = [['ate5', 'até 5 min'], ['ate15', '5 a 15 min'], ['ate30', '15 a 30 min'], ['mais30', 'mais de 30']];
+  var mx = Math.max.apply(null, F.map(function (f) { return b.faixas[f[0]] || 0; }).concat(1));
+  $('bFaixas').innerHTML = F.map(function (f) {
+    var n = b.faixas[f[0]] || 0;
+    var tip = '<div class="h">Espera ' + f[1] + '</div>' + linhaTip(f[0] === 'ate30' || f[0] === 'mais30' ? 'var(--bad)' : 'var(--warn)', 'entregas buscando', fmt(n), 'sq') +
+      linhaTip('transparent', 'do total buscando', b.total ? Math.round(100 * n / b.total) + '%' : '—');
+    return '<div class="faixa' + (f[0] === 'ate30' || f[0] === 'mais30' ? ' crit' : '') + '" data-tip="' + esc(tip) + '"><span>' + f[1] + '</span><div class="bar"><span style="width:' + (100 * n / mx) + '%"></span></div><span class="q">' + fmt(n) + '</span></div>';
+  }).join('');
+  var cor = function (m) { return m == null ? 'var(--ink3)' : m >= 15 ? 'var(--bad)' : m >= 5 ? 'var(--warn)' : 'var(--ok)'; };
+  $('bTbl').innerHTML = '<thead><tr><th>Loja</th><th>Bairro</th><th>Buscando desde</th><th>Espera</th></tr></thead><tbody>' +
+    (b.lista.length ? b.lista.map(function (x) {
+      return '<tr><td>' + esc(x.loja) + (x.modalidade && x.modalidade !== 'Sem modalidade' ? ' <span class="pill n">' + esc(x.modalidade) + '</span>' : '') + '</td>' +
+        '<td style="white-space:normal; text-align:left; font-family:var(--body)">' + esc(x.bairro) + '</td>' +
+        '<td>' + (x.desde || '—') + '</td>' +
+        '<td class="espera" style="color:' + cor(x.min) + '">' + (x.min == null ? '—' : fmt1(x.min) + ' min') + '</td></tr>';
+    }).join('') + (b.total > b.lista.length ? '<tr><td colspan="4" style="color:var(--ink3)">+ ' + fmt(b.total - b.lista.length) + ' com espera menor</td></tr>' : '')
+    : '<tr><td colspan="4">Nenhuma entrega buscando entregador no momento da coleta.</td></tr>') + '</tbody>';
+}
+
+function renderAgend() {
+  var g = state.geral, a = g && g.agendadas;
+  if (!a) { $('agendSub').textContent = 'sem leitura nesta coleta'; $('agendTbl').innerHTML = ''; return; }
+  $('agendSub').textContent = 'hoje, ' + diaBR(g.dia) + ' · coleta das ' + hhmm(g.gerado_em);
+  var linha = function (rot, o) {
+    return '<tr><td><b>' + rot + '</b></td><td style="color:var(--bee); font-weight:700">' + fmt(o.total) + '</td>' +
+      '<td style="color:var(--ok)">' + fmt(o.fin) + '</td><td style="color:var(--bad)">' + fmt(o.canc) + '</td>' +
+      '<td>' + fmt(o.andamento) + '</td>' +
+      '<td>' + fmt(o.aguardando) + (o.aguardandoDepois ? ' <span style="color:var(--ink3)">(' + fmt(o.aguardandoHoje) + ' hoje · ' + fmt(o.aguardandoDepois) + ' depois)</span>' : '') + '</td>' +
+      '<td>' + fmt(o.drog) + '</td><td>' + fmt(o.demais) + '</td></tr>';
+  };
+  $('agendTbl').innerHTML = '<thead><tr><th>Modalidade</th><th>Total</th><th>Finalizadas</th><th>Canceladas</th><th>Em andamento</th><th>Aguardando horário</th><th>Drogasil</th><th>Demais</th></tr></thead><tbody>' +
+    linha('D+1', a.d1) + linha('Agendadas', a.agendada) + '</tbody>';
+}
+
+var ORDEM_MODAL = ['Turbo60', 'Turbo', 'Turbo90', 'Turbo120', '4 horas', 'D+1', 'AGENDADO', 'Agendada', 'Padrão', 'Sem modalidade'];
+var ROT_MODAL = { 'Super Expressa': 'Super Expressa · 30 min', Expressa: 'Expressa · 60 min', 'Econômica': 'Econômica · 24 h', Turbo60: 'Turbo60 · até 60 min', Turbo120: 'Turbo120 · até 120 min', Turbo: 'Turbo (sem prazo no badge)', 'D+1': 'D+1 · dia seguinte', AGENDADO: 'Agendado (Drogasil)', Agendada: 'Agendada (horário marcado)', 'Padrão': 'Padrão · sob demanda', 'Sem modalidade': 'Drogasil sem modalidade' };
+function renderTipos() {
+  var g = state.geral, t = g && g.tipos;
+  if (!t) { $('tiposSub').textContent = 'sem leitura nesta coleta'; ['tiposMod', 'tiposVeic', 'tiposFmt'].forEach(function (id) { $(id).innerHTML = ''; }); return; }
+  var d = t.drog, m = t.demais;
+  var tot = d.fin + d.canc + d.andamento + m.fin + m.canc + m.andamento;
+  $('tiposSub').textContent = 'hoje, ' + diaBR(g.dia) + ' · ' + fmt(tot) + ' pedidos · coleta das ' + hhmm(g.gerado_em);
+  var mods = Object.keys(d.modalidade).concat(Object.keys(m.modalidade)).filter(function (x, i, a) { return a.indexOf(x) === i; })
+    .sort(function (a, b) { return ((ORDEM_MODAL.indexOf(a) + 1) || 99) - ((ORDEM_MODAL.indexOf(b) + 1) || 99); });
+  var soma = function (x) { return x ? x.fin + x.canc + x.andamento : 0; };
+  var mx = Math.max.apply(null, mods.map(function (k) { return soma(d.modalidade[k]) + soma(m.modalidade[k]); }).concat(1));
+  $('tiposMod').innerHTML = '<thead><tr><th>Modalidade</th><th>Total</th><th>% do dia</th><th>Drogasil</th><th>Demais</th><th>Finalizadas</th><th>Canceladas</th><th>Em andamento</th><th>% cancel.</th></tr></thead><tbody>' +
+    mods.map(function (k) {
+      var a = d.modalidade[k] || { fin: 0, canc: 0, andamento: 0 }, b = m.modalidade[k] || { fin: 0, canc: 0, andamento: 0 };
+      var fin = a.fin + b.fin, canc = a.canc + b.canc, and = a.andamento + b.andamento, n = fin + canc + and;
+      return '<tr><td>' + esc(ROT_MODAL[k] || k) + '</td>' +
+        '<td><span class="minibar" style="width:' + Math.round(56 * n / mx) + 'px; background:var(--bee)"></span><b>' + fmt(n) + '</b></td>' +
+        '<td>' + fmt1(100 * n / (tot || 1)) + '%</td><td>' + fmt(soma(a)) + '</td><td>' + fmt(soma(b)) + '</td>' +
+        '<td style="color:var(--ok)">' + fmt(fin) + '</td><td style="color:var(--bad)">' + fmt(canc) + '</td><td>' + fmt(and) + '</td>' +
+        '<td>' + taxaPill(fin + canc ? 100 * canc / (fin + canc) : null) + '</td></tr>';
+    }).join('') + '</tbody>';
+  var veics = ['Moto', 'Bike', 'Carro', 'Van', 'Picape', 'Sem registro'].filter(function (v) { return d.veiculo[v] || m.veiculo[v]; });
+  var finTot = d.fin + m.fin;
+  $('tiposVeic').innerHTML = '<thead><tr><th>Veículo</th><th>Drogasil</th><th>Demais</th><th>Total</th><th>%</th></tr></thead><tbody>' +
+    (veics.length ? veics.map(function (v) {
+      var a = d.veiculo[v] || 0, b = m.veiculo[v] || 0;
+      return '<tr><td>' + v + '</td><td>' + fmt(a) + '</td><td>' + fmt(b) + '</td><td><b>' + fmt(a + b) + '</b></td><td>' + fmt1(100 * (a + b) / (finTot || 1)) + '%</td></tr>';
+    }).join('') : '<tr><td colspan="5">Sem finalizadas ainda.</td></tr>') + '</tbody>';
+  var F = [['1 parada (entrega simples)', '1'], ['2 paradas', '2'], ['3 ou mais paradas (rota)', '3+']];
+  $('tiposFmt').innerHTML = '<thead><tr><th>Formato</th><th>Drogasil</th><th>Demais</th><th>Total</th></tr></thead><tbody>' +
+    F.map(function (f) { return '<tr><td>' + f[0] + '</td><td>' + fmt(d.paradas[f[1]]) + '</td><td>' + fmt(m.paradas[f[1]]) + '</td><td><b>' + fmt(d.paradas[f[1]] + m.paradas[f[1]]) + '</b></td></tr>'; }).join('') +
+    '<tr><td>Com retorno à loja</td><td>' + fmt(d.retorno) + ' <span style="color:var(--ink3)">(' + fmt1(100 * d.retorno / (d.fin || 1)) + '%)</span></td><td>' + fmt(m.retorno) + ' <span style="color:var(--ink3)">(' + fmt1(100 * m.retorno / (m.fin || 1)) + '%)</span></td><td><b>' + fmt(d.retorno + m.retorno) + '</b></td></tr></tbody>';
+}
+
+function renderObs() {
+  var g = state.geral, L = g && g.observacao;
+  $('obsBox').hidden = !(L && L.length);
+  if (!L || !L.length) return;
+  $('obsSub').textContent = 'hoje, ' + diaBR(g.dia) + ' · coleta das ' + hhmm(g.gerado_em) + ' · ' + L.length + (L.length === 1 ? ' loja' : ' lojas');
+  var corOtd = function (v) { return v == null ? 'var(--ink3)' : v >= 80 ? 'var(--ok)' : v >= 65 ? 'var(--warn)' : 'var(--bad)'; };
+  $('obsLojas').innerHTML = L.map(function (o) {
+    var kpis =
+      '<div class="kpi fin"><span class="l">Finalizadas</span><span class="v">' + fmt(o.fin) + '</span><span class="f">' + (o.total ? fmt1(100 * o.fin / o.total) + '% do total' : 'nenhuma fechada') + ' · ' + fmt(o.andamento) + ' em andamento</span></div>' +
+      '<div class="kpi canc"><span class="l">Canceladas</span><span class="v">' + fmt(o.canc) + '</span><span class="f">' + (o.taxa == null ? '—' : fmt1(o.taxa) + '% de cancelamento') + (o.semAceite ? ' · ' + fmt(o.semAceite) + ' sem aceite' : '') + (o.tempoCanc != null ? ' · ' + minTxt(o.tempoCanc) + ' até cancelar' : '') + '</span></div>' +
+      '<div class="kpi"><span class="l">On time geral</span><span class="v" style="color:' + corOtd(o.otd) + '">' + (o.otd == null ? '—' : fmt1(o.otd) + '%') + '</span><span class="f">ponta 1 ' + (o.otd1 == null ? '—' : fmt1(o.otd1) + '%') + ' · ponta 2 ' + (o.otd2 == null ? '—' : fmt1(o.otd2) + '%') + ' · ' + fmt(o.otdN) + ' ped.</span></div>' +
+      '<div class="kpi"><span class="l">Aceite médio</span><span class="v">' + minTxt(o.aceite) + '</span><span class="f">mediana ' + minTxt(o.aceiteMediana) + ' · canc. ' + minTxt(o.aceiteCanc) + '</span></div>';
+    var tabela = function (titulo, lista, rot) {
+      var linhas = lista && lista.length ? lista.map(function (m) {
+        return '<tr><td>' + esc(rot[m.tipo] || m.tipo) + '</td><td style="color:var(--ok)">' + fmt(m.fin) + '</td><td style="color:var(--bad)">' + fmt(m.canc) + '</td>' +
+          '<td>' + taxaPill(m.taxa) + '</td><td>' + fmt(m.andamento) + '</td><td>' + minTxt(m.aceite) + '</td>' +
+          '<td>' + otdPill(m.otd) + '</td><td>' + (m.otd1 == null ? '—' : fmt1(m.otd1) + '%') + '</td><td>' + (m.otd2 == null ? '—' : fmt1(m.otd2) + '%') + '</td></tr>';
+      }).join('') : '<tr><td colspan="9">Nenhum pedido hoje.</td></tr>';
+      return '<div class="tbl"><table><thead><tr><th>' + titulo + '</th><th>Fin.</th><th>Canc.</th><th>% canc.</th><th>Em and.</th><th>Aceite</th><th>On time</th><th>Ponta 1</th><th>Ponta 2</th></tr></thead><tbody>' + linhas + '</tbody></table></div>';
+    };
+    // medidores de OTD: trilho + preenchimento na cor da série, marca da meta (80%) e selo de status
+    var meter = function (rot, cor, v, sub) {
+      var tip = '<div class="h">' + rot + '</div>' + linhaTip(cor, 'on time', v == null ? '—' : fmt1(v) + '%') + linhaTip('var(--ink2)', 'meta', '80%') + linhaTip('transparent', sub, '');
+      return '<div class="meter" data-tip="' + esc(tip) + '"><div class="mtop"><span><i class="minibar" style="width:12px; height:3px; margin:0; background:' + cor + '"></i>' + rot + '</span><b>' + (v == null ? '—' : fmt1(v) + '%') + '</b></div>' +
+        '<div class="trk"><div class="fill" style="width:' + (v == null ? 0 : v) + '%; background:' + cor + '; box-shadow:0 0 8px -1px ' + cor + '"></div><div class="goal" style="left:calc(80% - 1px)"></div></div>' +
+        '<div class="sub">' + sub + '</div></div>';
+    };
+    var meters = '<div class="meters">' +
+      meter('On time geral', 'var(--s-geral)', o.otd, fmt(o.otdN) + ' pedidos · ' + statusTxt(o.otd)) +
+      meter('Ponta 1 · criação → loja', 'var(--s-p1)', o.otd1, 'média ' + minTxt(o.p1)) +
+      meter('Ponta 2 · loja → cliente', 'var(--s-p2)', o.otd2, 'média ' + minTxt(o.p2)) + '</div>';
+    // composição do dia: finalizadas | canceladas | em andamento (folga de 2px entre os segmentos)
+    var tot = o.fin + o.canc + o.andamento;
+    var seg3 = [['var(--ok)', 'finalizadas', o.fin], ['var(--bad)', 'canceladas', o.canc], ['var(--cyan)', 'em andamento', o.andamento]];
+    var compoTip = '<div class="h">Pedidos do dia · ' + fmt(tot) + '</div>' + seg3.map(function (s) { return linhaTip(s[0], s[1], fmt(s[2]) + (tot ? ' · ' + Math.round(100 * s[2] / tot) + '%' : ''), 'sq'); }).join('');
+    var compo = '<div class="compo"><div class="bar" data-tip="' + esc(compoTip) + '">' + seg3.map(function (s) { return '<span style="width:' + (tot ? 100 * s[2] / tot : 0) + '%; background:' + s[0] + '"></span>'; }).join('') + '</div>' +
+      '<div class="legend">' + seg3.map(function (s) { return '<span><i style="background:' + s[0] + '"></i>' + s[1] + ' <b class="num" style="color:var(--ink)">' + fmt(s[2]) + '</b></span>'; }).join('') + '</div></div>';
+    // cancelamentos do dia: tempo até cancelar, fase, motivo (evento da API) e quem cancelou
+    var corTempo = function (m) { return m == null ? 'var(--ink3)' : m >= 30 ? 'var(--bad)' : m >= 10 ? 'var(--warn)' : 'var(--ink)'; };
+    var cancBloco = '';
+    if (o.cancelamentos && o.cancelamentos.length) {
+      var mxM = Math.max.apply(null, o.motivos.map(function (x) { return x.n; }).concat(1));
+      var fases = (o.fases || []).map(function (f) { return '<span><b>' + fmt(f.n) + '</b> ' + f.fase + '</span>'; }).join('');
+      var motivosHtml = o.motivos.map(function (x) {
+        var tip = '<div class="h">Motivo</div>' + esc(x.motivo) + '<div class="sep"></div>' + linhaTip('var(--bad)', 'cancelamentos', fmt(x.n), 'sq') + linhaTip('transparent', 'do total cancelado', Math.round(100 * x.n / o.canc) + '%');
+        return '<div class="mot" data-tip="' + esc(tip) + '"><span class="mn">' + esc(x.motivo) + '</span><div class="bar"><span style="width:' + (100 * x.n / mxM) + '%; background:var(--bad)"></span></div><span class="q">' + fmt(x.n) + '</span></div>';
+      }).join('');
+      var linhasC = o.cancelamentos.map(function (c) {
+        return '<tr><td>' + esc(c.motivo) + '</td><td>' + c.hora + ' <span style="color:var(--ink3)">(criado ' + c.criado + ')</span></td>' +
+          '<td style="color:' + corTempo(c.min) + '; font-weight:600">' + (c.min == null ? '—' : fmt1(c.min) + ' min') + '</td>' +
+          '<td>' + esc(c.fase) + '</td><td style="font-family:var(--body); white-space:normal; text-align:left">' + esc(c.quem) + '</td><td>' + esc(c.veiculo) + '</td><td style="color:var(--ink3)">#' + c.id + '</td></tr>';
+      }).join('');
+      cancBloco = '<div class="canc-obs"><div class="ch"><b>Cancelamentos do dia</b><span>tempo até cancelar: média <b style="color:' + corTempo(o.tempoCanc) + '">' + minTxt(o.tempoCanc) + '</b> · mediana ' + minTxt(o.tempoCancMediana) + '</span></div>' +
+        '<div class="fases">' + fases + '</div>' +
+        '<div class="mots">' + motivosHtml + '</div>' +
+        '<div class="tbl"><table><thead><tr><th>Motivo</th><th>Cancelado às</th><th>Tempo até cancelar</th><th>Fase</th><th style="text-align:left">Quem cancelou</th><th>Transporte</th><th>Pedido</th></tr></thead><tbody>' + linhasC + '</tbody></table></div></div>';
+    }
+    return '<div class="obs-loja"><div class="nome"><b>' + esc(o.loja) + '</b><span>id ' + esc(o.id) + (o.limite ? ' · limite ' + o.limite + ' min por ponta' : '') + '</span></div>' +
+      '<div class="kpis">' + kpis + '</div>' + meters + compo +
+      tabela('Modalidade', o.modalidades, ROT_MODAL) +
+      tabela('Transporte', o.veiculos, { 'Sem entregador': 'Sem entregador (não aceito)' }) + cancBloco + '</div>';
+  }).join('');
+}
+
+function renderAll() { renderGeral(); renderObs(); renderBusca(); renderAgend(); renderTipos(); renderSeg(); }
+renderAll();
+
+// ------------------------------------------------------------------ banco ao vivo
+var DB = null;
+function aplica(id, v) {
+  if (!v || !v.gerado_em) return false;
+  var atual = state[id];
+  if (atual && atual.gerado_em && new Date(atual.gerado_em) > new Date(v.gerado_em)) return false;
+  state[id] = v;
+  return true;
+}
+(async function () {
+  try { DB = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { DB = null; }
+  if (!DB) return;
+  $('fonte').textContent = 'ao vivo';
+  ['geral', 'drogasil', 'pmef', 'americanas', 'demais'].forEach(function (id) {
+    DB.doc('live/' + id).onSnapshot(function (snap) {
+      var v = snap && (typeof snap.data === 'function' ? snap.data() : snap.data);
+      if (aplica(id, v)) renderAll();
+    });
+  });
+})();
+
+// "Idade" da coleta ao lado do horário: a página não chama a API da Bee, então o
+// botão pede uma coleta; o servidor do painel-bee lê a API a cada 10 min
+function idadeTxt() {
+  if (!state.geral) return '';
+  var m = Math.max(0, Math.round((Date.now() - new Date(state.geral.gerado_em)) / 60000));
+  return m < 1 ? 'agora' : m < 60 ? 'há ' + m + ' min' : 'há ' + Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0');
+}
+function marcaIdade() {
+  if (!state.geral) return;
+  var idade = (Date.now() - new Date(state.geral.gerado_em)) / 60000;
+  $('dot').className = 'dot' + (idade > 25 ? ' stale' : '');
+  $('stamp').textContent = 'atualizado ' + hhmm(state.geral.gerado_em) + ' · ' + idadeTxt();
+}
+var btnAtt = $('btnAtualizar'), avisoT;
+function aviso(txt) {
+  $('attAviso').textContent = txt; $('attAviso').hidden = false;
+  clearTimeout(avisoT); avisoT = setTimeout(function () { $('attAviso').hidden = true; }, 6000);
+}
+// "Atualizar agora": a página não alcança a API da Bee, então grava um pedido em
+// controle/pedido; o servidor do painel-bee roda o coletor na hora (POST /api/atualizar), roda o
+// coletor e grava live/* — o onSnapshot acima troca o painel sozinho quando chega.
+var pedidoEm = null, eraPendente = false;
+function pendente() { return pedidoEm && (!state.geral || Date.parse(pedidoEm) > Date.parse(state.geral.gerado_em)); }
+var statusColeta = null;   // controle/status: a coleta mais recente deu certo ou a API recusou?
+function falhaRecente() {
+  var s = statusColeta;
+  return s && s.estado === 'falha' && (!state.geral || Date.parse(s.em) > Date.parse(state.geral.gerado_em)) ? s : null;
+}
+function marcaFalha() {
+  var f = falhaRecente(), el = $('attFalha');
+  if (!f) { el.hidden = true; return; }
+  el.hidden = false;
+  el.textContent = (f.limite ? 'A API da Bee está recusando leituras (limite de requisições)' : 'A última coleta falhou') +
+    ' desde ' + hhmm(f.em) + ' — nova tentativa automática às ' + hhmm(f.proxima_em) + '. O painel mostra a coleta das ' + hhmm(state.geral && state.geral.gerado_em) + ' de ' + diaBR(state.geral && state.geral.dia) + '.';
+}
+function marcaPedido() {
+  marcaFalha();
+  if (pendente()) {
+    eraPendente = true;
+    var f = falhaRecente();
+    btnAtt.classList.toggle('girando', !(f && Date.parse(f.em) > Date.parse(pedidoEm)));
+    btnAtt.lastChild.textContent = f && Date.parse(f.em) > Date.parse(pedidoEm)
+      ? ' Aguardando API · ' + hhmm(f.proxima_em)
+      : ' Coleta pedida ' + hhmm(pedidoEm) + '…';
+    btnAtt.title = 'A leitura da API leva ~2 min; o painel troca sozinho';
+  } else {
+    btnAtt.classList.remove('girando');
+    btnAtt.lastChild.textContent = ' Atualizar agora';
+    btnAtt.title = 'Pedir uma leitura nova da API da Bee';
+  }
+}
+btnAtt.addEventListener('click', async function () {
+  if (btnAtt.disabled) return;
+  if (!DB) { aviso('Sem conexão com o servidor do painel — confira se o painel-bee está rodando.'); return; }
+  if (pendente()) { aviso('Já há uma coleta pedida às ' + hhmm(pedidoEm) + '. A leitura leva ~2 min e o painel troca sozinho.'); return; }
+  btnAtt.disabled = true;
+  try {
+    var agora = new Date().toISOString();
+    await DB.doc('controle/pedido').set({ pedido_em: agora });
+    pedidoEm = agora; marcaPedido();
+    aviso('Coleta pedida às ' + hhmm(agora) + '. A API está sendo lida agora (~2 min) e o painel troca sozinho.');
+  } catch (e) {
+    var cod = e && e.code ? ' (' + e.code + ')' : '';
+    aviso('Não consegui registrar o pedido de coleta' + cod + '. Tente de novo em instantes.');
+  } finally {
+    btnAtt.disabled = false;
+  }
+});
+(async function () {
+  // espera o banco resolver e acompanha o pedido (vale para todos que estão com o painel aberto)
+  for (var i = 0; i < 40 && !DB; i++) await new Promise(function (r) { setTimeout(r, 250); });
+  if (!DB) return;
+  DB.doc('controle/pedido').onSnapshot(function (snap) {
+    var v = snap && snap.exists ? snap.data() : null;
+    pedidoEm = v && v.pedido_em ? v.pedido_em : null;
+    marcaPedido();
+  });
+  DB.doc('controle/status').onSnapshot(function (snap) {
+    statusColeta = snap && snap.exists ? snap.data() : null;
+    marcaPedido();
+  });
+})();
+var renderAllBase = renderAll;
+renderAll = function () {
+  renderAllBase(); marcaIdade();
+  var p = pendente();
+  if (eraPendente && !p) aviso('Painel atualizado com a coleta das ' + hhmm(state.geral.gerado_em) + '.');
+  eraPendente = p; marcaPedido();
+};
+marcaIdade(); marcaPedido();
+setInterval(marcaIdade, 60000);
+
+// ------------------------------------------------------------------ números animados
+// Indicadores que mudam entre coletas contam do valor antigo ao novo (0,7 s); o texto final é
+// sempre o do render. Só mexe no número — prefixo/sufixo ("%", " min") ficam como vieram.
+var NUM_RE = /^(\D*?)(-?\d{1,3}(?:\.\d{3})+(?:,\d+)?|-?\d+(?:,\d+)?)(.*)$/;
+var numAnt = new WeakMap();
+var semMovimento = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+function animarNumeros() {
+  document.querySelectorAll('.kpi .v, .frota-top .big, .tempos b').forEach(function (el) {
+    var txt = el.textContent, ant = numAnt.get(el);
+    numAnt.set(el, txt);
+    if (semMovimento || ant == null || ant === txt || el.children.length) return;
+    var m = txt.match(NUM_RE), ma = ant.match(NUM_RE);
+    if (!m || !ma || m[1] !== ma[1] || m[3] !== ma[3]) return;
+    var p = function (s) { return parseFloat(s.replace(/\./g, '').replace(',', '.')); };
+    var de = p(ma[2]), para = p(m[2]), dec = (m[2].split(',')[1] || '').length;
+    if (!isFinite(de) || !isFinite(para)) return;
+    var t0 = performance.now();
+    (function passo(t) {
+      if (numAnt.get(el) !== txt) return;   // chegou outra coleta no meio: o render novo manda
+      var k = Math.min(1, (t - t0) / 700), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = k < 1 ? m[1] + (de + (para - de) * e).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec }) + m[3] : txt;
+      if (k < 1) requestAnimationFrame(passo);
+    })(t0);
+  });
+}
+var renderAllAnim = renderAll;
+renderAll = function () { renderAllAnim(); animarNumeros(); };
+animarNumeros();
+
+// ------------------------------------------------------------------ alerta sonoro
+// live/alerta: entregas buscando de lojas sem rede / grupo regional (leitura a cada 1 min).
+// A página recalcula a espera a cada segundo; quem cruza 5 min toca o alarme uma vez
+// (som ligado pelo botão — o navegador só libera áudio depois de um clique).
+var ALERTA = null, LIMITE_MIN = 5, alertados = {}, ultimoBip = 0, actx = null, somLigado = false, tituloBase = document.title;
+try { somLigado = localStorage.getItem('radar-som') === '1'; } catch (e) {}
+function audio() {
+  if (!actx) { var C = window.AudioContext || window.webkitAudioContext; if (!C) return null; actx = new C(); }
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function tom(ctx, freq, ini, dur, vol) {
+  var o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = 'square'; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, ctx.currentTime + ini);
+  g.gain.exponentialRampToValueAtTime(vol, ctx.currentTime + ini + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + ini + dur);
+  o.connect(g); g.connect(ctx.destination); o.start(ctx.currentTime + ini); o.stop(ctx.currentTime + ini + dur + 0.02);
+}
+function alarme(curto) {
+  if (!somLigado) return;
+  var ctx = audio(); if (!ctx) return;
+  ultimoBip = Date.now();
+  if (curto) { tom(ctx, 880, 0, 0.16, 0.12); return; }
+  [0, 0.42].forEach(function (t) { tom(ctx, 988, t, 0.17, 0.18); tom(ctx, 740, t + 0.2, 0.17, 0.18); });
+}
+function marcaSom() {
+  var b = $('btnSom');
+  b.setAttribute('aria-pressed', somLigado ? 'true' : 'false');
+  b.textContent = somLigado ? (actx && actx.state === 'running' ? '🔔 Som ligado' : '🔔 Som ligado · clique para liberar') : '🔕 Som desligado';
+}
+$('btnSom').addEventListener('click', function () {
+  somLigado = !somLigado;
+  try { localStorage.setItem('radar-som', somLigado ? '1' : '0'); } catch (e) {}
+  if (somLigado) { audio(); alarme(true); }
+  marcaSom();
+});
+// som lembrado de outra visita: o primeiro clique em qualquer lugar libera o áudio
+document.addEventListener('click', function () { if (somLigado) { audio(); setTimeout(marcaSom, 100); } }, { once: true });
+function esperaTxt(min) { var s = Math.max(0, Math.round(min * 60)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function corEspera(min) { return min >= 15 ? 'var(--bad)' : min >= 10 ? 'var(--warn)' : 'var(--ink)'; }
+var quadroAtual = null;
+function tickAlerta() {
+  var box = $('alertaBox'); if (!box) return;
+  if (!ALERTA) return;
+  var agora = Date.now();
+  var L = (ALERTA.lista || []).map(function (x) { return Object.assign({}, x, { min: x.desdeIso ? (agora - Date.parse(x.desdeIso)) / 60000 : 0 }); });
+  var acima = L.filter(function (x) { return x.min >= LIMITE_MIN; }).sort(function (a, b) { return b.min - a.min; });
+  var abaixo = L.length - acima.length;
+  // alarme para quem cruzou o limite agora; lembrete curto a cada 2 min enquanto houver alguém
+  var novos = acima.filter(function (x) { return !alertados[x.id]; });
+  novos.forEach(function (x) { alertados[x.id] = agora; });
+  Object.keys(alertados).forEach(function (id) { if (!acima.some(function (x) { return String(x.id) === id; })) delete alertados[id]; });
+  if (novos.length) alarme(false); else if (acima.length && agora - ultimoBip > 120e3) alarme(true);
+  box.classList.toggle('ativo', acima.length > 0);
+  document.title = acima.length ? '(' + acima.length + ') ⚠ ' + tituloBase : tituloBase;
+  $('alertaSub').textContent = 'leitura das ' + new Date(ALERTA.em).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) + ' · a cada 1 min';
+  var corpo;
+  if (!acima.length) {
+    corpo = '<div class="al-calmo">✓ Nenhuma entrega sem rede ou de grupo regional buscando há mais de ' + LIMITE_MIN + ' min' +
+      '<span>' + (abaixo ? '· ' + abaixo + ' buscando há menos de ' + LIMITE_MIN + ' min, em observação' : '') + '</span></div>';
+  } else {
+    corpo = '<div class="al-topo"><span class="al-num">' + acima.length + '</span><span>' + (acima.length === 1 ? 'entrega buscando' : 'entregas buscando') + ' há mais de ' + LIMITE_MIN + ' min' +
+      (abaixo ? ' <span style="color:var(--ink3)">· mais ' + abaixo + ' abaixo de ' + LIMITE_MIN + ' min</span>' : '') + '</span></div>' +
+      '<div class="tbl"><table class="al-tbl"><thead><tr><th>Loja</th><th style="text-align:left">Tipo</th><th style="text-align:left">Bairro</th><th>Buscando desde</th><th>Espera</th><th>Pedido</th><th>Entregadores</th></tr></thead><tbody>' +
+      acima.map(function (x) {
+        var tipo = x.classe === 'gr' ? 'Grupo regional' + (x.grupo ? ' · ' + esc(x.grupo) : '') : 'Sem rede';
+        var aberta = proxAberto === String(x.id);
+        return '<tr data-prox="' + x.id + '"' + (aberta ? ' class="aberta"' : '') + '><td>' + esc(x.loja) + (x.agendado ? ' <span class="pill n">agendado</span>' : '') + '</td>' +
+          '<td style="text-align:left; font-family:var(--body); white-space:normal">' + tipo + '</td>' +
+          '<td style="text-align:left; font-family:var(--body); white-space:normal">' + esc(x.bairro) + '</td>' +
+          '<td>' + (x.desde || '—') + '</td><td class="esp" style="color:' + corEspera(x.min) + '">' + esperaTxt(x.min) + '</td><td style="color:var(--ink3)">#' + x.id + '</td>' +
+          '<td><button type="button" class="prox-btn" aria-expanded="' + aberta + '">Até 3 km ' + (aberta ? '▴' : '▾') + '</button></td></tr>' +
+          (aberta ? '<tr><td colspan="7" class="al-prox">' + htmlProximos(proxDados[proxAberto]) + '</td></tr>' : '');
+      }).join('') + '</tbody></table></div>';
+  }
+  if (ALERTA.erro && (!ALERTA.em || Date.parse(ALERTA.erroEm) > Date.parse(ALERTA.em)))
+    corpo += '<div class="al-erro">⚠ A última leitura falhou às ' + hhmm(ALERTA.erroEm) + ' (' + esc(ALERTA.erro) + ') — mostrando a leitura anterior.</div>';
+  // se só o relógio mudou, atualiza a espera e não mexe no resto: redesenhar a cada segundo
+  // apagaria a seleção de quem está copiando um telefone e poderia perder o clique no link
+  var quadro = corpo.replace(/<td class="esp"[^>]*>[^<]*<\/td>/g, '<td class="esp"></td>');
+  if (quadro === quadroAtual) {
+    acima.forEach(function (x) {
+      var c = $('alertaCorpo').querySelector('tr[data-prox="' + x.id + '"] td.esp');
+      if (c) { c.textContent = esperaTxt(x.min); c.style.color = corEspera(x.min); }
+    });
+    return;
+  }
+  quadroAtual = quadro;
+  // redesenho de verdade: mantém o foco no botão e a rolagem da lista de entregadores
+  var foco = document.activeElement && document.activeElement.classList.contains('prox-btn') ? document.activeElement.closest('tr').dataset.prox : null;
+  var listaAntes = $('alertaCorpo').querySelector('.al-lista'), rolagem = listaAntes ? listaAntes.scrollTop : 0;
+  $('alertaCorpo').innerHTML = corpo;
+  var listaDepois = $('alertaCorpo').querySelector('.al-lista');
+  if (listaDepois) listaDepois.scrollTop = rolagem;
+  if (foco) { var bt = $('alertaCorpo').querySelector('tr[data-prox="' + foco + '"] .prox-btn'); if (bt) bt.focus(); }
+}
+
+// Entregadores até 3 km da loja, abertos ao clicar em uma entrega do alerta (GET /api/proximos).
+var proxAberto = null, proxDados = {};
+function htmlTelefone(t) {
+  var d = String(t || '').replace(/\D/g, '');
+  if (d.length >= 12 && d.indexOf('55') === 0) d = d.slice(2);
+  if (d.length !== 10 && d.length !== 11) return t ? '<span class="tel">' + esc(t) + '</span>' : '<span class="tel">sem telefone</span>';
+  return '<a class="tel" href="tel:+55' + d + '">(' + d.slice(0, 2) + ') ' + d.slice(2, -4) + '-' + d.slice(-4) + '</a>';
+}
+function htmlProximos(d) {
+  if (!d || (d.carregando && !d.lista)) return '<div class="al-vazia">Buscando entregadores perto da loja…</div>';
+  if (d.erro) return '<div class="al-vazia">' + esc(d.erro) + '</div>';
+  var livres = d.lista.filter(function (e) { return !e.emEntrega; }).length, ocupados = d.lista.length - livres;
+  var topo = '<div class="al-prox-top"><span><b>' + fmt(livres) + '</b> ' + (livres === 1 ? 'disponível' : 'disponíveis') + '</span><span><b>' + fmt(ocupados) + '</b> com entrega</span><span>até ' + d.raioKm + ' km da loja, em linha reta · leitura das ' + new Date(d.em).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) + '</span></div>';
+  if (!d.lista.length) return topo + '<div class="al-vazia">Nenhum dos ' + fmt(d.online) + ' entregadores online está a até ' + d.raioKm + ' km desta loja.</div>';
+  return topo + '<div class="al-lista">' + d.lista.map(function (e) {
+    return '<div class="al-ent"><b>' + esc(e.nome) + '</b><span class="km">' + fmt1(e.km) + ' km</span><small>ID ' + esc(e.id) + ' · ' + esc(e.veiculo) + '</small><span class="st ' + (e.emEntrega ? 'ocupado' : 'livre') + '">' + (e.emEntrega ? 'com entrega' : 'disponível') + '</span>' + '<div class="al-acoes">' + htmlTelefone(e.telefone) + htmlZap(e) + '</div>' + (zapEstado[zapChave(e.id)] && zapEstado[zapChave(e.id)].erro ? '<div class="zap-erro" role="alert">' + esc(zapEstado[zapChave(e.id)].erro) + '</div>' : '') + '</div>';
+  }).join('') + '</div>';
+}
+// Botão de WhatsApp: template aprovado no GHL, para o telefone que o servidor lê da API da Bee.
+// A janela de confirmação fica fora de alertaCorpo porque o quadro é redesenhado a cada leitura.
+var zapEstado = {}, zapAlvo = null;
+function zapChave(id) { return proxAberto + ':' + id; }
+function htmlZap(e) {
+  if (!window.WHATSAPP_ATIVO) return '';
+  var d = String(e.telefone || '').replace(/\D/g, '');
+  if (d.length >= 12 && d.indexOf('55') === 0) d = d.slice(2);
+  if (d.length !== 10 && d.length !== 11) return '';
+  var st = zapEstado[zapChave(e.id)] || {};
+  if (st.ok && st.semConfirmacao) return '<button type="button" class="zap-btn" disabled>Enviado ao GHL · sem confirmação</button>';
+  if (e.whatsappEnviado || st.ok) return '<button type="button" class="zap-btn" disabled>✓ WhatsApp enviado</button>';
+  if (st.enviando) return '<button type="button" class="zap-btn" disabled>Enviando…</button>';
+  return '<button type="button" class="zap-btn" data-zap="' + esc(e.id) + '" aria-label="Enviar WhatsApp para ' + esc(e.nome) + '">WhatsApp</button>';
+}
+var zapDlg = document.createElement('dialog');
+zapDlg.id = 'zapDlg';
+zapDlg.innerHTML = '<form><h3>Enviar WhatsApp?</h3><p id="zapPara"></p><blockquote id="zapTexto"></blockquote>' +
+  '<div class="zap-acoes"><button type="button" id="zapNao">Cancelar</button><button type="submit">Enviar</button></div></form>';
+document.body.appendChild(zapDlg);
+function abrirZap(pedido, e) {
+  zapAlvo = { pedido: pedido, id: e.id };
+  var nome = String(e.nome || '').trim().split(/\s+/)[0] || '';
+  nome = nome.charAt(0).toUpperCase() + nome.slice(1).toLowerCase();
+  var x = (ALERTA && ALERTA.lista || []).find(function (p) { return String(p.id) === String(pedido); }) || {};
+  $('zapPara').textContent = 'Para ' + e.nome + ' · entrega #' + pedido;
+  $('zapTexto').textContent = 'Olá, ' + nome + '! Temos uma entrega disponível perto de você. Loja: ' + (x.loja || '—') + '. Destino: ' + (x.bairro || '—') + '. A mensagem traz também origem, distância e valor, com os botões Sim e Não. Se ele responder Sim, a entrega é atribuída a ele.';
+  zapDlg.showModal();
+}
+$('zapNao').addEventListener('click', function () { zapDlg.close(); });
+zapDlg.querySelector('form').addEventListener('submit', function (ev) {
+  ev.preventDefault();
+  var alvo = zapAlvo, k = alvo.pedido + ':' + alvo.id;
+  zapDlg.close();
+  zapEstado[k] = { enviando: true };
+  tickAlerta();
+  fetch('/api/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pedido: alvo.pedido, entregador: alvo.id }) }).then(function (r) {
+    return r.json().then(function (j) { return { status: r.status, j: j }; });
+  }).then(function (r) {
+    if (r.status === 200 || r.status === 409) { zapEstado[k] = { ok: true, semConfirmacao: r.status === 200 && r.j.confirmado === false }; return; }
+    zapEstado[k] = { erro: r.j.erro || 'Não foi possível enviar.' };
+  }).catch(function () {
+    zapEstado[k] = { erro: 'Sem conexão com o servidor. Confira no GHL antes de tentar de novo.' };
+  }).then(tickAlerta);
+});
+function carregarProximos(id) {
+  proxDados[id] = Object.assign({}, proxDados[id], { carregando: true });
+  fetch('/api/proximos?pedido=' + encodeURIComponent(id)).then(function (r) { return r.json(); }).then(function (j) {
+    proxDados[id] = j;
+  }).catch(function () {
+    proxDados[id] = { erro: 'Sem conexão com o servidor do painel. Tente de novo em instantes.' };
+  }).then(tickAlerta);
+}
+$('alertaCorpo').addEventListener('click', function (ev) {
+  var z = ev.target.closest('.zap-btn[data-zap]');
+  if (z) {
+    var ent = (proxDados[proxAberto] && proxDados[proxAberto].lista || []).find(function (n) { return String(n.id) === z.dataset.zap; });
+    if (ent) abrirZap(proxAberto, ent);
+    return;
+  }
+  var tr = ev.target.closest('tr[data-prox]');
+  if (!tr) return;
+  var id = tr.dataset.prox;
+  proxAberto = proxAberto === id ? null : id;
+  if (proxAberto) carregarProximos(id);
+  tickAlerta();
+});
+marcaSom();
+setInterval(tickAlerta, 1000);
+(async function () {
+  var db = null;
+  try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) {}
+  if (!db) { $('alertaSub').textContent = 'sem conexão com o servidor do painel'; return; }
+  db.doc('live/alerta').onSnapshot(function (snap) {
+    var v = snap && (typeof snap.data === 'function' ? snap.data() : snap.data);
+    if (v) {
+      ALERTA = v;
+      // a cada leitura: fecha a lista de entrega que saiu do alerta e renova a que continua aberta
+      if (proxAberto && !(v.lista || []).some(function (x) { return String(x.id) === proxAberto; })) proxAberto = null;
+      if (proxAberto) carregarProximos(proxAberto);
+      tickAlerta();
+    }
+  });
+})();
+</script>
