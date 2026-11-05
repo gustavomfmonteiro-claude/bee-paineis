@@ -8,13 +8,15 @@ import fs from 'node:fs';
 const HORA_MS = 60 * 60e3, INTERVALO_STATUS_MS = 4000;
 // Recusa do Meta (limite de marketing por pessoa): o automático não gasta nova mensagem com ele por um tempo
 const RECUSA_MS = 6 * HORA_MS;
+// Por quanto tempo depois de vencer a oferta o painel ainda lê a conversa, para o "Sim" não ficar sem resposta
+const LEITURA_TARDIA_MS = 20 * 60e3;
 // Campos do contato que o template alocar_detalhes lê
 const CAMPOS = { loja: 'contact.bee__loja', origem: 'contact.bee__endereco_origem', destino: 'contact.bee__endereco_destino', distancia: 'contact.bee__distancia_km', valor: 'contact.bee__valor_entregador' };
 // O Meta recusa variável com quebra de linha, tabulação ou 4+ espaços seguidos
 const limpa = (s, max = 150) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, max) || '-';
 const virgula = (n) => n.toFixed(2).replace('.', ',');
 export const camposDoTemplate = (d) => ({
-  loja: limpa(d.loja, 80), origem: limpa(d.origem), destino: limpa(d.destino, 80),
+  loja: limpa(d.loja, 80), origem: limpa(d.origem), destino: limpa(d.destino),
   distancia: (d.distanciaM / 1000).toFixed(1).replace('.', ','),
   valor: virgula(d.valorCentavos / 100),
 });
@@ -43,11 +45,12 @@ export function separaNome(nome) {
   return { firstName: tituloNome(partes[0] || 'Entregador'), lastName: partes.slice(1).map(tituloNome).join(' ') };
 }
 
-export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit, locationId, tag, arquivo, arquivoOfertas, chaveWebhook, validadeOfertaMs = 5 * 60e3, limiteAbertas = 3, maxPorEntrega = 10, porRodada = 3, pausaAposAtribuirMs = 15 * 60e3, limiteHora = 60, esperaStatusMs = 24000, intervaloStatusMs = INTERVALO_STATUS_MS, log = () => {} }) {
+export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit, locationId, tag, arquivo, arquivoOfertas, chaveWebhook, validadeOfertaMs = 5 * 60e3, respostaTardiaMs = 20 * 60e3, limiteAbertas = 3, maxPorEntrega = 10, porRodada = 3, pausaAposAtribuirMs = 15 * 60e3, limiteHora = 60, esperaStatusMs = 24000, intervaloStatusMs = INTERVALO_STATUS_MS, log = () => {} }) {
   const ativo = !!(pit && locationId && tag);
   const enviados = new Set(), emAndamento = new Set(), pedidosEmAtribuicao = new Set();
   const entregadoresEmEnvio = new Set(), tentativas = new Map(), jaTentados = new Set(), recusadosAte = new Map();
-  let ofertas = {}, idsCampos = null, pausadoAte = 0;
+  let ofertas = {}, idsCampos = null, pausadoAte = 0, conferindoTardias = false;
+  const conversasLidas = new Map();
   // O Workflow espera o botão por 5 min e ignora nova entrada enquanto isso: uma segunda oferta
   // nesse intervalo não sairia, e o "Sim" da primeira cairia na oferta errada.
   // Quem acabou de receber uma entrega também fica um tempo sem ofertas, mesmo se a devolver.
@@ -179,6 +182,44 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
       }
       return disparados;
     },
+    // Depois do prazo do Workflow o "SIm" chega na conversa, mas não aciona o
+    // webhook. Uma busca por leitura do alerta acha quem escreveu depois de vencer a oferta, e só essas
+    // conversas são lidas. Vale só o texto exato do botão: texto livre ("bota") não atribui entrega.
+    // `responder` decide: passado `respostaTardiaMs`, só avisa que expirou; antes disso, só atribui se o
+    // pedido ainda estiver em Buscando.
+    async respostasTardias(bee) {
+      if (conferindoTardias) return 0;
+      const agora = Date.now();
+      const pendentes = Object.entries(ofertas).filter(([, o]) => o.estado === 'aberta' && agora > Date.parse(o.expira) && agora <= Date.parse(o.expira) + LEITURA_TARDIA_MS);
+      if (!pendentes.length) return 0;
+      conferindoTardias = true;
+      try {
+        const j = await ghl(`/conversations/search?locationId=${encodeURIComponent(locationId)}&sortBy=last_message_date&sort=desc&limit=100`, '2021-04-15');
+        const conversas = new Map((j?.conversations || []).map((c) => [c.contactId, c]));
+        const respostas = [];
+        for (const [contactId, o] of pendentes) {
+          const c = conversas.get(contactId);
+          const ultima = new Date(c?.lastMessageDate).getTime();
+          if (!(ultima >= Date.parse(o.em)) || conversasLidas.get(contactId) === ultima) continue;
+          const m = await ghl(`/conversations/${c.id}/messages?limit=10`, '2021-04-15');
+          conversasLidas.set(contactId, ultima);
+          const botao = (m?.messages?.messages || [])
+            .filter((x) => x.direction === 'inbound' && Date.parse(x.dateAdded) >= Date.parse(o.em))
+            .map((x) => ({ contactId, em: Date.parse(x.dateAdded), resposta: String(x.body || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase() }))
+            .filter((x) => x.resposta === 'sim' || x.resposta === 'nao')
+            .sort((a, b) => b.em - a.em)[0]; // vale o último toque
+          if (botao) respostas.push(botao);
+        }
+        // quem respondeu primeiro fica com a entrega
+        for (const r of respostas.sort((a, b) => a.em - b.em)) {
+          log('whatsapp resposta tardia:', r.contactId, r.resposta);
+          await this.responder(r.contactId, r.resposta, bee);
+        }
+        return respostas.length;
+      } finally {
+        conferindoTardias = false;
+      }
+    },
     confereChave(tentativa) {
       if (!chaveWebhook) return false;
       const a = crypto.createHash('sha256').update(String(tentativa ?? '')).digest();
@@ -194,7 +235,7 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
       if (o.estado !== 'aberta') { reg('repetida', o.estado); return 'repetida'; } // reenvio do webhook ou segundo toque
       if (resposta === 'nao') { o.estado = 'recusada'; salvaOfertas(); reg('recusada'); return 'recusada'; }
       const encerra = async (estado, msg, extra) => { o.estado = estado; salvaOfertas(); reg(estado, extra); await responde(contactId, msg); return estado; };
-      if (Date.now() > Date.parse(o.expira)) return encerra('expirada', 'Esta oferta de entrega já expirou. Obrigado pelo retorno!');
+      if (Date.now() > Date.parse(o.expira) + respostaTardiaMs) return encerra('expirada', 'Esta oferta de entrega já expirou. Obrigado pelo retorno!');
       if (pedidosEmAtribuicao.has(o.pedido)) return encerra('outro', 'Outro entregador já ficou com esta entrega. Obrigado pelo retorno!');
       pedidosEmAtribuicao.add(o.pedido);
       o.estado = 'processando';

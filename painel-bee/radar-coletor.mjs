@@ -19,8 +19,10 @@ import path from 'node:path';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 const TZ = 'America/Fortaleza';
-const FRANQUIA = 'FORTALEZA/CE';
-const FRANQUIA_ID = 7;
+// Franquia desta cópia do módulo: o server.mjs importa uma cópia por franquia e define em configurar().
+let FRANQUIA = 'FORTALEZA/CE', FRANQUIA_ID = 7, CIDADE_BASE = 'fortaleza';
+let CAIXA = { la0: -4.2, la1: -3.3, lo0: -38.9, lo1: -38.2 };   // coordenada fora daqui é erro de GPS
+const naCaixa = (lat, lng) => lat > CAIXA.la0 && lat < CAIXA.la1 && lng > CAIXA.lo0 && lng < CAIXA.lo1;
 const META_MIN = 15;
 const META_AMERICANAS = 30;   // prazo da Americanas por ponta, definido pelo usuário em 03/11/2026
 const MAX_PAGINAS = 120;
@@ -34,6 +36,8 @@ export function configurar(o) {
   DIR_CACHE = o.cache; DIR_CANC = o.cancelamentos || null;
   OBSERVACAO = (o.observacao || []).map(String);
   ALERTA_LOJAS = (o.alertaLojas || []).map(String);
+  if (o.franquia) { FRANQUIA = o.franquia.nome; FRANQUIA_ID = o.franquia.id; CIDADE_BASE = o.franquia.cidadeBase; CAIXA = o.franquia.caixa; }
+  if (o.sessao) S = o.sessao;
 }
 
 // ---------------------------------------------------------------------- HTTP
@@ -48,11 +52,20 @@ const tipoReq = (caminho) => caminho.startsWith('/orders?') ? 'pedidos'
   : caminho.startsWith('/merchants/') ? 'lojas'
   : caminho.startsWith('/dashboard') ? 'entregadores' : 'outros';
 
-let TOKEN = null;
-let loginEmVoo = null;
+// Sessão da API: { token, login }. Um login derruba o token anterior do mesmo usuário, então as cópias do módulo
+// que usam o mesmo login dividem este objeto. `semLogin` = token herdado de uma sessão aberta no site da Bee, como
+// faz a extensão bee-export: o Radar nunca entra com esse acesso, para não derrubar quem está no site.
+let S = {};
+// A franquia vai na consulta: `franquia_id` (com nome em inglês a API ignora o filtro em silêncio).
+const filtroFranquia = () => ['filters[franquia_id][$eq][]', String(FRANQUIA_ID)];
+export const ERRO_SESSAO = 'sessao-expirada';
 async function login() {
-  if (loginEmVoo) return loginEmVoo;
-  loginEmVoo = (async () => {
+  if (S.semLogin) throw new Error(ERRO_SESSAO);
+  if (S.login) return S.login;
+  // Acesso usado também no site da Bee: cada login derruba quem está lá, então não insiste.
+  if (S.intervaloLogin && S.ultimoLogin && Date.now() - S.ultimoLogin < S.intervaloLogin) throw new Error('login em espera: este acesso está em uso no site da Bee');
+  S.ultimoLogin = Date.now();
+  S.login = (async () => {
     contar('login');
     const r = await fetch(BASE + '/public/login', {
       method: 'POST',
@@ -60,23 +73,23 @@ async function login() {
       body: JSON.stringify({ username: USUARIO, password: SENHA }),
     });
     const j = await r.json().catch(() => null);
-    TOKEN = j?.data?.token || null;
-    if (!TOKEN) throw new Error('login falhou (HTTP ' + r.status + ')');
-    return TOKEN;
-  })().finally(() => { loginEmVoo = null; });
-  return loginEmVoo;
+    S.token = j?.data?.token || null;
+    if (!S.token) throw new Error('login falhou (HTTP ' + r.status + ')');
+    return S.token;
+  })().finally(() => { S.login = null; });
+  return S.login;
 }
 async function api(caminho, tentativa = 0) {
-  if (!TOKEN) await login();
+  if (!S.token) await login();
   contar(tipoReq(caminho));
   const r = await fetch(BASE + caminho, {
-    headers: { Authorization: 'Bearer ' + TOKEN, Accept: 'application/json' },
+    headers: { Authorization: 'Bearer ' + S.token, Accept: 'application/json' },
   });
   // o mesmo usuário é usado pelo coletor de cancelamentos: um login derruba o outro
   if (r.status === 401 && tentativa < 4) {
     contarRepeticao();
     await new Promise((s) => setTimeout(s, 1500 * (tentativa + 1)));
-    TOKEN = null; await login(); return api(caminho, tentativa + 1);
+    S.token = null; await login(); return api(caminho, tentativa + 1);
   }
   // 429: a API limita o login (compartilhado com outras torres) — respeita Retry-After
   // e insiste por até ~2,5 min antes de desistir
@@ -118,7 +131,7 @@ const titulo = (s) => s.toLowerCase().replace(/(^|[\s(/-])(\p{L})/gu, (m, a, b) 
   .replace(/\b(De|Da|Do|Das|Dos|E)\b/g, (w) => w.toLowerCase());
 
 // "Rua Costa Freire, 595 - Vila Peri, Fortaleza - CE, 60730135, BR" -> "Vila Peri"
-const CIDADES = /,\s*(Fortaleza|Caucaia|Maracana[uú]|Eus[eé]bio|Aquiraz|Itaitinga|Pacatuba|Maranguape|Horizonte|Pacajus)\b/i;
+const CIDADES = /,\s*(Fortaleza|Caucaia|Maracana[uú]|Eus[eé]bio|Aquiraz|Itaitinga|Pacatuba|Maranguape|Horizonte|Pacajus|Campinas|Valinhos|Vinhedo|Sumar[eé]|Hortol[aâ]ndia|Paul[ií]nia|Indaiatuba|Monte Mor|Nova Odessa|Jaguari[uú]na|Itatiba|Louveira)\b/i;
 function bairro(endereco) {
   let s = String(endereco || '').replace(/\s+/g, ' ').trim();
   if (!s) return { nome: 'Sem endereço', chave: 'sem endereco' };
@@ -127,7 +140,7 @@ function bairro(endereco) {
   let cidade = null;
   const mc = s.match(CIDADES);
   if (mc) { cidade = mc[1]; s = s.slice(0, mc.index); }
-  else s = s.replace(/,\s*(BRA?|\d{5}-?\d{3}|CE)\b.*$/i, '').replace(/\s*-\s*CE$/i, '');
+  else s = s.replace(/,\s*(BRA?|\d{5}-?\d{3}|CE|SP)\b.*$/i, '').replace(/\s*-\s*(CE|SP)$/i, '');
   const segs = s.split(',');
   let b = segs.length > 1 || cidade ? segs[segs.length - 1].trim() : '';
   b = b.replace(/\s*\([^)]*$/, '');   // "NOVA METROPOLE (JURE" — parêntese cortado na origem
@@ -138,7 +151,7 @@ function bairro(endereco) {
   }
   if (!b || /^\d/.test(b) || b.length < 3) b = 'Não identificado';
   let nome = titulo(b).replace(/\b(I{1,3}|Iv|Vi{0,3})\b/g, (r) => r.toUpperCase()).replace(/\bIi\b/g, 'II').replace(/\bIii\b/g, 'III');
-  if (cidade && !/^fortaleza$/i.test(cidade)) nome += ' (' + titulo(cidade) + ')';
+  if (cidade && semAcento(cidade).toLowerCase() !== CIDADE_BASE) nome += ' (' + titulo(cidade) + ')';
   const chave = semAcento(nome.toLowerCase()).replace(/[^a-z0-9() ]/g, '').replace(/\s+/g, ' ').trim();
   return { nome, chave };
 }
@@ -147,7 +160,7 @@ function coordsDestino(p) {
   const w = (p.waypoints || []).find((x) => x.type === 'delivery' && x.latitude && x.longitude);
   if (!w) return null;
   const lat = Number(w.latitude), lng = Number(w.longitude);
-  if (!isFinite(lat) || !isFinite(lng) || lat > -3.3 || lat < -4.2 || lng > -38.2 || lng < -38.9) return null;
+  if (!isFinite(lat) || !isFinite(lng) || !naCaixa(lat, lng)) return null;
   return [Math.round(lat * 1e4) / 1e4, Math.round(lng * 1e4) / 1e4];
 }
 
@@ -199,6 +212,7 @@ async function listarPedidos() {
       per_page: '100',
       page: String(page),
     });
+    qs.append(...filtroFranquia());
     const j = await api('/orders?' + qs);
     const itens = Array.isArray(j?.data) ? j.data : [];
     todos.push(...itens);
@@ -605,7 +619,7 @@ function resumoEntregadores(online) {
       out.modal[m][emEntrega ? 'emEntrega' : 'disponiveis']++;
       out[emEntrega ? 'emEntrega' : 'disponiveis']++;
       const lat = Number(e.latitude), lng = Number(e.longitude);
-      if (isFinite(lat) && isFinite(lng) && lat < -3.3 && lat > -4.2 && lng < -38.2 && lng > -38.9)
+      if (isFinite(lat) && isFinite(lng) && naCaixa(lat, lng))
         out.pts.push([Math.round(lat * 1e4) / 1e4, Math.round(lng * 1e4) / 1e4, emEntrega ? 1 : 0, m[0]]);
     }
   }
@@ -740,7 +754,7 @@ function lojasObservacao(pedidos, motivos = {}, nomes = {}) {
 // por minuto. Classe da loja pelo cadastro (classeLoja: sem key_account → grupo regional se tiver
 // regional_group, senão sem rede), mais as lojas de ALERTA_LOJAS no .env (ids de merchant), que entram
 // pelo id seja qual for a rede. Devolve todos com a hora do início da busca; quem passou de
-// 5 min é decidido na página, que conta a espera ao vivo e toca o alerta.
+// 5 min é decidido na página, que conta a espera ao vivo e toca o alerta. Americanas entra pelo nome.
 const coordsColeta = (p) => {
   const w = (p.waypoints || []).find((x) => x.type === 'pickup');
   const lat = Number(w?.latitude), lng = Number(w?.longitude);
@@ -773,6 +787,13 @@ export async function entregadoresProximos(origem, raioKm = 3) {
   return { em: new Date(cacheOnline.t).toISOString(), raioKm, online: (od.available || []).length + (od.in_delivery || []).length, lista };
 }
 
+// Endereço de entrega como aparece na rota do site. Um dos formatos traz o cliente antes ("Cliente | Rua..."), e o nome
+// não vai para o WhatsApp. Com mais de uma entrega no pedido, avisa quantas paradas são.
+export function destinoCompleto(p) {
+  const end = String(p.address_destination || '').split('|').pop().replace(/\s+/g, ' ').trim();
+  const paradas = (p.waypoints || []).filter((w) => w.type === 'delivery').length;
+  return (end || bairro(p.address_destination).nome) + (paradas > 1 ? ` (+${paradas - 1} ${paradas === 2 ? 'parada' : 'paradas'})` : '');
+}
 let detalhesAlerta = new Map();
 export const detalheAlerta = (id) => detalhesAlerta.get(String(id)) || null;
 
@@ -794,17 +815,23 @@ export async function entregasAbertas(entregadorId) {
 // Em Buscando a API só aceita o entregador junto com a saída do status 10 (teste real de 04/11/2026).
 // Sem repetição em erro ou timeout: quem chama relê o pedido. Só 401 tenta de novo, pois nada foi gravado.
 export async function atribuirEntrega(id, merchantId, entregadorId) {
-  if (!TOKEN) await login();
+  if (!S.token) await login();
   const envia = () => fetch(BASE + '/orders/' + encodeURIComponent(id), {
     method: 'PATCH',
-    headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers: { Authorization: 'Bearer ' + S.token, 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ merchant_id: Number(merchantId), deliveryman_id: Number(entregadorId), status: '20' }),
     signal: AbortSignal.timeout(20e3),
   });
   let r = await envia();
-  if (r.status === 401) { TOKEN = null; await login(); r = await envia(); }
+  if (r.status === 401) { S.token = null; await login(); r = await envia(); }
   const j = await r.json().catch(() => null);
   return { ok: r.ok && j?.status !== 'error', http: r.status, mensagem: String(j?.message || '').slice(0, 200) };
+}
+
+// Ids das franquias selecionadas no login: o painel só coleta as que estão aqui.
+export async function franquiasAtivas() {
+  const j = await api('/user/active-franchises');
+  return (Array.isArray(j?.data) ? j.data : []).map((x) => Number(typeof x === 'object' ? x.id : x));
 }
 
 export function buscandoSemRede() {
@@ -821,6 +848,7 @@ async function buscandoSemRedeDia(reqs) {
       'filters[status][$in][]': '10',
       per_page: '100', page: String(page),
     });
+    qs.append(...filtroFranquia());
     const j = await api('/orders?' + qs);
     const itens = Array.isArray(j?.data) ? j.data : [];
     ps.push(...itens);
@@ -833,16 +861,16 @@ async function buscandoSemRedeDia(reqs) {
     merchantId: p.merchant?.id ?? p.merchant_id ?? null,
     loja: (p.merchant?.name || '').replace(/\s+/g, ' ').trim(),
     origem: String(p.address_origin || '').replace(/\s+/g, ' ').trim(),
-    destino: bairro(p.address_destination).nome,
+    destino: destinoCompleto(p),
     distanciaM: Number(p.distance) || 0,      // metros
     valorCentavos: Number(p.price_deliveryman) || 0, // o que o entregador recebe; nunca `price`
   }]));
   const vistos = new Set();
   const classeAlerta = (p) => (ALERTA_LOJAS.includes(String(p.merchant?.id))
     ? { classe: 'loja', grupo: /EXTRAFARMA/i.test(p.merchant?.name || '') ? 'Extrafarma' : /PAGUE MENOS/i.test(p.merchant?.name || '') ? 'Pague Menos' : 'Loja selecionada' }
-    : classeLoja(p));
+    : ehAmericanas(p) ? { classe: 'americanas', grupo: 'Americanas' } : classeLoja(p));
   const lista = buscando.filter((p) => !vistos.has(p.id) && vistos.add(p.id)).map((p) => ({ p, c: classeAlerta(p) }))
-    .filter(({ c }) => c.classe === 'sr' || c.classe === 'gr' || c.classe === 'loja')
+    .filter(({ c }) => ['sr', 'gr', 'loja', 'americanas'].includes(c.classe))
     .map(({ p, c }) => {
       const ini = inicioBusca(p);
       return {
@@ -870,8 +898,8 @@ async function coletarDia(reqs) {
   const [pedidos, online] = await Promise.all([listarPedidos(), entregadoresOnline().catch((e) => { console.error('dashboard:', e.message); return null; })]);
   await carregarLojas(pedidos).catch((e) => console.error('cadastro de lojas:', e.message));
   // Nunca grava um painel zerado: nenhum pedido de Fortaleza quase sempre é acesso errado
-  // (usuário cuja franquia ativa não é a 7), não um dia sem pedidos.
-  if (!pedidos.length) throw new Error('nenhum pedido de ' + FRANQUIA + ' — confira a franquia ativa do usuário ' + USUARIO);
+  // (usuário cuja franquia ativa não é a 7), não um dia sem pedidos. Nas franquias pequenas, dia sem pedido é normal.
+  if (!pedidos.length && FRANQUIA_ID === 7) throw new Error('nenhum pedido de ' + FRANQUIA + ' — confira a franquia ativa do usuário ' + USUARIO);
   const drog = segmento(pedidos.filter(ehDrogasil), true);
   const pmef = segmento(pedidos.filter(ehPMEF), false);
   const americanas = segmento(pedidos.filter(ehAmericanas), false);

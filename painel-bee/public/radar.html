@@ -402,6 +402,18 @@ tbody tr:hover > td:first-child{box-shadow:inset 3px 0 0 var(--bee)}
 .wrap > *:nth-child(2){animation-delay:.05s} .wrap > *:nth-child(3){animation-delay:.1s} .wrap > *:nth-child(4){animation-delay:.15s}
 .wrap > *:nth-child(5){animation-delay:.2s} .wrap > *:nth-child(6){animation-delay:.25s} .wrap > *:nth-child(n+7){animation-delay:.3s}
 @media (prefers-reduced-motion: reduce){ .top::after,.wrap > *{animation:none} body::after{display:none} }
+/* seletor de franquia: cada opção é um link próprio, com URL que dá para compartilhar */
+.franq{display:inline-flex; gap:2px; padding:3px; background:var(--bee-ink); border-radius:999px; box-shadow:0 2px 10px -4px rgba(0,0,0,.6)}
+.franq a{padding:3px 12px; border-radius:999px; color:var(--bee); text-decoration:none; font-weight:500}
+.franq a:hover{background:rgba(255,210,0,.16)}
+.franq a[aria-current]{background:var(--bee); color:var(--bee-ink); font-weight:700}
+.franq a:focus-visible{outline:2px solid var(--bee); outline-offset:2px}
+.so-outras{display:none}
+body.franq-outra .so-principal{display:none}
+body.franq-outra .so-outras{display:inline}
+body.franq-sem-acesso .wrap > *:not(.top):not(#franqAviso){display:none}
+.franq-aviso h2{font-size:18px; margin-bottom:6px}
+.franq-aviso p{margin:0; color:var(--ink2)}
 </style>
 
 <div class="wrap">
@@ -415,6 +427,7 @@ tbody tr:hover > td:first-child{box-shadow:inset 3px 0 0 var(--bee)}
       <h1>Radar Operacional</h1>
     </div>
     <div class="live">
+      <nav class="franq" aria-label="Franquia"><!--FRANQUIAS--></nav>
       <span class="chip live-chip"><span class="dot" id="dot"></span><span id="stamp">—</span></span>
       <span class="chip" id="diaChip">—</span>
       <span class="chip" id="fonte">snapshot embutido</span>
@@ -424,13 +437,18 @@ tbody tr:hover > td:first-child{box-shadow:inset 3px 0 0 var(--bee)}
     </div>
   </header>
 
+  <section class="panel franq-aviso" id="franqAviso" hidden>
+    <h2 id="franqAvisoTit"></h2>
+    <p id="franqAvisoTxt"></p>
+  </section>
+
   <!-- alerta: entregas de lojas sem rede e de grupos regionais buscando entregador há mais de 5 min.
        Leitura própria a cada 1 min (live/alerta); a espera conta ao vivo na página; som opcional. -->
   <section class="panel alerta" id="alertaBox" style="margin-bottom:18px">
-    <div class="ph"><div class="sectitle"><span class="tag bad">ALERTA</span><h2>Sem rede, grupos regionais e lojas selecionadas buscando há mais de 5 min</h2></div>
+    <div class="ph"><div class="sectitle"><span class="tag bad">ALERTA</span><h2>Sem rede, grupos regionais<span class="so-principal">, Americanas e lojas selecionadas</span><span class="so-outras"> e Americanas</span> buscando há mais de 5 min</h2></div>
       <div class="al-ctl"><span class="sub" id="alertaSub">aguardando a primeira leitura…</span><button type="button" class="chip som" id="btnSom" aria-pressed="false">🔕 Som desligado</button></div></div>
     <div id="alertaCorpo"></div>
-    <div class="foot">Entregas com status "buscando" de lojas sem rede (sem key account e sem grupo regional no cadastro), de grupos regionais e das lojas 933, 890, 495, 678 e 839 Pague Menos e 7300 e 7362 Extrafarma, lidas da API a cada 1 min. O WhatsApp automático começa com 1 min de busca nessas lojas e com 5 min nas demais. Espera contada do início da busca e atualizada a cada segundo — uma entrega aceita entre duas leituras sai da lista na leitura seguinte. Com o som ligado, cada entrega que passa de 5 min toca o alerta; enquanto houver entregas na lista, um bipe curto a cada 2 min. Clique em uma entrega para ver os entregadores online até 3 km da loja, em linha reta, pela última posição enviada pelo app.</div>
+    <div class="foot">Entregas com status "buscando" de lojas sem rede (sem key account e sem grupo regional no cadastro), de grupos regionais e da Americanas<span class="so-principal">, mais as lojas 933, 890, 495, 678 e 839 Pague Menos e 7300 e 7362 Extrafarma</span>, lidas da API a cada 1 min. <span class="so-principal">O WhatsApp automático começa com 1 min de busca nessas lojas e com 5 min em sem rede e grupos regionais; a Americanas não recebe oferta automática, só pelo botão. </span>Espera contada do início da busca e atualizada a cada segundo — uma entrega aceita entre duas leituras sai da lista na leitura seguinte. Com o som ligado, cada entrega que passa de 5 min toca o alerta; enquanto houver entregas na lista, um bipe curto a cada 2 min. Clique em uma entrega para ver os entregadores online até 3 km da loja, em linha reta, pela última posição enviada pelo app.</div>
   </section>
 
   <!-- visão da franquia inteira -->
@@ -1033,7 +1051,7 @@ function limites() {
   var la = [], lo = [];
   ['drogasil', 'pmef', 'americanas', 'demais'].forEach(function (s) { (state[s] ? state[s].heat : []).forEach(function (p) { la.push(p[0]); lo.push(p[1]); }); });
   if (state.geral && state.geral.entregadores) state.geral.entregadores.pts.forEach(function (p) { la.push(p[0]); lo.push(p[1]); });
-  if (la.length < 10) return { la0: -3.89, la1: -3.69, lo0: -38.65, lo1: -38.43 };
+  if (la.length < 10) return (window.FRANQUIA_ATUAL && FRANQUIA_ATUAL.mapa) || { la0: -3.89, la1: -3.69, lo0: -38.65, lo1: -38.43 };
   la.sort(function (a, b) { return a - b; }); lo.sort(function (a, b) { return a - b; });
   var q = function (a, p) { return a[Math.floor(p * (a.length - 1))]; };
   var r = { la0: q(la, .01), la1: q(la, .99), lo0: q(lo, .01), lo1: q(lo, .99) };
@@ -1375,6 +1393,19 @@ function marcaIdade() {
   $('dot').className = 'dot' + (idade > 25 ? ' stale' : '');
   $('stamp').textContent = 'atualizado ' + hhmm(state.geral.gerado_em) + ' · ' + idadeTxt();
 }
+// Franquia que o login não enxerga: troca o painel vazio por um aviso. Volta sozinho quando o acesso chegar.
+var AVISOS = {
+  'sem-acesso': ['Franquia sem acesso neste login', 'A sessão usada pelo Radar ainda não tem esta franquia selecionada na Bee, então não há dados para mostrar. Fortaleza segue normal.'],
+  'sessao-expirada': ['Sessão desta franquia expirada', 'Alguém entrou de novo no site da Bee com o acesso usado aqui, e o token anterior deixou de valer. O Radar não refaz esse login, para não derrubar quem está no site; ele precisa receber o token novo. Fortaleza segue normal.'],
+};
+function marcaSemAcesso(estado) {
+  var a = AVISOS[estado];
+  document.body.classList.toggle('franq-sem-acesso', !!a);
+  $('franqAviso').hidden = !a;
+  if (a) { $('franqAvisoTit').textContent = a[0]; $('franqAvisoTxt').textContent = a[1]; }
+}
+document.body.classList.toggle('franq-outra', !!(window.FRANQUIA_ATUAL && !FRANQUIA_ATUAL.principal));
+marcaSemAcesso(window.FRANQUIA_ATUAL && FRANQUIA_ATUAL.aviso);
 var btnAtt = $('btnAtualizar'), avisoT;
 function aviso(txt) {
   $('attAviso').textContent = txt; $('attAviso').hidden = false;
@@ -1441,6 +1472,7 @@ btnAtt.addEventListener('click', async function () {
   });
   DB.doc('controle/status').onSnapshot(function (snap) {
     statusColeta = snap && snap.exists ? snap.data() : null;
+    marcaSemAcesso(statusColeta && statusColeta.estado);
     marcaPedido();
   });
 })();
@@ -1542,14 +1574,14 @@ function tickAlerta() {
   $('alertaSub').textContent = 'leitura das ' + new Date(ALERTA.em).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) + ' · a cada 1 min' + (window.WHATSAPP_AUTO ? ' · WhatsApp automático ligado' : '');
   var corpo;
   if (!acima.length) {
-    corpo = '<div class="al-calmo">✓ Nenhuma entrega sem rede, de grupo regional ou das lojas selecionadas buscando há mais de ' + LIMITE_MIN + ' min' +
+    corpo = '<div class="al-calmo">✓ Nenhuma entrega deste alerta buscando há mais de ' + LIMITE_MIN + ' min' +
       '<span>' + (abaixo ? '· ' + abaixo + ' buscando há menos de ' + LIMITE_MIN + ' min, em observação' : '') + '</span></div>';
   } else {
     corpo = '<div class="al-topo"><span class="al-num">' + acima.length + '</span><span>' + (acima.length === 1 ? 'entrega buscando' : 'entregas buscando') + ' há mais de ' + LIMITE_MIN + ' min' +
       (abaixo ? ' <span style="color:var(--ink3)">· mais ' + abaixo + ' abaixo de ' + LIMITE_MIN + ' min</span>' : '') + '</span></div>' +
       '<div class="tbl"><table class="al-tbl"><thead><tr><th>Loja</th><th style="text-align:left">Tipo</th><th style="text-align:left">Bairro</th><th>Buscando desde</th><th>Espera</th><th>Pedido</th><th>Entregadores</th></tr></thead><tbody>' +
       acima.map(function (x) {
-        var tipo = x.classe === 'loja' ? esc(x.grupo) : x.classe === 'gr' ? 'Grupo regional' + (x.grupo ? ' · ' + esc(x.grupo) : '') : 'Sem rede';
+        var tipo = x.classe === 'loja' || x.classe === 'americanas' ? esc(x.grupo) : x.classe === 'gr' ? 'Grupo regional' + (x.grupo ? ' · ' + esc(x.grupo) : '') : 'Sem rede';
         var aberta = proxAberto === String(x.id);
         return '<tr data-prox="' + x.id + '"' + (aberta ? ' class="aberta"' : '') + '><td>' + esc(x.loja) + (x.agendado ? ' <span class="pill n">agendado</span>' : '') + '</td>' +
           '<td style="text-align:left; font-family:var(--body); white-space:normal">' + tipo + '</td>' +
