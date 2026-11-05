@@ -27,12 +27,13 @@ const MAX_PAGINAS = 120;
 
 // ---------------------------------------------------------------- credenciais
 // vêm do server.mjs (.env do painel-bee)
-let BASE = '', USUARIO = '', SENHA = '', DIR_CACHE = '.', DIR_CANC = null, OBSERVACAO = [];
+let BASE = '', USUARIO = '', SENHA = '', DIR_CACHE = '.', DIR_CANC = null, OBSERVACAO = [], ALERTA_LOJAS = [];
 export function configurar(o) {
   BASE = String(o.base || '').replace(/\/+$/, '');
   USUARIO = o.usuario; SENHA = o.senha;
   DIR_CACHE = o.cache; DIR_CANC = o.cancelamentos || null;
   OBSERVACAO = (o.observacao || []).map(String);
+  ALERTA_LOJAS = (o.alertaLojas || []).map(String);
 }
 
 // ---------------------------------------------------------------------- HTTP
@@ -737,7 +738,8 @@ function lojasObservacao(pedidos, motivos = {}, nomes = {}) {
 // ------------------------------------------------- alerta: sem rede / grupo regional buscando
 // Leitura rápida, separada da coleta de 10 min: só pedidos com status 10 (buscando), uma página
 // por minuto. Classe da loja pelo cadastro (classeLoja: sem key_account → grupo regional se tiver
-// regional_group, senão sem rede). Devolve todos com a hora do início da busca; quem passou de
+// regional_group, senão sem rede), mais as lojas de ALERTA_LOJAS no .env (ids de merchant), que entram
+// pelo id seja qual for a rede. Devolve todos com a hora do início da busca; quem passou de
 // 5 min é decidido na página, que conta a espera ao vivo e toca o alerta.
 const coordsColeta = (p) => {
   const w = (p.waypoints || []).find((x) => x.type === 'pickup');
@@ -836,8 +838,11 @@ async function buscandoSemRedeDia(reqs) {
     valorCentavos: Number(p.price_deliveryman) || 0, // o que o entregador recebe; nunca `price`
   }]));
   const vistos = new Set();
-  const lista = buscando.filter((p) => !vistos.has(p.id) && vistos.add(p.id)).map((p) => ({ p, c: classeLoja(p) }))
-    .filter(({ c }) => c.classe === 'sr' || c.classe === 'gr')
+  const classeAlerta = (p) => (ALERTA_LOJAS.includes(String(p.merchant?.id))
+    ? { classe: 'loja', grupo: /EXTRAFARMA/i.test(p.merchant?.name || '') ? 'Extrafarma' : /PAGUE MENOS/i.test(p.merchant?.name || '') ? 'Pague Menos' : 'Loja selecionada' }
+    : classeLoja(p));
+  const lista = buscando.filter((p) => !vistos.has(p.id) && vistos.add(p.id)).map((p) => ({ p, c: classeAlerta(p) }))
+    .filter(({ c }) => c.classe === 'sr' || c.classe === 'gr' || c.classe === 'loja')
     .map(({ p, c }) => {
       const ini = inicioBusca(p);
       return {

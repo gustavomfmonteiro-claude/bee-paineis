@@ -29,6 +29,8 @@ configurar({
   cancelamentos: cfg('CANCELAMENTOS_DIR') ? path.resolve(DIR, cfg('CANCELAMENTOS_DIR')) : null,
   // lojas em observação: ids de merchant separados por vírgula
   observacao: String(cfg('LOJAS_OBSERVACAO', '')).split(',').map((s) => s.trim()).filter(Boolean),
+  // lojas que entram no alerta de busca além de sem rede e grupos regionais: ids de merchant separados por vírgula
+  alertaLojas: String(cfg('ALERTA_LOJAS', '')).split(',').map((s) => s.trim()).filter(Boolean),
 });
 
 // Botão de WhatsApp: só aparece com token, location e tag do Workflow no .env. Sem senha, por decisão do usuário (04/11/2026)
@@ -40,14 +42,23 @@ const whatsapp = criarEnvio({
   arquivo: path.join(CACHE, 'whatsapp-envios.jsonl'),
   arquivoOfertas: path.join(CACHE, 'whatsapp-ofertas.json'),
   chaveWebhook: cfg('GHL_WEBHOOK_CHAVE'),
-  validadeOfertaMs: Number(cfg('WHATSAPP_VALIDADE_MIN', 10)) * 60e3,
+  // igual ao tempo limite da ação do Workflow: depois disso o botão não aciona mais o webhook
+  validadeOfertaMs: Number(cfg('WHATSAPP_VALIDADE_MIN', 5)) * 60e3,
   limiteAbertas: Number(cfg('WHATSAPP_LIMITE_ABERTAS', 3)),
+  maxPorEntrega: Number(cfg('WHATSAPP_MAX_POR_ENTREGA', 10)),
+  porRodada: Number(cfg('WHATSAPP_POR_RODADA', 3)),
+  pausaAposAtribuirMs: Number(cfg('WHATSAPP_PAUSA_MIN', 15)) * 60e3,
   limiteHora: Number(cfg('WHATSAPP_LIMITE_HORA', 60)),
   esperaStatusMs: Number(cfg('WHATSAPP_ESPERA_MS', 24000)),
   intervaloStatusMs: Number(cfg('WHATSAPP_INTERVALO_MS', 4000)),
   log,
 });
-const COD_HTTP = { telefone: 422, repetido: 409, limite: 429, recusado: 502, token: 502, ghl: 502 };
+const COD_HTTP = { telefone: 422, repetido: 409, ocupado: 423, limite: 429, recusado: 502, token: 502, ghl: 502 };
+// Envio automático: 1 liga. Sem isso, só o botão manual envia.
+const WHATSAPP_AUTO = whatsapp.ativo && cfg('WHATSAPP_AUTO') === '1';
+// Minutos de busca até a primeira oferta: lojas de ALERTA_LOJAS têm prazo próprio, as demais seguem em 5.
+const WHATSAPP_MIN_LOJAS = Number(cfg('WHATSAPP_MIN_LOJAS', 1));
+const limiteOferta = (x) => (x.classe === 'loja' ? WHATSAPP_MIN_LOJAS : 5);
 
 // ---------- estado (documentos que a página lê)
 const SEGMENTOS = ['geral', 'drogasil', 'pmef', 'americanas', 'demais'];
@@ -90,7 +101,12 @@ async function rodarAlerta() {
   if (alertando) return;
   alertando = true;
   try {
-    docs['live/alerta'] = await buscandoSemRede();
+    const leitura = await buscandoSemRede();
+    if (WHATSAPP_AUTO) {
+      await whatsapp.rodadaAuto(leitura.lista, { proximos: entregadoresProximos, detalhe: detalheAlerta, limiteDe: limiteOferta }).catch((e) => log('whatsapp auto falhou:', e?.message));
+    }
+    leitura.lista = leitura.lista.map((p) => ({ ...p, whatsapp: whatsapp.tentativas(p.id), whatsappMax: whatsapp.maxPorEntrega }));
+    docs['live/alerta'] = leitura;
   } catch (e) {
     docs['live/alerta'] = { ...(docs['live/alerta'] || { lista: [] }), erro: String(e?.message || e).slice(0, 160), erroEm: new Date().toISOString() };
     log('alerta falhou:', docs['live/alerta'].erro);
@@ -140,6 +156,7 @@ const ADAPTADOR = `<script>
   };
   window.claude = { use: function () { return Promise.resolve(db); } };
   window.WHATSAPP_ATIVO = ${whatsapp.ativo};
+  window.WHATSAPP_AUTO = ${WHATSAPP_AUTO};
 })();
 </script>
 `;

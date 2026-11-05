@@ -427,10 +427,10 @@ tbody tr:hover > td:first-child{box-shadow:inset 3px 0 0 var(--bee)}
   <!-- alerta: entregas de lojas sem rede e de grupos regionais buscando entregador há mais de 5 min.
        Leitura própria a cada 1 min (live/alerta); a espera conta ao vivo na página; som opcional. -->
   <section class="panel alerta" id="alertaBox" style="margin-bottom:18px">
-    <div class="ph"><div class="sectitle"><span class="tag bad">ALERTA</span><h2>Sem rede e grupos regionais buscando há mais de 5 min</h2></div>
+    <div class="ph"><div class="sectitle"><span class="tag bad">ALERTA</span><h2>Sem rede, grupos regionais e lojas selecionadas buscando há mais de 5 min</h2></div>
       <div class="al-ctl"><span class="sub" id="alertaSub">aguardando a primeira leitura…</span><button type="button" class="chip som" id="btnSom" aria-pressed="false">🔕 Som desligado</button></div></div>
     <div id="alertaCorpo"></div>
-    <div class="foot">Entregas com status "buscando" de lojas sem rede (sem key account e sem grupo regional no cadastro) e de grupos regionais, lidas da API a cada 1 min. Espera contada do início da busca e atualizada a cada segundo — uma entrega aceita entre duas leituras sai da lista na leitura seguinte. Com o som ligado, cada entrega que passa de 5 min toca o alerta; enquanto houver entregas na lista, um bipe curto a cada 2 min. Clique em uma entrega para ver os entregadores online até 3 km da loja, em linha reta, pela última posição enviada pelo app.</div>
+    <div class="foot">Entregas com status "buscando" de lojas sem rede (sem key account e sem grupo regional no cadastro), de grupos regionais e das lojas 933, 890, 495, 678 e 839 Pague Menos e 7300 e 7362 Extrafarma, lidas da API a cada 1 min. O WhatsApp automático começa com 1 min de busca nessas lojas e com 5 min nas demais. Espera contada do início da busca e atualizada a cada segundo — uma entrega aceita entre duas leituras sai da lista na leitura seguinte. Com o som ligado, cada entrega que passa de 5 min toca o alerta; enquanto houver entregas na lista, um bipe curto a cada 2 min. Clique em uma entrega para ver os entregadores online até 3 km da loja, em linha reta, pela última posição enviada pelo app.</div>
   </section>
 
   <!-- visão da franquia inteira -->
@@ -1539,23 +1539,23 @@ function tickAlerta() {
   if (novos.length) alarme(false); else if (acima.length && agora - ultimoBip > 120e3) alarme(true);
   box.classList.toggle('ativo', acima.length > 0);
   document.title = acima.length ? '(' + acima.length + ') ⚠ ' + tituloBase : tituloBase;
-  $('alertaSub').textContent = 'leitura das ' + new Date(ALERTA.em).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) + ' · a cada 1 min';
+  $('alertaSub').textContent = 'leitura das ' + new Date(ALERTA.em).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) + ' · a cada 1 min' + (window.WHATSAPP_AUTO ? ' · WhatsApp automático ligado' : '');
   var corpo;
   if (!acima.length) {
-    corpo = '<div class="al-calmo">✓ Nenhuma entrega sem rede ou de grupo regional buscando há mais de ' + LIMITE_MIN + ' min' +
+    corpo = '<div class="al-calmo">✓ Nenhuma entrega sem rede, de grupo regional ou das lojas selecionadas buscando há mais de ' + LIMITE_MIN + ' min' +
       '<span>' + (abaixo ? '· ' + abaixo + ' buscando há menos de ' + LIMITE_MIN + ' min, em observação' : '') + '</span></div>';
   } else {
     corpo = '<div class="al-topo"><span class="al-num">' + acima.length + '</span><span>' + (acima.length === 1 ? 'entrega buscando' : 'entregas buscando') + ' há mais de ' + LIMITE_MIN + ' min' +
       (abaixo ? ' <span style="color:var(--ink3)">· mais ' + abaixo + ' abaixo de ' + LIMITE_MIN + ' min</span>' : '') + '</span></div>' +
       '<div class="tbl"><table class="al-tbl"><thead><tr><th>Loja</th><th style="text-align:left">Tipo</th><th style="text-align:left">Bairro</th><th>Buscando desde</th><th>Espera</th><th>Pedido</th><th>Entregadores</th></tr></thead><tbody>' +
       acima.map(function (x) {
-        var tipo = x.classe === 'gr' ? 'Grupo regional' + (x.grupo ? ' · ' + esc(x.grupo) : '') : 'Sem rede';
+        var tipo = x.classe === 'loja' ? esc(x.grupo) : x.classe === 'gr' ? 'Grupo regional' + (x.grupo ? ' · ' + esc(x.grupo) : '') : 'Sem rede';
         var aberta = proxAberto === String(x.id);
         return '<tr data-prox="' + x.id + '"' + (aberta ? ' class="aberta"' : '') + '><td>' + esc(x.loja) + (x.agendado ? ' <span class="pill n">agendado</span>' : '') + '</td>' +
           '<td style="text-align:left; font-family:var(--body); white-space:normal">' + tipo + '</td>' +
           '<td style="text-align:left; font-family:var(--body); white-space:normal">' + esc(x.bairro) + '</td>' +
           '<td>' + (x.desde || '—') + '</td><td class="esp" style="color:' + corEspera(x.min) + '">' + esperaTxt(x.min) + '</td><td style="color:var(--ink3)">#' + x.id + '</td>' +
-          '<td><button type="button" class="prox-btn" aria-expanded="' + aberta + '">Até 3 km ' + (aberta ? '▴' : '▾') + '</button></td></tr>' +
+          '<td>' + (x.whatsapp ? '<small style="display:block;margin-bottom:3px;color:var(--ok);white-space:nowrap">WhatsApp ' + x.whatsapp + '/' + x.whatsappMax + '</small>' : '') + '<button type="button" class="prox-btn" aria-expanded="' + aberta + '">Até 3 km ' + (aberta ? '▴' : '▾') + '</button></td></tr>' +
           (aberta ? '<tr><td colspan="7" class="al-prox">' + htmlProximos(proxDados[proxAberto]) + '</td></tr>' : '');
       }).join('') + '</tbody></table></div>';
   }
