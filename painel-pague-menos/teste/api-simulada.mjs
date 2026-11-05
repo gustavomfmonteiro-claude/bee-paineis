@@ -68,9 +68,6 @@ http.createServer((req, res) => {
     available: [{ id: 71, name: 'Fulano  De Tal Silva', phone: '85998470001', photo: 'NAO GUARDAR', latitude: -3.7390, longitude: -38.5200, vehicle_type: 'moto' }, { id: 72, name: 'Longe Demais', phone: 'NAO GUARDAR', latitude: -3.8100, longitude: -38.5200 }, { id: 74, name: 'Sem Gps', latitude: null, longitude: null }],
     in_delivery: [{ id: 73, name: 'Ciclana Souza Lima', phone: '(85) 99847-0002', latitude: -3.7525, longitude: -38.5200 }],
   } } });
-  const ent = u.pathname.match(/^\/api\/deliverymen\/(\d+)$/);
-  // cadastro lento, como a API real quando limita
-  if (ent) return void setTimeout(() => js(200, { data: { id: Number(ent[1]), name: 'x', document: ent[1] === '73' ? '98765432100' : '12345678901', email: 'NAO GUARDAR' } }), 2500);
   const m = u.pathname.match(/^\/api\/orders\/(\d+)$/);
   if (m) { const p = pedidos.find((x) => x.id === Number(m[1])); return p ? js(200, { data: { cancellation_reason: p.motivo || '' } }) : js(404, {}); }
   js(404, {});

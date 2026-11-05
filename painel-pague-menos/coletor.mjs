@@ -366,47 +366,14 @@ export async function lerBuscando(hoje) {
 
 // ---------------------------------------------------- entregadores até 3 km
 // Mesma conta do Radar: distância em linha reta da coleta até o GPS do /dashboard. O GPS e a foto do
-// entregador não saem daqui. O CPF fica só em memória e vai mascarado sem login no painel.
+// entregador não saem daqui.
 const RAIO_KM = 3;
-const INTERVALO_CPF_MS = 1100; // a API limita o cadastro: a fila anda devagar para não atrasar as outras leituras
 const distanciaKm = ([a, b], [c, d]) => {
   const rad = Math.PI / 180, s1 = Math.sin((c - a) * rad / 2), s2 = Math.sin((d - b) * rad / 2);
   return 2 * 6371 * Math.asin(Math.sqrt(s1 * s1 + Math.cos(a * rad) * Math.cos(c * rad) * s2 * s2));
 };
 const veiculoDe = (v) => { const s = String(v || '').toLowerCase(); return /moto/.test(s) ? 'Moto' : /bike|bicy|bicicleta/.test(s) ? 'Bike' : /car|van|pickup/.test(s) ? 'Carro' : 'Outro'; };
 export const pedidoBuscando = (pedido) => !!origens.get(String(pedido))?.buscando;
-export function formataCpf(valor, completo) {
-  const d = String(valor || '').replace(/\D/g, '');
-  if (d.length !== 11) return null;
-  return completo ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}` : `***.${d.slice(3, 6)}.${d.slice(6, 9)}-**`;
-}
-const cpfs = new Map();
-// CPF em segundo plano: a consulta responde na hora com o que já se sabe e a página pede de novo.
-const filaCpf = new Set();
-let filaAndando = false;
-let reqsFila = { total: 0, login: 0, repeticoes: 0 };
-async function andarFila() {
-  if (filaAndando) return;
-  filaAndando = true;
-  try {
-    for (const id of filaCpf) {
-      const reqs = { total: 0, login: 0, cadastro: 0, repeticoes: 0 };
-      try {
-        const j = await api('/deliverymen/' + id, reqs, 'cadastro');
-        cpfs.set(id, j?.data?.document || null);
-      } catch (erro) {
-        console.error('cadastro do entregador', id, erro.message);
-        // sai da fila; volta na próxima consulta
-      }
-      filaCpf.delete(id);
-      for (const k of Object.keys(reqsFila)) reqsFila[k] += reqs[k] || 0;
-      await espera(INTERVALO_CPF_MS);
-    }
-  } finally {
-    filaAndando = false;
-    if (filaCpf.size) andarFila();
-  }
-}
 let cacheOnline = { t: 0, dados: null, voo: null };
 async function onlineAgora(reqs) {
   // 30 s de cache: vários cliques seguidos custam uma requisição só
@@ -422,7 +389,7 @@ async function onlineAgora(reqs) {
 export async function entregadoresProximos(pedido) {
   const chave = String(pedido);
   if (!origens.has(chave)) return null;
-  const reqs = { total: 0, login: 0, dashboard: 0, cadastro: 0, repeticoes: 0 };
+  const reqs = { total: 0, login: 0, dashboard: 0, repeticoes: 0 };
   const { coords: origem, buscando } = origens.get(chave);
   if (!origem) return { em: new Date().toISOString(), raioKm: RAIO_KM, semColeta: true, lista: [], reqs };
   const od = await onlineAgora(reqs);
@@ -430,17 +397,7 @@ export async function entregadoresProximos(pedido) {
     const lat = Number(e.latitude), lng = Number(e.longitude);
     return lat && lng ? { id: e.id, nome: String(e.name || '—').replace(/\s+/g, ' ').trim(), telefone: e.phone ? String(e.phone) : null, veiculo: veiculoDe(e.vehicle_type), emEntrega, km: Math.round(distanciaKm(origem, [lat, lng]) * 100) / 100 } : null;
   })).filter((e) => e && e.km <= RAIO_KM).sort((a, b) => a.emEntrega - b.emEntrega || a.km - b.km);
-
-  // Disponíveis e mais próximos entram primeiro na fila (é a ordem da lista).
-  for (const e of perto) if (!cpfs.has(e.id)) filaCpf.add(e.id);
-  andarFila();
-  for (const k of Object.keys(reqsFila)) reqs[k] = (reqs[k] || 0) + reqsFila[k];
-  reqsFila = { total: 0, login: 0, repeticoes: 0 };
-  return {
-    em: new Date().toISOString(), raioKm: RAIO_KM, cpfCompleto: DESTINO_COMPLETO, buscando, online: (od.available || []).length + (od.in_delivery || []).length, reqs,
-    cpfPendentes: perto.filter((e) => !cpfs.has(e.id)).length,
-    lista: perto.map((e) => ({ ...e, cpf: formataCpf(cpfs.get(e.id), DESTINO_COMPLETO), cpfCarregando: !cpfs.has(e.id) })),
-  };
+  return { em: new Date().toISOString(), raioKm: RAIO_KM, buscando, online: (od.available || []).length + (od.in_delivery || []).length, reqs, lista: perto };
 }
 
 // ----------------------------------------------------------------- entregadores

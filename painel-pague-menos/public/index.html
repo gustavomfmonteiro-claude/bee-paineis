@@ -195,7 +195,6 @@ details summary:hover{color:var(--ink)}
 .al-ent b{font-size:13px;font-weight:600;min-width:0;overflow-wrap:anywhere;color:var(--ink);line-height:1.3}
 .al-ent .km{font:700 13px var(--mono);color:var(--ink);white-space:nowrap}
 .al-ent small{font-size:11px;color:var(--ink3)}
-.al-ent small.doc{grid-column:1/-1;font-family:var(--mono);color:var(--ink2)}
 .al-ent .sit{font:600 10.5px var(--mono);justify-self:end}
 .al-ent .sit.livre{color:var(--ok)}.al-ent .sit.ocupado{color:#5CC8FF}
 .al-acoes{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;margin-top:3px}
@@ -408,16 +407,16 @@ function corpoProx(id) {
   if (d.semColeta) return '<p class="vazio">A API não informou a localização da loja neste pedido.</p>';
   const hora = new Date(d.em).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' });
   const livres = d.lista.filter((e) => !e.emEntrega).length, ocupados = d.lista.length - livres;
-  const avisos = [d.cpfCompleto ? '' : 'CPF mascarado enquanto o painel estiver sem login', d.cpfPendentes ? `Lendo o CPF de ${num(d.cpfPendentes)} ${d.cpfPendentes === 1 ? 'entregador' : 'entregadores'}…` : '', d.buscando ? '' : 'Esta entrega já tem entregador: o envio por WhatsApp só vale para entrega buscando'].filter(Boolean).join(' · ');
+  const avisos = d.buscando ? '' : 'Esta entrega já tem entregador: o envio por WhatsApp só vale para entrega buscando';
   const topo = `<div class="al-prox-top"><span><b>${num(livres)}</b> ${livres === 1 ? 'disponível' : 'disponíveis'}</span><span><b>${num(ocupados)}</b> com entrega</span><span>até ${num(d.raioKm)} km da loja, em linha reta · leitura das ${hora}</span></div>${avisos ? `<p class="nota" style="margin:0 0 8px">${avisos}</p>` : ''}`;
   if (!d.lista.length) return topo + `<p class="vazio">Nenhum dos ${num(d.online)} entregadores online está a até ${num(d.raioKm)} km desta loja.</p>`;
   return topo + `<div class="al-lista">${d.lista.map((e) => {
     const erro = zapEstado[id + ':' + e.id]?.erro;
-    return `<div class="al-ent"><b>${esc(e.nome)}</b><span class="km">${Number(e.km).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km</span><small>ID ${esc(e.id)} · ${esc(e.veiculo)}</small><span class="sit ${e.emEntrega ? 'ocupado' : 'livre'}">${e.emEntrega ? 'com entrega' : 'disponível'}</span><small class="doc">CPF ${esc(e.cpf || (e.cpfCarregando ? 'carregando…' : 'não informado'))}</small><div class="al-acoes">${htmlTelefone(e.telefone)}${htmlZap(id, d, e)}</div>${erro ? `<div class="zap-erro" role="alert">${esc(erro)}</div>` : ''}</div>`;
+    return `<div class="al-ent"><b>${esc(e.nome)}</b><span class="km">${Number(e.km).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km</span><small>ID ${esc(e.id)} · ${esc(e.veiculo)}</small><span class="sit ${e.emEntrega ? 'ocupado' : 'livre'}">${e.emEntrega ? 'com entrega' : 'disponível'}</span><div class="al-acoes">${htmlTelefone(e.telefone)}${htmlZap(id, d, e)}</div>${erro ? `<div class="zap-erro" role="alert">${esc(erro)}</div>` : ''}</div>`;
   }).join('')}</div>`;
 }
 const linhaProx = (id) => (proxAbertos.has(String(id)) ? `<tr class="prox-linha"><td colspan="${COLUNAS_ENTREGA}"><div class="prox-caixa" id="prox-${esc(id)}">${corpoProx(String(id))}</div></td></tr>` : '');
-// Os cartões chegam na hora. Enquanto faltar CPF ou o Radar não tiver lido a entrega, pede de novo sozinho.
+// Enquanto o Radar não tiver lido a entrega buscando, pede de novo sozinho para liberar o WhatsApp.
 const proxTimers = {};
 async function abrirProx(id, novaConsulta = true) {
   clearTimeout(proxTimers[id]);
@@ -435,7 +434,7 @@ async function abrirProx(id, novaConsulta = true) {
     if (lista) lista.scrollTop = rolagem;
   }
   const d = proxDados[id];
-  if (d && !d.erro && (d.cpfPendentes || (d.buscando && !d.whatsappAtivo))) proxTimers[id] = setTimeout(() => abrirProx(id, false), d.cpfPendentes ? 5000 : 15000);
+  if (d && !d.erro && d.buscando && !d.whatsappAtivo) proxTimers[id] = setTimeout(() => abrirProx(id, false), 15000);
 }
 
 // Evolução: lê /api/evolucao ao abrir e quando muda o dia escolhido; não redesenha a cada leitura ao vivo.
@@ -588,7 +587,7 @@ function regras() {
     <li><b>Aceite:</b> do início da busca ao aceite, nos pedidos aceitos, finalizados ou não. Pedido de integração que já nasce com entregador não passa por busca e fica de fora ("sem busca").</li>
     <li><b>Em andamento:</b> entregas abertas nas lojas prioritárias, com o status que a API informa. Tempo é o da etapa atual, a partir do último carimbo da entrega.</li>
     <li><b>Evolução:</b> pedidos criados em dias fechados, por loja e por bandeira. Dia contra o mesmo dia da semana anterior ou contra o dia anterior; semana de segunda a domingo; mês até o dia escolhido contra o mesmo intervalo do mês anterior. Estável é variação menor que 5%.</li>
-    <li><b>Até 3 km:</b> entregadores online a até 3 km da coleta da entrega, em linha reta, com ID, nome completo, CPF, telefone e WhatsApp. O CPF aparece mascarado enquanto o painel estiver sem login. O WhatsApp só aparece em entrega buscando e é enviado pelo Radar, com os mesmos limites e a mesma resposta Sim.</li>
+    <li><b>Até 3 km:</b> entregadores online a até 3 km da coleta da entrega, em linha reta, com ID, nome completo, telefone e WhatsApp. O WhatsApp só aparece em entrega buscando e é enviado pelo Radar, com os mesmos limites e a mesma resposta Sim.</li>
     <li><b>Alerta sonoro:</b> toca quando uma entrega das lojas prioritárias aparece buscando e repete a cada minuto até ter entregador.</li>
     <li><b>Entregadores:</b> entregas finalizadas por loja, pela data de criação do pedido.</li>
     <li><b>Operacional:</b> motivo classificado como falta de entregador ou atraso/problema do entregador.</li>
