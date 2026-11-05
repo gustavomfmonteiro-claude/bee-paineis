@@ -391,7 +391,10 @@ function htmlTelefone(t) {
 const telefoneValido = (t) => { let d = String(t || '').replace(/\D/g, ''); if (d.length >= 12 && d.startsWith('55')) d = d.slice(2); return d.length === 10 || d.length === 11; };
 const zapEstado = {};
 function htmlZap(pedido, d, e) {
-  if (!d.whatsappAtivo || !telefoneValido(e.telefone)) return '';
+  if (!telefoneValido(e.telefone)) return '';
+  // Entrega com entregador não recebe oferta: um "Sim" não teria o que atribuir.
+  if (!d.buscando) return '<button type="button" class="zap-btn" disabled title="A oferta por WhatsApp só vale para entrega buscando entregador">WhatsApp só em busca</button>';
+  if (!d.whatsappAtivo) return '<button type="button" class="zap-btn" disabled title="Liberado assim que o Radar ler esta entrega, em até 1 minuto">WhatsApp em instantes</button>';
   const st = zapEstado[pedido + ':' + e.id] || {};
   if (st.ok && st.semConfirmacao) return '<button type="button" class="zap-btn" disabled>Enviado ao GHL · sem confirmação</button>';
   if (e.whatsappEnviado || st.ok) return '<button type="button" class="zap-btn" disabled>✓ WhatsApp enviado</button>';
@@ -405,23 +408,34 @@ function corpoProx(id) {
   if (d.semColeta) return '<p class="vazio">A API não informou a localização da loja neste pedido.</p>';
   const hora = new Date(d.em).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' });
   const livres = d.lista.filter((e) => !e.emEntrega).length, ocupados = d.lista.length - livres;
-  const avisos = [d.cpfCompleto ? '' : 'CPF mascarado enquanto o painel estiver sem login', d.buscando && !d.whatsappAtivo ? 'WhatsApp disponível assim que o Radar ler esta entrega; feche e abra de novo em 1 min' : ''].filter(Boolean).join(' · ');
+  const avisos = [d.cpfCompleto ? '' : 'CPF mascarado enquanto o painel estiver sem login', d.cpfPendentes ? `Lendo o CPF de ${num(d.cpfPendentes)} ${d.cpfPendentes === 1 ? 'entregador' : 'entregadores'}…` : '', d.buscando ? '' : 'Esta entrega já tem entregador: o envio por WhatsApp só vale para entrega buscando'].filter(Boolean).join(' · ');
   const topo = `<div class="al-prox-top"><span><b>${num(livres)}</b> ${livres === 1 ? 'disponível' : 'disponíveis'}</span><span><b>${num(ocupados)}</b> com entrega</span><span>até ${num(d.raioKm)} km da loja, em linha reta · leitura das ${hora}</span></div>${avisos ? `<p class="nota" style="margin:0 0 8px">${avisos}</p>` : ''}`;
   if (!d.lista.length) return topo + `<p class="vazio">Nenhum dos ${num(d.online)} entregadores online está a até ${num(d.raioKm)} km desta loja.</p>`;
   return topo + `<div class="al-lista">${d.lista.map((e) => {
     const erro = zapEstado[id + ':' + e.id]?.erro;
-    return `<div class="al-ent"><b>${esc(e.nome)}</b><span class="km">${Number(e.km).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km</span><small>ID ${esc(e.id)} · ${esc(e.veiculo)}</small><span class="sit ${e.emEntrega ? 'ocupado' : 'livre'}">${e.emEntrega ? 'com entrega' : 'disponível'}</span><small class="doc">CPF ${esc(e.cpf || 'não informado')}</small><div class="al-acoes">${htmlTelefone(e.telefone)}${htmlZap(id, d, e)}</div>${erro ? `<div class="zap-erro" role="alert">${esc(erro)}</div>` : ''}</div>`;
+    return `<div class="al-ent"><b>${esc(e.nome)}</b><span class="km">${Number(e.km).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km</span><small>ID ${esc(e.id)} · ${esc(e.veiculo)}</small><span class="sit ${e.emEntrega ? 'ocupado' : 'livre'}">${e.emEntrega ? 'com entrega' : 'disponível'}</span><small class="doc">CPF ${esc(e.cpf || (e.cpfCarregando ? 'carregando…' : 'não informado'))}</small><div class="al-acoes">${htmlTelefone(e.telefone)}${htmlZap(id, d, e)}</div>${erro ? `<div class="zap-erro" role="alert">${esc(erro)}</div>` : ''}</div>`;
   }).join('')}</div>`;
 }
 const linhaProx = (id) => (proxAbertos.has(String(id)) ? `<tr class="prox-linha"><td colspan="${COLUNAS_ENTREGA}"><div class="prox-caixa" id="prox-${esc(id)}">${corpoProx(String(id))}</div></td></tr>` : '');
-async function abrirProx(id) {
-  delete proxDados[id];
+// Os cartões chegam na hora. Enquanto faltar CPF ou o Radar não tiver lido a entrega, pede de novo sozinho.
+const proxTimers = {};
+async function abrirProx(id, novaConsulta = true) {
+  clearTimeout(proxTimers[id]);
+  if (novaConsulta) delete proxDados[id];
   try {
     const r = await fetch('/api/proximos?pedido=' + encodeURIComponent(id), { cache: 'no-store' });
     proxDados[id] = await r.json();
-  } catch { proxDados[id] = { erro: 'Não foi possível ler os entregadores agora. Tente de novo em instantes.' }; }
+  } catch { if (novaConsulta) proxDados[id] = { erro: 'Não foi possível ler os entregadores agora. Tente de novo em instantes.' }; }
+  if (!proxAbertos.has(String(id))) return;
   const el = document.getElementById('prox-' + id);
-  if (el) el.innerHTML = corpoProx(id);
+  if (el) {
+    const rolagem = el.querySelector('.al-lista')?.scrollTop || 0;
+    el.innerHTML = corpoProx(id);
+    const lista = el.querySelector('.al-lista');
+    if (lista) lista.scrollTop = rolagem;
+  }
+  const d = proxDados[id];
+  if (d && !d.erro && (d.cpfPendentes || (d.buscando && !d.whatsappAtivo))) proxTimers[id] = setTimeout(() => abrirProx(id, false), d.cpfPendentes ? 5000 : 15000);
 }
 
 // Evolução: lê /api/evolucao ao abrir e quando muda o dia escolhido; não redesenha a cada leitura ao vivo.
