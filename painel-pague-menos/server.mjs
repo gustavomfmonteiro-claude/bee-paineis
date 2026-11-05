@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { configurar, coletar, entregadoresProximos, lerBuscando, lerEntregadores, pedidoBuscando, temAcesso } from './coletor.mjs';
+import { configurar, coletar, entregadoresProximos, lerBuscando, lerEntregadores, pedidoBuscando, temAcesso, VERSAO_DIA } from './coletor.mjs';
 import { analisarDia, evolucao, rankingEntregadores } from './analise.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -161,7 +161,7 @@ async function lerIndicadores() {
   try {
     // Virou o dia: a primeira leitura também fecha ontem até 23:59.
     const d = hoje(), ontem = somaDias(d, -1);
-    const dias = [...(historico[ontem]?.fechado ? [] : [{ dia: ontem, fechado: true }]), { dia: d, fechado: false }];
+    const dias = [...(historico[ontem]?.fechado && historico[ontem]?.versao === VERSAO_DIA ? [] : [{ dia: ontem, fechado: true }]), { dia: d, fechado: false }];
     const r = await coletar(dias, gravarDia, idsDoGrupo());
     somarUso('kpi', r.reqs, { segundos: r.segundos, pedidos: r.pedidos });
     ultimoErro = null;
@@ -195,6 +195,25 @@ async function conferir(tentativa = 0) {
     emitir();
   }
 }
+// Dia gravado numa versão anterior (sem modalidade) é relido, um por vez, do mais recente ao mais antigo,
+// só nas lojas do grupo. Roda depois da primeira leitura e não disputa com as outras.
+async function atualizarVersao() {
+  const velhos = Object.values(historico).filter((d) => d.fechado && d.versao !== VERSAO_DIA).map((d) => d.dia).sort().reverse();
+  for (const dia of velhos) {
+    while (lendo) await new Promise((s) => setTimeout(s, 5000));
+    lendo = true;
+    try {
+      const r = await coletar([{ dia, fechado: true }], gravarDia, idsDoGrupo());
+      log(`dia ${dia} relido com modalidade: ${r.pedidos} pedidos · ${r.reqs.total} requisições`);
+    } catch (e) {
+      log(`releitura de ${dia} falhou:`, String(e?.message || e).slice(0, 160));
+    } finally {
+      lendo = false;
+      emitir();
+    }
+  }
+}
+
 function agendarConferencia() {
   setTimeout(() => conferir(), Math.max(1000, proximaConferencia() - Date.now()));
 }
@@ -360,6 +379,7 @@ http.createServer((req, res) => {
   setInterval(lerBuscandoAgora, BUSCA_MS);
   await lerIndicadores();
   setInterval(lerIndicadores, KPI_MS);
+  await atualizarVersao();
   await completarEntregadores();
   setInterval(completarEntregadores, 6 * 3600e3).unref();
 });

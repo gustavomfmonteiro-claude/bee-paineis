@@ -1,9 +1,10 @@
 // Transforma um dia coletado nos KPIs, rankings, orientações e lojas prioritárias do painel e do relatório.
-import { LOJAS_ENTREGADORES } from './coletor.mjs';
+import { LOJAS_ENTREGADORES, PRAZO_MOD, ORDEM_MOD } from './coletor.mjs';
 
 export const PRIORITARIAS = ['678', '7300', '933', '495', '890', '7362', '839'];
 const MIN_DEMANDA_TAXA = 10;   // volume mínimo para taxa e tempo médio entrarem em ranking ou orientação
 const TOP = 10;
+const MIN_OTD_MOD = 5;         // entregas mínimas de uma modalidade na loja para virar orientação
 
 const pct = (n, d) => (d ? Math.round((1000 * n) / d) / 10 : null);
 const media = (s, n) => (n ? Math.round((10 * s) / n) / 10 : null);
@@ -16,10 +17,31 @@ function identificar(nome) {
   return m ? { num: m[1], band, bairro: m[3] } : { num: '', band, bairro: String(nome) };
 }
 
+// OTD por modalidade: finalizada que chegou ao cliente dentro do prazo da modalidade (30 min, 60 min, 24 h).
+// Agendada e Padrão não têm prazo e ficam fora do OTD. `fontes` = lojas brutas do coletor.
+function porModalidade(fontes) {
+  const t = {};
+  for (const l of fontes) for (const [m, x] of Object.entries(l.m || {})) {
+    const y = (t[m] ||= { dem: 0, fin: 0, canc: 0, n: 0, on: 0, soma: 0 });
+    for (const k of Object.keys(y)) y[k] += x[k] || 0;
+  }
+  return ORDEM_MOD.filter((m) => t[m]?.dem).map((m) => {
+    const x = t[m];
+    return { mod: m, prazo: PRAZO_MOD[m] || null, dem: x.dem, fin: x.fin, canc: x.canc, taxaCanc: pct(x.canc, x.dem),
+      otd: pct(x.on, x.n), otdN: x.n, noPrazo: x.on, tempo: media(x.soma, x.n) };
+  });
+}
+// OTD de todas as modalidades juntas, cada entrega contra o próprio prazo
+function otdGeral(mods) {
+  const n = mods.reduce((t, m) => t + m.otdN, 0), on = mods.reduce((t, m) => t + m.noPrazo, 0);
+  return { otd: pct(on, n), otdN: n, temModalidade: mods.length > 0 };
+}
+
 function linhaLoja(id, l, perdidas) {
   const pico = l.h.reduce((best, v, i) => (v > l.h[best] ? i : best), 0);
   const acimaDe5 = l.acN - l.ac5;
   const semAceite = l.semAceite - perdidas;
+  const mods = porModalidade([l]);
   return {
     id, nome: l.n, ...identificar(l.n),
     dem: l.dem, fin: l.fin, canc: l.canc, and: l.and,
@@ -31,8 +53,8 @@ function linhaLoja(id, l, perdidas) {
     dificuldade: pct(acimaDe5 + semAceite, l.acN + semAceite),
     cOp: l.cOp, pctOp: pct(l.cOp, l.dem),
     c05: l.c05, pctC05: pct(l.c05, l.canc),
-    otd1: pct(l.p1On, l.otdN), otd2: pct(l.p2On, l.otdN), otd: pct(l.geralOn, l.otdN), otdN: l.otdN,
-    p1Med: media(l.p1Soma, l.otdN), p2Med: media(l.p2Soma, l.otdN),
+    p1Med: media(l.p1Soma, l.otdN), p2Med: media(l.p2Soma, l.otdN), pontasN: l.otdN,
+    mods, ...otdGeral(mods),
     pico: l.dem ? pico : null,
   };
 }
@@ -40,13 +62,14 @@ function linhaLoja(id, l, perdidas) {
 function kpis(lojas) {
   const t = { dem: 0, fin: 0, canc: 0, and: 0, acSoma: 0, acN: 0, ac5: 0, semAceite: 0, direto: 0, c05: 0, cOp: 0, otdN: 0, p1On: 0, p2On: 0, geralOn: 0, p1Soma: 0, p2Soma: 0 };
   for (const l of lojas) for (const k of Object.keys(t)) t[k] += l[k] || 0;
+  const mods = porModalidade(lojas);
   return {
     dem: t.dem, fin: t.fin, canc: t.canc, and: t.and, lojas: lojas.length,
     taxaCanc: pct(t.canc, t.dem),
     aceite: media(t.acSoma, t.acN), pctAte5: pct(t.ac5, t.acN), semAceite: t.semAceite, direto: t.direto,
     cOp: t.cOp, pctOpDosCanc: pct(t.cOp, t.canc), c05: t.c05, pctC05: pct(t.c05, t.canc),
-    otd1: pct(t.p1On, t.otdN), otd2: pct(t.p2On, t.otdN), otd: pct(t.geralOn, t.otdN), otdN: t.otdN,
-    p1Med: media(t.p1Soma, t.otdN), p2Med: media(t.p2Soma, t.otdN),
+    p1Med: media(t.p1Soma, t.otdN), p2Med: media(t.p2Soma, t.otdN), pontasN: t.otdN,
+    mods, ...otdGeral(mods),
   };
 }
 
@@ -103,15 +126,17 @@ function orientar(linhas, cancs) {
             ? 'Motivo ligado ao entregador: reforçar a oferta perto da loja e levantar os casos com a operação.'
             : 'Conferir com a loja o que motiva o cancelamento rápido e alinhar o tempo de espera pelo aceite.');
     }
-    if (l.otdN >= MIN_DEMANDA_TAXA && l.otd1 < 70) {
-      add(l.otd1 < 50 ? 'alta' : 'media', 'OTD ponta 1',
-        `${br(l.otd1)}% chegaram à loja em até 15 min; média de ${br(l.p1Med)} min.`,
-        'Entregador está chegando tarde na loja: rever a oferta ao redor dela e o tempo de aceite.');
-    }
-    if (l.otdN >= MIN_DEMANDA_TAXA && l.otd2 < 70) {
-      add(l.otd2 < 50 ? 'alta' : 'media', 'OTD ponta 2',
-        `${br(l.otd2)}% chegaram ao cliente em até 15 min depois da saída; média de ${br(l.p2Med)} min.`,
-        'Conferir a distância das entregas dessa loja e se o raio de atendimento está adequado.');
+    for (const m of l.mods) {
+      if (!m.prazo || m.otdN < MIN_OTD_MOD || m.otd >= 70) continue;
+      const prazo = m.prazo >= 1440 ? '24 h' : m.prazo + ' min';
+      const pontas = l.p1Med != null ? ` No dia, a chegada à loja levou ${br(l.p1Med)} min e a saída até o cliente ${br(l.p2Med)} min, em média.` : '';
+      add(m.otd < 50 ? 'alta' : 'media', 'OTD ' + m.mod,
+        `${br(m.otd)}% das ${m.otdN} entregas ${m.mod} chegaram ao cliente em até ${prazo}; média de ${br(m.tempo)} min da criação à entrega.${pontas}`,
+        m.prazo >= 1440
+          ? 'Entrega econômica passou de 24 h: levantar com a operação por que ficou sem entregador.'
+          : l.p1Med != null && l.p1Med > l.p2Med
+            ? 'O atraso está antes da coleta: priorizar a oferta perto da loja e o aceite nas entregas com prazo curto.'
+            : 'O atraso está depois da coleta: conferir a espera na loja, a distância das entregas e o raio de atendimento.');
     }
   }
   // Prioritárias primeiro dentro do mesmo nível: é onde a operação já está de olho.
@@ -254,7 +279,7 @@ export function analisarDia(d) {
     const l = linhas.find((x) => x.num === num);
     if (!l) return { num, semPedidos: true };
     const cs = d.cancs.filter((c) => c.l === l.id).sort((a, b) => a.h.localeCompare(b.h));
-    return { ...l, grupos: contarMotivos(cs), motivos: contarTextos(cs), cancelamentos: cs.map((c) => ({ id: c.id, h: c.h, min: c.min, fase: c.f, motivo: c.m || 'Sem motivo informado', grupo: c.g, op: c.op })) };
+    return { ...l, grupos: contarMotivos(cs), motivos: contarTextos(cs), cancelamentos: cs.map((c) => ({ id: c.id, h: c.h, min: c.min, fase: c.f, motivo: c.m || 'Sem motivo informado', grupo: c.g, op: c.op, mod: c.md || null })) };
   });
 
   return {

@@ -176,6 +176,17 @@ details summary:hover{color:var(--ink)}
 .pill{display:inline-block;font:600 11px/1 var(--body);padding:4px 8px;border-radius:999px;color:#fff;margin-bottom:5px;white-space:nowrap}
 .pill.pm{background:#D93A47}.pill.ef{background:#6D4BC3}
 .st{display:inline-block;font:600 10.5px/1 var(--mono);padding:5px 8px;border-radius:999px;background:var(--panel3);color:var(--ink);letter-spacing:.04em}
+.mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px}
+.modc{border:1px solid var(--line);border-radius:12px;padding:13px 14px;background:rgba(19,26,35,.72);min-width:0}
+.modc h3{margin:0 0 2px;font:700 14px/1.2 var(--display)}
+.modc .pz{color:var(--ink3);font:500 10.5px/1.3 var(--mono);letter-spacing:.05em;text-transform:uppercase}
+.modc .big{display:flex;align-items:baseline;gap:8px;margin:9px 0 2px}
+.modc .big b{font:700 28px/1 var(--display);font-variant-numeric:tabular-nums}
+.modc .chip{margin-left:auto}
+.modc dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:11px 0 0;padding-top:10px;border-top:1px solid var(--line)}
+.modc dt{color:var(--ink3);font:500 10px/1.3 var(--mono);letter-spacing:.05em;text-transform:uppercase}
+.modc dd{margin:0;font:600 14px/1.3 var(--display);font-variant-numeric:tabular-nums}
+td small.b{display:block;color:var(--ink3);font-size:10.5px;font-weight:400}
 .mod{display:inline-block;font:600 10.5px/1 var(--body);padding:4px 7px;border-radius:999px;border:1px solid var(--bee);color:var(--ink);margin-left:5px}
 .busca small.total{color:var(--ink3);font-size:11px;font-weight:400}
 .prox-btn{min-height:32px;padding:0 10px;font:500 12px var(--body);color:var(--ink);background:var(--panel3);border:1px solid var(--line2);border-radius:8px;cursor:pointer;white-space:nowrap;transition:border-color .15s}
@@ -317,15 +328,38 @@ function blocoKpis(a) {
     ${kpi('Finalizadas', num(k.fin), k.and ? `${num(k.and)} em outros status` : '', '', medidor(k.dem ? (100 * k.fin) / k.dem : null))}
     ${kpi('Cancelamentos', num(k.canc), `${pc(k.taxaCanc)} da demanda · ${num(k.cOp)} operacionais`, '', medidor(k.taxaCanc))}
     ${kpi('Tempo médio de aceite', min(k.aceite), `${pc(k.pctAte5)} em até 5 min${k.direto ? ` · ${num(k.direto)} sem busca` : ''}`, '', medidor(k.pctAte5))}
-    ${kpi('OTD 15 min · ponta 1', pc(k.otd1), `chegada à loja · média ${min(k.p1Med)}`, chipOtd(k.otd1), medidor(k.otd1, classeOtd(k.otd1)))}
-    ${kpi('OTD 15 min · ponta 2', pc(k.otd2), `saída até o cliente · média ${min(k.p2Med)}`, chipOtd(k.otd2), medidor(k.otd2, classeOtd(k.otd2)))}
+    ${kpi('OTD no prazo da modalidade', pc(k.otd), k.otdN ? `${num(k.otdN)} entregas, cada uma no próprio prazo` : 'sem entregas finalizadas', chipOtd(k.otd), medidor(k.otd, classeOtd(k.otd)))}
+    ${kpi('Tempo das pontas', `${min(k.p1Med)} · ${min(k.p2Med)}`, 'chegada à loja · saída até o cliente')}
   </div>`;
 }
 
+// OTD por modalidade: Super Expressa 30 min, Expressa 60 min, Econômica 24 h, da criação à chegada no cliente.
+const PRAZO_TXT = { 'Super Expressa': '30 min', Expressa: '60 min', 'Econômica': '24 h' };
+const prazoTxt = (m) => PRAZO_TXT[m] || 'sem prazo';
+const ORDEM_MODS = ['Super Expressa', 'Expressa', 'Econômica'];
+const achaMod = (k, m) => (k?.mods || []).find((x) => x.mod === m);
+// célula de tabela: OTD da modalidade com a base embaixo
+const celMod = (k, m) => { const x = achaMod(k, m); return `<td>${x?.otdN ? `${pc(x.otd)}<small class="b">${num(x.noPrazo)} de ${num(x.otdN)} no prazo</small>` : '—'}</td>`; };
+const thMods = ORDEM_MODS.map((m) => `<th>OTD ${m}<small class="b">${prazoTxt(m)}</small></th>`).join('');
+
+function blocoModalidades(a) {
+  const k = a.kpis;
+  if (!k.mods?.length) return `<section><h2>OTD por modalidade</h2><p class="vazio">Este dia foi gravado antes da separação por modalidade e ainda não foi relido.</p></section>`;
+  const cards = k.mods.map((x) => {
+    const pm = achaMod(a.bandeiras.PM, x.mod), ef = achaMod(a.bandeiras.EF, x.mod);
+    return `<div class="modc"><h3>${esc(x.mod)}</h3><div class="pz">${x.prazo ? 'Prazo de ' + prazoTxt(x.mod) : 'Sem prazo'}</div>
+      <div class="big"><b>${x.prazo ? pc(x.otd) : '—'}</b><small>${x.prazo ? (x.otdN ? `${num(x.noPrazo)} de ${num(x.otdN)} no prazo` : 'nenhuma finalizada') : 'fora do OTD'}</small>${x.prazo ? chipOtd(x.otd) : ''}</div>
+      ${x.prazo ? medidor(x.otd, classeOtd(x.otd)) : ''}
+      <dl><div><dt>Demanda</dt><dd>${num(x.dem)}</dd></div><div><dt>Canceladas</dt><dd>${num(x.canc)} <small>${pc(x.taxaCanc)}</small></dd></div><div><dt>Até o cliente</dt><dd>${min(x.tempo)}</dd></div>
+      <div><dt>Pague Menos</dt><dd>${pm?.otdN ? pc(pm.otd) : '—'}</dd></div><div><dt>Extrafarma</dt><dd>${ef?.otdN ? pc(ef.otd) : '—'}</dd></div><div><dt>Finalizadas</dt><dd>${num(x.fin)}</dd></div></dl></div>`;
+  }).join('');
+  return `<section><h2>OTD por modalidade</h2><p class="nota">Finalizada que chegou ao cliente dentro do prazo da modalidade, contado da criação do pedido. A modalidade vem do prazo do pedido, como no Radar.</p><div class="mods">${cards}</div></section>`;
+}
+
 function blocoBandeiras(a) {
-  const lin = (rot, k) => `<tr><td class="loja">${rot}</td><td class="forte">${num(k.dem)}</td><td>${num(k.fin)}</td><td>${num(k.canc)}</td><td>${pc(k.taxaCanc)}</td><td>${num(k.cOp)}</td><td>${num(k.c05)}</td><td>${min(k.aceite)}</td><td>${pc(k.otd1)}</td><td>${pc(k.otd2)}</td><td>${pc(k.otd)}</td></tr>`;
-  return `<section><h2>Por bandeira</h2><p class="nota">OTD geral: soma das duas pontas em até 30 min, base de ${num(a.kpis.otdN)} finalizadas com os dois tempos.</p>
-  <div class="rolagem"><table><thead><tr><th>Bandeira</th><th>Demanda</th><th>Finalizadas</th><th>Canceladas</th><th>% canc.</th><th>Operacional</th><th>0 a 5 min</th><th>Aceite</th><th>OTD P1</th><th>OTD P2</th><th>OTD geral</th></tr></thead>
+  const lin = (rot, k) => `<tr><td class="loja">${rot}</td><td class="forte">${num(k.dem)}</td><td>${num(k.fin)}</td><td>${num(k.canc)}</td><td>${pc(k.taxaCanc)}</td><td>${num(k.cOp)}</td><td>${num(k.c05)}</td><td>${min(k.aceite)}</td>${ORDEM_MODS.map((m) => celMod(k, m)).join('')}<td>${pc(k.otd)}</td></tr>`;
+  return `<section><h2>Por bandeira</h2><p class="nota">OTD de cada modalidade no próprio prazo; o geral junta as três, cada entrega contra o seu prazo. Embaixo do percentual: entregas no prazo e finalizadas da modalidade.</p>
+  <div class="rolagem"><table><thead><tr><th>Bandeira</th><th>Demanda</th><th>Finalizadas</th><th>Canceladas</th><th>% canc.</th><th>Operacional</th><th>0 a 5 min</th><th>Aceite</th>${thMods}<th>OTD geral</th></tr></thead>
   <tbody>${lin('Pague Menos', a.bandeiras.PM)}${lin('Extrafarma', a.bandeiras.EF)}</tbody></table></div></section>`;
 }
 
@@ -344,7 +378,7 @@ function linhasCancPrioridade(a) {
   for (const l of a.prioridade) if (!l.semPedidos && (filtroCanc === 'todas' || filtroCanc === l.num)) for (const c of l.cancelamentos) todos.push({ ...c, num: l.num, bairro: l.bairro });
   todos.sort((x, y) => y.h.localeCompare(x.h));
   if (!todos.length) return '<p class="vazio">Nenhum cancelamento neste dia.</p>';
-  return `<div class="rolagem"><table><thead><tr><th>Hora</th><th class="txt">Loja</th><th>Até cancelar</th><th class="txt">Fase</th><th class="txt">Motivo</th><th class="txt">Tipo</th><th>Pedido</th></tr></thead><tbody>${todos.map((c) => `<tr><td class="forte">${esc(c.h)}</td><td class="txt">${esc(c.num)} · ${esc(c.bairro)}</td><td>${min(c.min)}</td><td class="txt">${esc(c.fase)}</td><td class="txt">${esc(c.motivo)}</td><td class="txt">${c.op ? '<span class="tag" style="margin:0">Operacional</span>' : esc(c.grupo)}</td><td>${esc(c.id)}</td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="rolagem"><table><thead><tr><th>Hora</th><th class="txt">Loja</th><th class="txt">Modalidade</th><th>Até cancelar</th><th class="txt">Fase</th><th class="txt">Motivo</th><th class="txt">Tipo</th><th>Pedido</th></tr></thead><tbody>${todos.map((c) => `<tr><td class="forte">${esc(c.h)}</td><td class="txt">${esc(c.num)} · ${esc(c.bairro)}</td><td class="txt">${esc(c.mod || '—')}</td><td>${min(c.min)}</td><td class="txt">${esc(c.fase)}</td><td class="txt">${esc(c.motivo)}</td><td class="txt">${c.op ? '<span class="tag" style="margin:0">Operacional</span>' : esc(c.grupo)}</td><td>${esc(c.id)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 function blocoCancPrioridade(a) {
   const ls = a.prioridade;
@@ -360,17 +394,18 @@ function blocoCancPrioridade(a) {
     <div id="listaCanc">${linhasCancPrioridade(a)}</div></section>`;
 }
 
-const baseOtd = (l) => (l.otdN ? `<small>${l.otdN === 1 ? '1 entrega' : num(l.otdN) + ' entregas'}</small>` : '');
+const baseOtd = (n) => (n ? `<small>${n === 1 ? '1 entrega' : num(n) + ' entregas'}</small>` : '<small>sem finalizada</small>');
+const celulasMod = (l) => (l.mods || []).filter((x) => x.prazo).map((x) => `<div><span>OTD ${esc(x.mod)} · ${prazoTxt(x.mod)}</span><b>${pc(x.otd)}</b>${baseOtd(x.otdN)}</div>`).join('');
 
 function blocoPrioridade(a) {
   const cards = a.prioridade.map((l) => {
     if (l.semPedidos) return `<div class="card"><h3>Loja ${esc(l.num)}</h3><p class="vazio">Sem pedidos neste dia.</p></div>`;
     const motivos = l.motivos.length ? l.motivos.map((m) => `<div class="motivo${m.op ? ' op' : ''}"><div class="tt">${esc(m.motivo)}${m.op ? '<span class="tag">Operacional</span>' : ''}</div><div class="vv">${num(m.n)}${m.c05 ? ` · ${num(m.c05)} em 0 a 5 min` : ''}</div><div class="bar"><i style="width:${(100 * m.n) / l.canc}%"></i></div></div>`).join('') : '<p class="vazio">Nenhum cancelamento neste dia.</p>';
-    const lista = l.cancelamentos.length ? `<details data-chave="canc-${esc(l.num)}"><summary>${l.cancelamentos.length === 1 ? 'Ver o cancelamento' : `Ver os ${num(l.cancelamentos.length)} cancelamentos, um a um`}</summary><div class="rolagem"><table><thead><tr><th>Hora</th><th>Até cancelar</th><th class="txt">Fase</th><th class="txt">Motivo</th><th>Pedido</th></tr></thead><tbody>${l.cancelamentos.map((c) => `<tr><td>${esc(c.h)}</td><td>${min(c.min)}</td><td class="txt">${esc(c.fase)}</td><td class="txt">${esc(c.motivo)}</td><td>${esc(c.id)}</td></tr>`).join('')}</tbody></table></div></details>` : '';
+    const lista = l.cancelamentos.length ? `<details data-chave="canc-${esc(l.num)}"><summary>${l.cancelamentos.length === 1 ? 'Ver o cancelamento' : `Ver os ${num(l.cancelamentos.length)} cancelamentos, um a um`}</summary><div class="rolagem"><table><thead><tr><th>Hora</th><th class="txt">Modalidade</th><th>Até cancelar</th><th class="txt">Fase</th><th class="txt">Motivo</th><th>Pedido</th></tr></thead><tbody>${l.cancelamentos.map((c) => `<tr><td>${esc(c.h)}</td><td class="txt">${esc(c.mod || '—')}</td><td>${min(c.min)}</td><td class="txt">${esc(c.fase)}</td><td class="txt">${esc(c.motivo)}</td><td>${esc(c.id)}</td></tr>`).join('')}</tbody></table></div></details>` : '';
     return `<div class="card"><h3>Loja ${esc(l.num)} · ${esc(l.bairro)}</h3><div class="sub">${l.band === 'EF' ? 'Extrafarma' : 'Pague Menos'}</div>
       <div class="mini">
         <div><span>Demanda</span><b>${num(l.dem)}</b></div><div><span>Finalizadas</span><b>${num(l.fin)}</b></div><div><span>Em andamento</span><b>${num(l.and)}</b></div><div><span>Canceladas</span><b>${num(l.canc)}</b></div><div><span>Operacional</span><b>${num(l.cOp)}</b></div><div><span>0 a 5 min</span><b>${num(l.c05)}</b></div>
-        <div><span>Aceite</span><b>${min(l.aceite)}</b>${l.direto ? `<small>${num(l.direto)} sem busca</small>` : ''}</div><div><span>OTD P1</span><b>${pc(l.otd1)}</b>${baseOtd(l)}</div><div><span>OTD P2</span><b>${pc(l.otd2)}</b>${baseOtd(l)}</div>
+        <div><span>Aceite</span><b>${min(l.aceite)}</b>${l.direto ? `<small>${num(l.direto)} sem busca</small>` : ''}</div><div><span>OTD geral</span><b>${pc(l.otd)}</b>${baseOtd(l.otdN)}</div>${celulasMod(l)}
       </div>
       <h4>Motivos de cancelamento</h4>${motivos}${lista}</div>`;
   }).join('');
@@ -561,8 +596,8 @@ function blocoMotivos(a) {
 function blocoLojas(a) {
   const f = busca.trim().toLowerCase();
   const ls = a.lojas.filter((l) => !f || l.nome.toLowerCase().includes(f));
-  const linhas = ls.map((l) => `<tr><td class="loja">${nomeLoja(l)}</td><td class="forte">${num(l.dem)}</td><td>${num(l.fin)}</td><td>${num(l.canc)}</td><td>${pc(l.taxaCanc)}</td><td>${num(l.cOp)}</td><td>${num(l.c05)}</td><td>${min(l.aceite)}</td><td>${pc(l.otd1)}</td><td>${pc(l.otd2)}</td></tr>`).join('');
-  return `<div class="rolagem"><table><thead><tr><th>Loja</th><th>Demanda</th><th>Finalizadas</th><th>Canceladas</th><th>% canc.</th><th>Operacional</th><th>0 a 5 min</th><th>Aceite</th><th>OTD P1</th><th>OTD P2</th></tr></thead><tbody>${linhas || '<tr><td colspan="10" class="vazio">Nenhuma loja encontrada.</td></tr>'}</tbody></table></div>`;
+  const linhas = ls.map((l) => `<tr><td class="loja">${nomeLoja(l)}</td><td class="forte">${num(l.dem)}</td><td>${num(l.fin)}</td><td>${num(l.canc)}</td><td>${pc(l.taxaCanc)}</td><td>${num(l.cOp)}</td><td>${num(l.c05)}</td><td>${min(l.aceite)}</td>${ORDEM_MODS.map((m) => celMod(l, m)).join('')}<td>${pc(l.otd)}</td></tr>`).join('');
+  return `<div class="rolagem"><table><thead><tr><th>Loja</th><th>Demanda</th><th>Finalizadas</th><th>Canceladas</th><th>% canc.</th><th>Operacional</th><th>0 a 5 min</th><th>Aceite</th>${thMods}<th>OTD geral</th></tr></thead><tbody>${linhas || '<tr><td colspan="12" class="vazio">Nenhuma loja encontrada.</td></tr>'}</tbody></table></div>`;
 }
 
 function blocoRequisicoes(d) {
@@ -583,7 +618,9 @@ function regras() {
   return `<section><details><summary>Como cada número é calculado</summary><ul class="regras">
     <li><b>Dia:</b> pedidos criados das 00:00 às 23:59 em Fortaleza. O dia corrente fica parcial até virar o dia.</li>
     <li><b>Atualização:</b> buscando a cada minuto; indicadores a cada 5 min, só das lojas do grupo; às 04:00 uma conferência relê ontem na franquia inteira e inclui loja nova.</li>
-    <li><b>OTD ponta 1:</b> da criação à chegada na loja, em até 15 min. <b>Ponta 2:</b> da saída da loja à chegada no cliente, em até 15 min. Base: finalizadas com os dois tempos.</li>
+    <li><b>Modalidade:</b> vem do prazo do pedido, como no Radar: Super Expressa 30 min, Expressa 60 min, Econômica 24 h. Sem prazo, é Agendada (com horário marcado) ou Padrão, e fica fora do OTD.</li>
+    <li><b>OTD:</b> finalizada que chegou ao cliente dentro do prazo da sua modalidade, contado da criação do pedido. O OTD geral junta as modalidades, cada entrega contra o próprio prazo.</li>
+    <li><b>Tempo das pontas:</b> média da criação à chegada na loja e da saída da loja à chegada no cliente, nas finalizadas com os dois tempos.</li>
     <li><b>Aceite:</b> do início da busca ao aceite, nos pedidos aceitos, finalizados ou não. Pedido de integração que já nasce com entregador não passa por busca e fica de fora ("sem busca").</li>
     <li><b>Em andamento:</b> entregas abertas nas lojas prioritárias, com o status que a API informa. Tempo é o da etapa atual, a partir do último carimbo da entrega.</li>
     <li><b>Evolução:</b> pedidos criados em dias fechados, por loja e por bandeira. Dia contra o mesmo dia da semana anterior ou contra o dia anterior; semana de segunda a domingo; mês até o dia escolhido contra o mesmo intervalo do mês anterior. Estável é variação menor que 5%.</li>
@@ -617,7 +654,7 @@ function desenhar() {
   const a = d.atual;
   // Redesenhar a cada leitura não pode fechar o que a pessoa abriu
   const abertos = [...document.querySelectorAll('details[open][data-chave]')].map((x) => x.dataset.chave);
-  $('#conteudo').innerHTML = blocoKpis(a) + blocoBuscando() + blocoAndamento() + blocoPrioridade(a) + blocoCancPrioridade(a) + blocoEvolucao() + blocoEntregadores(d) + blocoOrientacoes(a) + blocoRankings(a)
+  $('#conteudo').innerHTML = blocoKpis(a) + blocoBuscando() + blocoAndamento() + blocoModalidades(a) + blocoPrioridade(a) + blocoCancPrioridade(a) + blocoEvolucao() + blocoEntregadores(d) + blocoOrientacoes(a) + blocoRankings(a)
     + `<div class="grade2">${blocoMotivos(a)}${blocoHoras(a)}</div>` + blocoBandeiras(a)
     + `<section><h2>Todas as lojas</h2><p class="nota">${num(a.lojas.length)} lojas com pedido no dia, da maior para a menor demanda.</p><p><input id="busca" type="search" placeholder="Buscar loja por número ou bairro" aria-label="Buscar loja" value="${esc(busca)}"></p><div id="todas">${blocoLojas(a)}</div></section>`
     + blocoRequisicoes(d) + regras();

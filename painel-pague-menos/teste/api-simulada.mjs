@@ -21,7 +21,7 @@ function pedido(dia, hhmm, [mid, nome], st, t = {}) {
   if (t.p2 != null) d.arrival_at_destination = iso(dia, hhmm, t.saida + t.p2);
   if (t.canc != null) d.cancelled_at = iso(dia, hhmm, t.canc);
   pedidos.push({ id: ++id, status: st, status_label: ROTULOS[st], franchise: { id: 7, name: 'FORTALEZA/CE' }, merchant: { id: mid, name: nome }, created_at: c, searching: t.semBusca ? null : c, dates: d, customer_name: 'NAO GUARDAR', motivo: t.motivo,
-    address_origin: nome + ' - Av Teste, 100', address_destination: 'Rua Sigilosa, 595 - Vila Peri, Fortaleza - CE, 60730135, BR', badges: { type: st === '10' ? 'Turbo60' : '0' },
+    address_origin: nome + ' - Av Teste, 100', address_destination: 'Rua Sigilosa, 595 - Vila Peri, Fortaleza - CE, 60730135, BR', badges: { type: st === '10' ? 'Turbo60' : '0' }, time_to_delivery: [30, 60, 1440, 60, null][id % 5], schedule_time: id % 5 === 4 && id % 2 ? '2026-11-05 18:00:00' : null,
     deliveryman: t.ent ? { id: t.ent, name: 'Entregador ' + t.ent, phone: 'NAO GUARDAR' } : null,
     waypoints: [{ type: 'pickup', position: 0, description: 'x', latitude: '-3.7300', longitude: '-38.5200' }, { type: 'delivery', position: 1, description: 'Rua Sigilosa, 595 - Vila Peri, Fortaleza - CE, 60730135, BR' }, ...(t.retorno ? [{ type: 'return', position: 2, description: 'x' }] : [])] });
 }

@@ -41,10 +41,16 @@ function tabela(cab, linhas, vazio) {
   return `<table><thead><tr>${cab.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas.map((l) => `<tr>${l.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
 
+// OTD por modalidade: no prazo da própria modalidade (Super Expressa 30 min, Expressa 60 min, Econômica 24 h)
+const PRAZO_TXT = { 'Super Expressa': '30 min', Expressa: '60 min', 'Econômica': '24 h' };
+const MODS = ['Super Expressa', 'Expressa', 'Econômica'];
+const otdMod = (k, m) => { const x = (k?.mods || []).find((y) => y.mod === m); return x?.otdN ? `${pc(x.otd)} <small>(${num(x.otdN)})</small>` : '—'; };
+const textoMods = (k) => (k.mods || []).filter((x) => x.prazo && x.otdN).map((x) => `${x.mod} ${pc(x.otd)}`).join(', ');
+
 function resumo(a) {
   const k = a.kpis, f = [];
   f.push(`O grupo teve <b>${num(k.dem)} pedidos</b> em ${num(k.lojas)} lojas: ${num(k.fin)} finalizados e ${num(k.canc)} cancelados (${pc(k.taxaCanc)} da demanda).`);
-  f.push(`O OTD de 15 min ficou em <b>${pc(k.otd1)}</b> na ponta 1 e <b>${pc(k.otd2)}</b> na ponta 2; o aceite levou ${min(k.aceite)} em média${k.direto ? `, sem contar ${num(k.direto)} pedidos de integração que já nasceram com entregador` : ''}.`);
+  f.push(`O OTD no prazo da modalidade ficou em <b>${pc(k.otd)}</b>${textoMods(k) ? ` (${textoMods(k)})` : ''}; o aceite levou ${min(k.aceite)} em média${k.direto ? `, sem contar ${num(k.direto)} pedidos de integração que já nasceram com entregador` : ''}.`);
   f.push(`${num(k.cOp)} cancelamentos foram operacionais (${pc(k.pctOpDosCanc)} do total) e ${num(k.c05)} saíram de 0 a 5 minutos (${pc(k.pctC05)}).`);
   const alta = a.orientacoes.filter((o) => o.nivel === 'alta').length;
   f.push(a.orientacoes.length ? `As regras apontaram ${num(a.orientacoes.length)} ajustes, ${num(alta)} de prioridade alta.` : 'Nenhuma loja acionou as regras de ajuste.');
@@ -58,7 +64,7 @@ function montar(d, ontem) {
   const prio = a.prioridade.map((l) => {
     if (l.semPedidos) return `<h3>Loja ${esc(l.num)}</h3><p class="vazio">Sem pedidos neste dia.</p>`;
     return `<div class="bloco"><h3>Loja ${esc(l.num)} · ${esc(l.bairro)} (${l.band === 'EF' ? 'Extrafarma' : 'Pague Menos'})</h3>
-      <p>Demanda ${num(l.dem)} · finalizadas ${num(l.fin)} · em andamento ${num(l.and)} · canceladas ${num(l.canc)} · operacionais ${num(l.cOp)} · de 0 a 5 min ${num(l.c05)} · aceite ${min(l.aceite)}${l.direto ? ` (${num(l.direto)} sem busca)` : ''} · OTD ponta 1 ${pc(l.otd1)} · OTD ponta 2 ${pc(l.otd2)} (${num(l.otdN)} entregas)</p>
+      <p>Demanda ${num(l.dem)} · finalizadas ${num(l.fin)} · em andamento ${num(l.and)} · canceladas ${num(l.canc)} · operacionais ${num(l.cOp)} · de 0 a 5 min ${num(l.c05)} · aceite ${min(l.aceite)}${l.direto ? ` (${num(l.direto)} sem busca)` : ''} · OTD ${pc(l.otd)} (${num(l.otdN)} entregas)${textoMods(l) ? `: ${textoMods(l)}` : ''}</p>
       ${tabela(['Motivo de cancelamento', 'Tipo', 'Qtde', 'De 0 a 5 min'], l.motivos.map((m) => [esc(m.motivo), m.op ? 'Operacional' : esc(m.grupo), num(m.n), num(m.c05)]), 'Nenhum cancelamento neste dia.')}</div>`;
   }).join('');
   const ontemKpis = ontem?.atual?.dia === somaDias(a.dia, -1) && ontem.atual.fechado ? ontem.atual.kpis : null;
@@ -76,6 +82,7 @@ function montar(d, ontem) {
   th{text-align:right;font-weight:600;color:#65625a;font-size:9.5px;border-bottom:1px solid #b9b5a4;padding:3px 5px}
   td{text-align:right;padding:3px 5px;border-bottom:1px solid #ecead9}
   th:first-child,td:first-child{text-align:left;padding-left:0}tr{break-inside:avoid}
+  td small{color:#65625a;font-size:9px}
   .duas{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.vazio{color:#65625a}
   .bloco{break-inside:avoid}.ori{margin-bottom:6px;break-inside:avoid}.ori b.alta{color:#b3122a}.ori b.media{color:#a85a00}
   footer{margin-top:16px;color:#65625a;font-size:9.5px;border-top:1px solid #dedbcd;padding-top:6px}
@@ -85,11 +92,13 @@ function montar(d, ontem) {
   <div class="resumo">${resumo(a)}</div>
   <div class="kpis">
     ${kpi('Demanda', num(k.dem), `${num(k.lojas)} lojas`)}${kpi('Finalizadas', num(k.fin), k.and ? `${num(k.and)} em outros status` : '&nbsp;')}${kpi('Cancelamentos', num(k.canc), pc(k.taxaCanc))}
-    ${kpi('Aceite médio', min(k.aceite), `${pc(k.pctAte5)} até 5 min`)}${kpi('OTD ponta 1', pc(k.otd1), `média ${min(k.p1Med)}`)}${kpi('OTD ponta 2', pc(k.otd2), `média ${min(k.p2Med)}`)}
+    ${kpi('Aceite médio', min(k.aceite), `${pc(k.pctAte5)} até 5 min`)}${kpi('OTD da modalidade', pc(k.otd), `${num(k.otdN)} entregas`)}${kpi('Tempo das pontas', `${min(k.p1Med)} · ${min(k.p2Med)}`, 'até a loja · loja ao cliente')}
   </div>
-  ${ontemKpis ? `<p style="margin-top:8px"><b>Fechamento de ${br(somaDias(a.dia, -1))} (00:00 às 23:59):</b> ${num(ontemKpis.dem)} pedidos, ${num(ontemKpis.fin)} finalizados, ${num(ontemKpis.canc)} cancelados (${pc(ontemKpis.taxaCanc)}), OTD ponta 1 ${pc(ontemKpis.otd1)}, ponta 2 ${pc(ontemKpis.otd2)}, aceite ${min(ontemKpis.aceite)}.</p>` : ''}
+  ${ontemKpis ? `<p style="margin-top:8px"><b>Fechamento de ${br(somaDias(a.dia, -1))} (00:00 às 23:59):</b> ${num(ontemKpis.dem)} pedidos, ${num(ontemKpis.fin)} finalizados, ${num(ontemKpis.canc)} cancelados (${pc(ontemKpis.taxaCanc)}), OTD ${pc(ontemKpis.otd)}${textoMods(ontemKpis) ? ` (${textoMods(ontemKpis)})` : ''}, aceite ${min(ontemKpis.aceite)}.</p>` : ''}
+  <h2>OTD por modalidade</h2>
+  ${tabela(['Modalidade', 'Prazo', 'Demanda', 'Finalizadas', 'Canceladas', 'OTD', 'No prazo', 'Até o cliente', 'OTD Pague Menos', 'OTD Extrafarma'], (k.mods || []).map((x) => [esc(x.mod), PRAZO_TXT[x.mod] || 'sem prazo', num(x.dem), num(x.fin), `${num(x.canc)} <small>(${pc(x.taxaCanc)})</small>`, x.prazo ? pc(x.otd) : '—', x.prazo ? `${num(x.noPrazo)} de ${num(x.otdN)}` : '—', min(x.tempo), otdMod(a.bandeiras.PM, x.mod), otdMod(a.bandeiras.EF, x.mod)]), 'Dia sem separação por modalidade.')}
   <h2>Por bandeira</h2>
-  ${tabela(['Bandeira', 'Demanda', 'Finalizadas', 'Canceladas', '% canc.', 'Operacional', '0 a 5 min', 'Aceite', 'OTD P1', 'OTD P2'], [['Pague Menos', a.bandeiras.PM], ['Extrafarma', a.bandeiras.EF]].map(([n, b]) => [n, num(b.dem), num(b.fin), num(b.canc), pc(b.taxaCanc), num(b.cOp), num(b.c05), min(b.aceite), pc(b.otd1), pc(b.otd2)]), '')}
+  ${tabela(['Bandeira', 'Demanda', 'Finalizadas', 'Canceladas', '% canc.', 'Operacional', '0 a 5 min', 'Aceite', ...MODS.map((m) => 'OTD ' + m), 'OTD geral'], [['Pague Menos', a.bandeiras.PM], ['Extrafarma', a.bandeiras.EF]].map(([n, b]) => [n, num(b.dem), num(b.fin), num(b.canc), pc(b.taxaCanc), num(b.cOp), num(b.c05), min(b.aceite), ...MODS.map((m) => otdMod(b, m)), pc(b.otd)]), '')}
   <h2>Lojas com prioridade de observação</h2>${prio}
   <h2>Orientação de ajustes</h2>
   ${a.orientacoes.length ? a.orientacoes.slice(0, 15).map((o) => `<div class="ori"><b class="${o.nivel}">${o.nivel === 'alta' ? 'Alta' : 'Média'}</b> · <b>${esc(o.loja)}</b> · ${esc(o.area)}. ${esc(o.evidencia)} <b>Ajuste:</b> ${esc(o.acao)}</div>`).join('') : '<p class="vazio">Nenhuma loja acionou as regras de ajuste neste dia.</p>'}
@@ -102,7 +111,7 @@ function montar(d, ontem) {
   </div>
   <h2>Motivos de cancelamento do grupo</h2>
   ${tabela(['Motivo', 'Tipo', 'Qtde', '%'], a.motivos.map((m) => [esc(m.grupo), m.op ? 'Operacional' : 'Não operacional', num(m.n), pc(m.pct)]), 'Nenhum cancelamento.')}
-  <footer>${u?.kpi ? `Requisições à API até agora em ${br(u.dia)}: ${num(u.kpi.total + u.busca.total)} (indicadores ${num(u.kpi.total)} em ${num(u.kpi.leituras)} leituras, buscando ${num(u.busca.total)} em ${num(u.busca.leituras)} leituras, logins ${num(u.kpi.login + u.busca.login)}). ` : ''}Aceite: só pedidos que passaram por busca. OTD: ponta 1 da criação à chegada na loja, ponta 2 da saída ao cliente, 15 min cada. Operacional: falta de entregador ou atraso/problema do entregador. Painel: ${esc(URL_PAINEL)}</footer>
+  <footer>${u?.kpi ? `Requisições à API até agora em ${br(u.dia)}: ${num(u.kpi.total + u.busca.total)} (indicadores ${num(u.kpi.total)} em ${num(u.kpi.leituras)} leituras, buscando ${num(u.busca.total)} em ${num(u.busca.leituras)} leituras, logins ${num(u.kpi.login + u.busca.login)}). ` : ''}Aceite: só pedidos que passaram por busca. OTD: finalizada que chegou ao cliente dentro do prazo da modalidade, contado da criação (Super Expressa 30 min, Expressa 60 min, Econômica 24 h); a modalidade vem do prazo do pedido, como no Radar. Pontas: tempo médio até a loja e da loja ao cliente. Operacional: falta de entregador ou atraso/problema do entregador. Painel: ${esc(URL_PAINEL)}</footer>
   </body></html>`;
 }
 
