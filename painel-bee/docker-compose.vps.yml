@@ -1,0 +1,18 @@
+# Compose da VPS (/opt/painel-tempo-real): sem portas publicadas — o acesso passa só pelo
+# Caddy (container jurflow-caddy), que alcança este container pelo nome na rede do proxy.
+# Na VPS este arquivo vai como docker-compose.yml.
+services:
+  painel-tempo-real:
+    build: .
+    container_name: painel-tempo-real
+    restart: unless-stopped
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./cache:/app/cache
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
+    name: jurflow-prod_default

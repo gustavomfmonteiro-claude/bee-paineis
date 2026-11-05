@@ -1,0 +1,14 @@
+services:
+  painel-bee:
+    build: .
+    container_name: painel-bee
+    restart: unless-stopped
+    ports:
+      - "3040:3040"
+    environment:
+      # dentro do container a pasta da torre-cancelamentos é montada aqui (somente leitura)
+      CANCELAMENTOS_DIR: /dados/torre-cancelamentos
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./cache:/app/cache
+      - ../torre-cancelamentos:/dados/torre-cancelamentos:ro
