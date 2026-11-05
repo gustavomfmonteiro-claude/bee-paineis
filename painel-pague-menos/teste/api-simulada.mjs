@@ -74,14 +74,16 @@ http.createServer((req, res) => {
 }).listen(PORTA, () => {
   // Radar falso: o envio cai aqui e nunca sai do computador
   const envios = [];
+  // simula o intervalo entre as leituras: nos primeiros 12 s o Radar ainda não conhece as entregas
+  const radarLeEm = Date.now() + Number(process.env.RADAR_ATRASO_MS ?? 12000);
   http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x');
     const js = (s, o) => { res.writeHead(s, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
-    const buscando = pedidos.filter((p) => p.status === '10');
+    const buscando = Date.now() < radarLeEm ? [] : pedidos.filter((p) => p.status === '10');
     if (u.pathname === '/envios') return js(200, envios);
     if (u.pathname === '/api/dados') return js(200, { 'live/alerta': { lista: buscando.map((p) => ({ id: p.id, whatsapp: 2, whatsappMax: 10 })) } });
     if (u.pathname === '/api/proximos') return buscando.some((p) => String(p.id) === u.searchParams.get('pedido')) ? js(200, { lista: [{ id: 71, whatsappEnviado: true }, { id: 73, whatsappEnviado: false }] }) : js(404, { erro: 'não está no alerta' });
-    if (u.pathname === '/api/whatsapp' && req.method === 'POST') { let c = ''; req.on('data', (x) => { c += x; }); req.on('end', () => { envios.push(JSON.parse(c)); const d = JSON.parse(c); return d.entregador === 99 ? js(429, { erro: 'Limite de 60 envios por hora atingido.' }) : js(200, { status: 'delivered', confirmado: true }); }); return; }
+    if (u.pathname === '/api/whatsapp' && req.method === 'POST') { let c = ''; req.on('data', (x) => { c += x; }); req.on('end', () => { const d = JSON.parse(c); if (!buscando.some((p) => String(p.id) === String(d.pedido))) return js(404, { erro: 'Esta entrega não está mais buscando entregador.' }); envios.push(d); return d.entregador === 99 ? js(429, { erro: 'Limite de 60 envios por hora atingido.' }) : js(200, { status: 'delivered', confirmado: true }); }); return; }
     js(404, {});
   }).listen(PORTA + 1);
 });

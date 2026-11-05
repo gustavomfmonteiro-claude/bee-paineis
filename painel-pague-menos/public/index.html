@@ -393,7 +393,7 @@ function htmlZap(pedido, d, e) {
   if (!telefoneValido(e.telefone)) return '';
   // Entrega com entregador não recebe oferta: um "Sim" não teria o que atribuir.
   if (!d.buscando) return '<button type="button" class="zap-btn" disabled title="A oferta por WhatsApp só vale para entrega buscando entregador">WhatsApp só em busca</button>';
-  if (!d.whatsappAtivo) return '<button type="button" class="zap-btn" disabled title="Liberado assim que o Radar ler esta entrega, em até 1 minuto">WhatsApp em instantes</button>';
+  if (!d.whatsappAtivo) return '<button type="button" class="zap-btn" disabled title="O painel não conseguiu falar com o Radar agora; tenta de novo sozinho">WhatsApp indisponível</button>';
   const st = zapEstado[pedido + ':' + e.id] || {};
   if (st.ok && st.semConfirmacao) return '<button type="button" class="zap-btn" disabled>Enviado ao GHL · sem confirmação</button>';
   if (e.whatsappEnviado || st.ok) return '<button type="button" class="zap-btn" disabled>✓ WhatsApp enviado</button>';
@@ -416,7 +416,7 @@ function corpoProx(id) {
   }).join('')}</div>`;
 }
 const linhaProx = (id) => (proxAbertos.has(String(id)) ? `<tr class="prox-linha"><td colspan="${COLUNAS_ENTREGA}"><div class="prox-caixa" id="prox-${esc(id)}">${corpoProx(String(id))}</div></td></tr>` : '');
-// Enquanto o Radar não tiver lido a entrega buscando, pede de novo sozinho para liberar o WhatsApp.
+// Enquanto a entrega estiver buscando e aberta na tela, atualiza quem já recebeu a oferta.
 const proxTimers = {};
 async function abrirProx(id, novaConsulta = true) {
   clearTimeout(proxTimers[id]);
@@ -434,7 +434,7 @@ async function abrirProx(id, novaConsulta = true) {
     if (lista) lista.scrollTop = rolagem;
   }
   const d = proxDados[id];
-  if (d && !d.erro && d.buscando && !d.whatsappAtivo) proxTimers[id] = setTimeout(() => abrirProx(id, false), 15000);
+  if (d && !d.erro && d.buscando) proxTimers[id] = setTimeout(() => abrirProx(id, false), 15000);
 }
 
 // Evolução: lê /api/evolucao ao abrir e quando muda o dia escolhido; não redesenha a cada leitura ao vivo.

@@ -73,6 +73,7 @@ function autorizar(req, res) {
 // O WhatsApp é todo do Radar: ofertas, limites e a resposta "Sim" ficam lá, e um envio paralelo daqui
 // repetiria ofertas e perderia o "Sim". Este painel só repassa, pela rede interna da VPS.
 const RADAR = String(cfg('RADAR_URL', 'http://painel-tempo-real:3040')).replace(/\/+$/, '');
+const ESPERA_RADAR_MS = 80e3; // um ciclo do alerta do Radar, com folga
 const noRadar = (caminho, opcoes = {}, ms = 5000) => fetch(RADAR + caminho, { ...opcoes, signal: AbortSignal.timeout(ms) });
 
 // Lojas do grupo, do cadastro; loja nova entra quando aparece na conferência das 04:00.
@@ -299,14 +300,15 @@ http.createServer((req, res) => {
       if (!r) return json(404, { erro: 'Esta entrega não está mais aberta nas lojas prioritárias.' });
       const { reqs, ...resto } = r;
       if (reqs.total) somarProximos(reqs);
-      // Só entrega buscando recebe oferta, e só se o Radar já estiver com ela no alerta
+      // Só entrega buscando recebe oferta. Basta o Radar responder: se ele ainda não leu a entrega (404),
+      // o envio espera por ela; a lista de quem já recebeu só existe depois dessa leitura.
       resto.whatsappAtivo = false;
       if (r.buscando && !r.semColeta) {
         try {
           const q = await noRadar('/api/proximos?pedido=' + pedido);
+          if (q.ok || q.status === 404) resto.whatsappAtivo = true;
           if (q.ok) {
             const enviados = new Set(((await q.json()).lista || []).filter((e) => e.whatsappEnviado).map((e) => String(e.id)));
-            resto.whatsappAtivo = true;
             resto.lista = resto.lista.map((e) => ({ ...e, whatsappEnviado: enviados.has(String(e.id)) }));
           }
         } catch (e) { log('Radar indisponível para o WhatsApp:', String(e?.message || e).slice(0, 100)); }
@@ -325,9 +327,17 @@ http.createServer((req, res) => {
       if (!/^\d{1,12}$/.test(String(d.pedido)) || !/^\d{1,12}$/.test(String(d.entregador))) return json(400, { erro: 'Pedido inválido.' });
       if (!pedidoBuscando(d.pedido)) return json(404, { erro: 'Esta entrega não está mais buscando entregador.' });
       try {
-        // o Radar confere de novo a entrega e a distância, e espera a confirmação do envio (até 24 s)
-        const r = await noRadar('/api/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pedido: d.pedido, entregador: d.entregador }) }, 40000);
-        json(r.status, await r.json());
+        // O Radar lê o alerta a cada minuto, em outro horário: enquanto a entrega seguir buscando aqui e
+        // ele ainda não a tiver lido, tenta de novo. Ele confere a entrega e a distância e espera a
+        // confirmação do envio (até 24 s). Nada sai enquanto ele responde que não conhece a entrega.
+        const limite = Date.now() + ESPERA_RADAR_MS;
+        for (;;) {
+          const r = await noRadar('/api/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pedido: d.pedido, entregador: d.entregador }) }, 40000);
+          const j = await r.json();
+          const naoLeu = r.status === 404 && /não está mais buscando/i.test(j.erro || '');
+          if (!naoLeu || !pedidoBuscando(d.pedido) || Date.now() > limite) return json(r.status, j);
+          await new Promise((s) => setTimeout(s, 5000));
+        }
       } catch (e) {
         log('WhatsApp pelo Radar falhou:', String(e?.message || e).slice(0, 100));
         json(502, { erro: 'Sem resposta do Radar. Confira no GHL antes de tentar de novo.' });
