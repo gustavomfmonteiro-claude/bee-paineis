@@ -71,7 +71,8 @@ const whatsapp = criarEnvio({
   // Tolerância depois do prazo: "Sim" ainda atribui, por este tempo, se a entrega seguir em Buscando. Com 0, só avisa que expirou.
   respostaTardiaMs: Number(cfg('WHATSAPP_TARDIA_MIN', 20)) * 60e3,
   limiteAbertas: Number(cfg('WHATSAPP_LIMITE_ABERTAS', 3)),
-  maxPorEntrega: Number(cfg('WHATSAPP_MAX_POR_ENTREGA', 10)),
+  blocoPorEntrega: Number(cfg('WHATSAPP_BLOCO_POR_ENTREGA', 10)),
+  pausaBlocoMs: Number(cfg('WHATSAPP_PAUSA_BLOCO_MIN', 2)) * 60e3,
   porRodada: Number(cfg('WHATSAPP_POR_RODADA', 3)),
   pausaAposAtribuirMs: Number(cfg('WHATSAPP_PAUSA_MIN', 15)) * 60e3,
   limiteHora: Number(cfg('WHATSAPP_LIMITE_HORA', 60)),
@@ -79,7 +80,7 @@ const whatsapp = criarEnvio({
   intervaloStatusMs: Number(cfg('WHATSAPP_INTERVALO_MS', 4000)),
   log,
 });
-const COD_HTTP = { telefone: 422, repetido: 409, ocupado: 423, limite: 429, recusado: 502, token: 502, ghl: 502 };
+const COD_HTTP = { telefone: 422, repetido: 409, ocupado: 423, limite: 429, pausa: 429, recusado: 502, token: 502, ghl: 502 };
 // Envio automático: 1 liga. Sem isso, só o botão manual envia.
 const WHATSAPP_AUTO = whatsapp.ativo && cfg('WHATSAPP_AUTO') === '1';
 // Minutos de busca até a primeira oferta: lojas de ALERTA_LOJAS têm prazo próprio, as demais seguem em 5.
@@ -188,7 +189,7 @@ async function rodarAlerta() {
     if (WHATSAPP_AUTO) {
       await whatsapp.rodadaAuto(leitura.lista.filter((x) => WHATSAPP_AUTO_AMERICANAS || x.classe !== 'americanas'), { proximos: entregadoresProximos, detalhe: detalheAlerta, limiteDe: limiteOferta }).catch((e) => log('whatsapp auto falhou:', e?.message));
     }
-    leitura.lista = leitura.lista.map((p) => ({ ...p, whatsapp: whatsapp.tentativas(p.id), whatsappMax: whatsapp.maxPorEntrega }));
+    leitura.lista = leitura.lista.map((p) => ({ ...p, whatsapp: whatsapp.tentativas(p.id), whatsappRetoma: whatsapp.retomaEm(p.id) }));
     docs['live/alerta'] = leitura;
   } catch (e) {
     docs['live/alerta'] = { ...(docs['live/alerta'] || { lista: [] }), erro: String(e?.message || e).slice(0, 160), erroEm: new Date().toISOString() };
@@ -291,7 +292,7 @@ http.createServer((req, res) => {
     const x = dona?.docs['live/alerta'].lista.find((p) => String(p.id) === url.searchParams.get('pedido'));
     if (!x) return json(404, { erro: 'Esta entrega não está mais buscando entregador.' });
     if (!x.origem) return json(422, { erro: 'A API não informou a localização da loja neste pedido.' });
-    return dona.col.entregadoresProximos(x.origem).then((r) => json(200, { ...r, lista: r.lista.map((e) => ({ ...e, whatsappEnviado: whatsapp.jaEnviado(x.id, e.id) })) }), (e) => { log('proximos falhou:', e.message); json(502, { erro: 'Não foi possível ler os entregadores agora. Tente de novo em instantes.' }); });
+    return dona.col.entregadoresProximos(x.origem).then((r) => json(200, { ...r, lista: r.lista.map((e) => ({ ...e, whatsappSituacao: whatsapp.situacao(x.id, e.id) })) }), (e) => { log('proximos falhou:', e.message); json(502, { erro: 'Não foi possível ler os entregadores agora. Tente de novo em instantes.' }); });
   }
   if ((url.pathname === '/api/whatsapp/sim' || url.pathname === '/api/whatsapp/nao') && req.method === 'POST') {
     // Webhook do Workflow do GHL. Responde na hora e processa depois, para o GHL não reenviar por demora.

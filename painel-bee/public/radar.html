@@ -448,7 +448,7 @@ body.franq-sem-acesso .wrap > *:not(.top):not(#franqAviso){display:none}
     <div class="ph"><div class="sectitle"><span class="tag bad">ALERTA</span><h2>Sem rede, grupos regionais<span class="so-principal">, Americanas e lojas selecionadas</span><span class="so-outras"> e Americanas</span> buscando há mais de 5 min</h2></div>
       <div class="al-ctl"><span class="sub" id="alertaSub">aguardando a primeira leitura…</span><button type="button" class="chip som" id="btnSom" aria-pressed="false">🔕 Som desligado</button></div></div>
     <div id="alertaCorpo"></div>
-    <div class="foot">Entregas com status "buscando" de lojas sem rede (sem key account e sem grupo regional no cadastro), de grupos regionais e da Americanas<span class="so-principal">, mais as lojas 933, 890, 495, 678 e 839 Pague Menos e 7300 e 7362 Extrafarma</span>, lidas da API a cada 1 min. <span class="so-principal">O WhatsApp automático começa com 1 min de busca nessas lojas e com 5 min em sem rede e grupos regionais; a Americanas não recebe oferta automática, só pelo botão. </span>Espera contada do início da busca e atualizada a cada segundo — uma entrega aceita entre duas leituras sai da lista na leitura seguinte. Com o som ligado, cada entrega que passa de 5 min toca o alerta; enquanto houver entregas na lista, um bipe curto a cada 2 min. Clique em uma entrega para ver os entregadores online até 3 km da loja, em linha reta, pela última posição enviada pelo app.</div>
+    <div class="foot">Entregas com status "buscando" de lojas sem rede (sem key account e sem grupo regional no cadastro), de grupos regionais e da Americanas<span class="so-principal">, mais as lojas 933, 890, 495, 678 e 839 Pague Menos e 7300 e 7362 Extrafarma</span>, lidas da API a cada 1 min. <span class="so-principal">O WhatsApp automático começa com 1 min de busca nessas lojas e com 5 min em sem rede e grupos regionais; a Americanas não recebe oferta automática, só pelo botão. A cada 10 mensagens de uma entrega, o envio pausa 2 min e segue para quem ainda não recebeu; o mesmo entregador não recebe a mesma entrega duas vezes. </span>Espera contada do início da busca e atualizada a cada segundo — uma entrega aceita entre duas leituras sai da lista na leitura seguinte. Com o som ligado, cada entrega que passa de 5 min toca o alerta; enquanto houver entregas na lista, um bipe curto a cada 2 min. Clique em uma entrega para ver os entregadores online até 3 km da loja, em linha reta, pela última posição enviada pelo app, com a lista atualizada a cada 1 min.</div>
   </section>
 
   <!-- visão da franquia inteira -->
@@ -1587,7 +1587,7 @@ function tickAlerta() {
           '<td style="text-align:left; font-family:var(--body); white-space:normal">' + tipo + '</td>' +
           '<td style="text-align:left; font-family:var(--body); white-space:normal">' + esc(x.bairro) + '</td>' +
           '<td>' + (x.desde || '—') + '</td><td class="esp" style="color:' + corEspera(x.min) + '">' + esperaTxt(x.min) + '</td><td style="color:var(--ink3)">#' + x.id + '</td>' +
-          '<td>' + (x.whatsapp ? '<small style="display:block;margin-bottom:3px;color:var(--ok);white-space:nowrap">WhatsApp ' + x.whatsapp + '/' + x.whatsappMax + '</small>' : '') + '<button type="button" class="prox-btn" aria-expanded="' + aberta + '">Até 3 km ' + (aberta ? '▴' : '▾') + '</button></td></tr>' +
+          '<td>' + (x.whatsapp ? '<small style="display:block;margin-bottom:3px;color:var(--ok);white-space:nowrap">WhatsApp ' + x.whatsapp + (x.whatsappRetoma > agora ? ' · pausa até ' + new Date(x.whatsappRetoma).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) : '') + '</small>' : '') + '<button type="button" class="prox-btn" aria-expanded="' + aberta + '">Até 3 km ' + (aberta ? '▴' : '▾') + '</button></td></tr>' +
           (aberta ? '<tr><td colspan="7" class="al-prox">' + htmlProximos(proxDados[proxAberto]) + '</td></tr>' : '');
       }).join('') + '</tbody></table></div>';
   }
@@ -1614,7 +1614,7 @@ function tickAlerta() {
 }
 
 // Entregadores até 3 km da loja, abertos ao clicar em uma entrega do alerta (GET /api/proximos).
-var proxAberto = null, proxDados = {};
+var proxAberto = null, proxDados = {}, proxTimer = null;
 function htmlTelefone(t) {
   var d = String(t || '').replace(/\D/g, '');
   if (d.length >= 12 && d.indexOf('55') === 0) d = d.slice(2);
@@ -1641,9 +1641,12 @@ function htmlZap(e) {
   if (d.length >= 12 && d.indexOf('55') === 0) d = d.slice(2);
   if (d.length !== 10 && d.length !== 11) return '';
   var st = zapEstado[zapChave(e.id)] || {};
+  // o servidor é quem sabe: vale também para o envio automático e sobrevive a recarregar a página
+  if (e.whatsappSituacao === 'falhou') return '<button type="button" class="zap-btn" disabled>WhatsApp não entregue</button>';
+  if (e.whatsappSituacao === 'enviado') return '<button type="button" class="zap-btn" disabled>✓ WhatsApp enviado</button>';
   if (st.ok && st.semConfirmacao) return '<button type="button" class="zap-btn" disabled>Enviado ao GHL · sem confirmação</button>';
-  if (e.whatsappEnviado || st.ok) return '<button type="button" class="zap-btn" disabled>✓ WhatsApp enviado</button>';
-  if (st.enviando) return '<button type="button" class="zap-btn" disabled>Enviando…</button>';
+  if (st.ok) return '<button type="button" class="zap-btn" disabled>✓ WhatsApp enviado</button>';
+  if (st.enviando || e.whatsappSituacao === 'enviando') return '<button type="button" class="zap-btn" disabled>Enviando…</button>';
   return '<button type="button" class="zap-btn" data-zap="' + esc(e.id) + '" aria-label="Enviar WhatsApp para ' + esc(e.nome) + '">WhatsApp</button>';
 }
 var zapDlg = document.createElement('dialog');
@@ -1680,6 +1683,8 @@ function carregarProximos(id) {
   proxDados[id] = Object.assign({}, proxDados[id], { carregando: true });
   fetch('/api/proximos?pedido=' + encodeURIComponent(id)).then(function (r) { return r.json(); }).then(function (j) {
     proxDados[id] = j;
+    // aviso de erro de um clique antigo não fica na tela depois da leitura nova
+    Object.keys(zapEstado).forEach(function (k) { if (k.indexOf(id + ':') === 0 && zapEstado[k].erro) delete zapEstado[k]; });
   }).catch(function () {
     proxDados[id] = { erro: 'Sem conexão com o servidor do painel. Tente de novo em instantes.' };
   }).then(tickAlerta);
@@ -1695,7 +1700,12 @@ $('alertaCorpo').addEventListener('click', function (ev) {
   if (!tr) return;
   var id = tr.dataset.prox;
   proxAberto = proxAberto === id ? null : id;
-  if (proxAberto) carregarProximos(id);
+  // abrir lê na hora; depois disso, de 1 em 1 min contado a partir daqui
+  clearInterval(proxTimer);
+  if (proxAberto) {
+    carregarProximos(id);
+    proxTimer = setInterval(function () { if (proxAberto) carregarProximos(proxAberto); }, 60e3);
+  }
   tickAlerta();
 });
 marcaSom();
@@ -1708,9 +1718,8 @@ setInterval(tickAlerta, 1000);
     var v = snap && (typeof snap.data === 'function' ? snap.data() : snap.data);
     if (v) {
       ALERTA = v;
-      // a cada leitura: fecha a lista de entrega que saiu do alerta e renova a que continua aberta
-      if (proxAberto && !(v.lista || []).some(function (x) { return String(x.id) === proxAberto; })) proxAberto = null;
-      if (proxAberto) carregarProximos(proxAberto);
+      // fecha a lista de entrega que saiu do alerta; a que continua aberta tem o próprio relógio de 1 min
+      if (proxAberto && !(v.lista || []).some(function (x) { return String(x.id) === proxAberto; })) { proxAberto = null; clearInterval(proxTimer); }
       tickAlerta();
     }
   });

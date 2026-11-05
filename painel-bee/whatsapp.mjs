@@ -10,6 +10,7 @@ const HORA_MS = 60 * 60e3, INTERVALO_STATUS_MS = 4000;
 const RECUSA_MS = 6 * HORA_MS;
 // Por quanto tempo depois de vencer a oferta o painel ainda lê a conversa, para o "Sim" não ficar sem resposta
 const LEITURA_TARDIA_MS = 20 * 60e3;
+const FOLGA_PAUSA_MS = 5000;
 // Campos do contato que o template alocar_detalhes lê
 const CAMPOS = { loja: 'contact.bee__loja', origem: 'contact.bee__endereco_origem', destino: 'contact.bee__endereco_destino', distancia: 'contact.bee__distancia_km', valor: 'contact.bee__valor_entregador' };
 // O Meta recusa variável com quebra de linha, tabulação ou 4+ espaços seguidos
@@ -45,12 +46,21 @@ export function separaNome(nome) {
   return { firstName: tituloNome(partes[0] || 'Entregador'), lastName: partes.slice(1).map(tituloNome).join(' ') };
 }
 
-export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit, locationId, tag, arquivo, arquivoOfertas, chaveWebhook, validadeOfertaMs = 5 * 60e3, respostaTardiaMs = 20 * 60e3, limiteAbertas = 3, maxPorEntrega = 10, porRodada = 3, pausaAposAtribuirMs = 15 * 60e3, limiteHora = 60, esperaStatusMs = 24000, intervaloStatusMs = INTERVALO_STATUS_MS, log = () => {} }) {
+export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit, locationId, tag, arquivo, arquivoOfertas, chaveWebhook, validadeOfertaMs = 5 * 60e3, respostaTardiaMs = 20 * 60e3, limiteAbertas = 3, blocoPorEntrega = 10, pausaBlocoMs = 2 * 60e3, porRodada = 3, pausaAposAtribuirMs = 15 * 60e3, limiteHora = 60, esperaStatusMs = 24000, intervaloStatusMs = INTERVALO_STATUS_MS, log = () => {} }) {
   const ativo = !!(pit && locationId && tag);
   const enviados = new Set(), emAndamento = new Set(), pedidosEmAtribuicao = new Set();
   const entregadoresEmEnvio = new Set(), tentativas = new Map(), jaTentados = new Set(), recusadosAte = new Map();
   let ofertas = {}, idsCampos = null, pausadoAte = 0, conferindoTardias = false;
-  const conversasLidas = new Map();
+  const conversasLidas = new Map(), ultimoEnvio = new Map();
+  // A cada `blocoPorEntrega` mensagens a entrega descansa `pausaBlocoMs`, contados da última mensagem do
+  // bloco, e depois segue para os entregadores que ainda não receberam. A folga evita que a variação de
+  // 1 ou 2 s entre as leituras do alerta, que rodam de minuto em minuto, transforme 2 min em 3.
+  const retomaEm = (pedido) => {
+    const p = String(pedido), n = tentativas.get(p) || 0;
+    if (!n || n % blocoPorEntrega) return 0;
+    const fim = (ultimoEnvio.get(p) || 0) + pausaBlocoMs;
+    return Date.now() < fim - FOLGA_PAUSA_MS ? fim : 0;
+  };
   // O Workflow espera o botão por 5 min e ignora nova entrada enquanto isso: uma segunda oferta
   // nesse intervalo não sairia, e o "Sim" da primeira cairia na oferta errada.
   // Quem acabou de receber uma entrega também fica um tempo sem ofertas, mesmo se a devolver.
@@ -59,6 +69,9 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
     (o.atribuidaEm && Date.now() < Date.parse(o.atribuidaEm) + pausaAposAtribuirMs)
   ));
   if (arquivoOfertas) { try { ofertas = JSON.parse(fs.readFileSync(arquivoOfertas, 'utf8')); } catch {} }
+  // A oferta é gravada antes da tag e o log só depois da confirmação (até 24 s): sem isto, reiniciar
+  // o servidor nesse intervalo faria o mesmo entregador receber a mesma entrega de novo.
+  for (const o of Object.values(ofertas)) if (o.estado !== 'falhou') jaTentados.add(o.pedido + ':' + o.entregador);
   const salvaOfertas = () => {
     if (!arquivoOfertas) return;
     for (const [c, o] of Object.entries(ofertas)) if (Date.now() - Date.parse(o.em) > 24 * HORA_MS) delete ofertas[c];
@@ -71,7 +84,12 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
         if (!l.trim()) continue;
         const r = JSON.parse(l);
         // `tag: false` = parou antes de acionar o Workflow, nenhuma mensagem saiu
-        if (r.tag !== false) { tentativas.set(String(r.pedido), (tentativas.get(String(r.pedido)) || 0) + 1); jaTentados.add(r.pedido + ':' + r.entregador); }
+        if (r.tag !== false) {
+          const p = String(r.pedido);
+          tentativas.set(p, (tentativas.get(p) || 0) + 1);
+          ultimoEnvio.set(p, Math.max(ultimoEnvio.get(p) || 0, Date.parse(r.em)));
+          jaTentados.add(r.pedido + ':' + r.entregador);
+        }
         if (r.tag && r.status === 'failed') recusadosAte.set(String(r.entregador), Date.parse(r.em) + RECUSA_MS);
         if (r.status !== 'failed') { enviados.add(r.pedido + ':' + r.entregador); envios.push(Date.parse(r.em)); }
       }
@@ -150,14 +168,20 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
 
   return {
     ativo,
-    jaEnviado: (pedido, id) => enviados.has(chave(pedido, id)),
+    // null = nunca recebeu esta entrega; 'falhou' = o WhatsApp recusou, e também não recebe de novo
+    situacao(pedido, id) {
+      const k = chave(pedido, id);
+      if (emAndamento.has(k)) return 'enviando';
+      if (enviados.has(k)) return 'enviado';
+      return jaTentados.has(k) ? 'falhou' : null;
+    },
 
     webhookAtivo: !!chaveWebhook,
-    maxPorEntrega,
     tentativas: (pedido) => tentativas.get(String(pedido)) || 0,
+    retomaEm,
 
-    // Uma rodada por leitura do alerta: até `porRodada` entregadores disponíveis mais próximos por
-    // entrega, até `maxPorEntrega` no total. Entrega que sai do alerta sai da rodada seguinte.
+    // Uma rodada por leitura do alerta: até `porRodada` entregadores disponíveis mais próximos por entrega,
+    // sem passar do fim do bloco. Entrega em pausa fica de fora; entrega que sai do alerta sai da rodada seguinte.
     // `limiteDe(entrega)` diz em quantos minutos de busca a entrega passa a receber ofertas.
     async rodadaAuto(alertas, { proximos, detalhe, limiteDe = () => 5 }) {
       if (Date.now() < pausadoAte) return 0;
@@ -165,9 +189,9 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
       const lista = alertas.filter((x) => x.origem && !x.agendado && x.desdeIso && agora - Date.parse(x.desdeIso) >= limiteDe(x) * 60e3).sort((a, b) => a.desdeIso.localeCompare(b.desdeIso));
       let disparados = 0;
       for (const x of lista) {
-        const restam = maxPorEntrega - (tentativas.get(String(x.id)) || 0);
+        const restam = blocoPorEntrega - (tentativas.get(String(x.id)) || 0) % blocoPorEntrega;
         const dados = detalhe(x.id);
-        if (restam <= 0 || !dados) continue;
+        if (retomaEm(x.id) || !dados) continue;
         const { lista: perto } = await proximos(x.origem);
         const escolhidos = perto.filter((e) => !e.emEntrega && normalizaTelefone(e.telefone) && !jaTentados.has(x.id + ':' + e.id) && !enviados.has(chave(x.id, e.id)) && !entregadoresEmEnvio.has(String(e.id)) && !ofertaAberta(e.id) && !((recusadosAte.get(String(e.id)) || 0) > agora)).slice(0, Math.min(restam, porRodada));
         for (const e of escolhidos) {
@@ -264,10 +288,11 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
       const k = chave(pedido, entregador.id);
       const digitos = normalizaTelefone(entregador.telefone);
       if (!digitos) throw new ErroEnvio('telefone', 'A API da Bee não trouxe um telefone válido para este entregador.');
-      if (enviados.has(k)) throw new ErroEnvio('repetido', 'Este entregador já recebeu a mensagem desta entrega.');
       if (emAndamento.has(k)) throw new ErroEnvio('repetido', 'Este envio já está em andamento.');
+      if (enviados.has(k) || jaTentados.has(k)) throw new ErroEnvio('repetido', 'Este entregador já recebeu a mensagem desta entrega.');
       const pid = String(pedido), idEnt = String(entregador.id);
-      if ((tentativas.get(pid) || 0) >= maxPorEntrega) throw new ErroEnvio('limite', `Esta entrega já chegou ao limite de ${maxPorEntrega} mensagens.`);
+      const retoma = retomaEm(pid);
+      if (retoma) throw new ErroEnvio('pausa', `Esta entrega está em pausa depois de ${tentativas.get(pid)} mensagens. O envio volta às ${new Date(retoma).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' })}.`);
       if (entregadoresEmEnvio.has(idEnt) || ofertaAberta(entregador.id)) throw new ErroEnvio('ocupado', 'Este entregador recebeu uma oferta ou uma entrega há pouco. Tente de novo em alguns minutos.');
       envios = envios.filter((t) => Date.now() - t < HORA_MS);
       if (envios.length >= limiteHora) throw new ErroEnvio('limite', `Limite de ${limiteHora} envios por hora atingido.`);
@@ -276,6 +301,7 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
       jaTentados.add(pedido + ':' + entregador.id);
       tentativas.set(pid, (tentativas.get(pid) || 0) + 1);
       const marca = Date.now();
+      ultimoEnvio.set(pid, marca);
       envios.push(marca);
       const registro = { em: new Date(marca).toISOString(), pedido, entregador: entregador.id, messageId: null, status: 'erro', erro: null, tag: false };
       let contactId = null;
