@@ -178,6 +178,73 @@ details summary:hover{color:var(--ink)}
 .st{display:inline-block;font:600 10.5px/1 var(--mono);padding:5px 8px;border-radius:999px;background:var(--panel3);color:var(--ink);letter-spacing:.04em}
 .mod{display:inline-block;font:600 10.5px/1 var(--body);padding:4px 7px;border-radius:999px;border:1px solid var(--bee);color:var(--ink);margin-left:5px}
 .busca small.total{color:var(--ink3);font-size:11px;font-weight:400}
+.prox-btn{min-height:32px;padding:0 10px;font:500 12px var(--body);color:var(--ink);background:var(--panel3);border:1px solid var(--line2);border-radius:8px;cursor:pointer;white-space:nowrap;transition:border-color .15s}
+.prox-btn:hover{border-color:var(--bee)}
+.prox-btn:focus-visible{outline:2px solid var(--bee);outline-offset:2px}
+.prox-btn[aria-expanded="true"]{border-color:var(--bee-l);background:var(--bee-d)}
+.prox-linha > td{background:rgba(5,7,11,.45);padding:12px}
+.prox-linha:hover{background:transparent}
+/* a tabela rola na horizontal em tela estreita; os cartões ficam presos à área visível */
+.prox-caixa{position:sticky;left:12px;width:min(100%,calc(100vw - 96px))}
+.zap-conta{display:block;margin-bottom:4px;color:var(--ok);font:500 11px var(--mono);white-space:nowrap}
+.al-prox-top{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;margin-bottom:8px;font-size:12.5px;color:var(--ink2)}
+.al-prox-top b{font-family:var(--mono);color:var(--ink)}
+.al-prox-top span:last-child{margin-left:auto;color:var(--ink3);font-size:11.5px}
+.al-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));gap:7px;max-height:330px;overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.al-ent{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:baseline;border:1px solid var(--line2);border-radius:9px;padding:8px 11px;background:var(--panel)}
+.al-ent b{font-size:13px;font-weight:600;min-width:0;overflow-wrap:anywhere;color:var(--ink);line-height:1.3}
+.al-ent .km{font:700 13px var(--mono);color:var(--ink);white-space:nowrap}
+.al-ent small{font-size:11px;color:var(--ink3)}
+.al-ent small.doc{grid-column:1/-1;font-family:var(--mono);color:var(--ink2)}
+.al-ent .sit{font:600 10.5px var(--mono);justify-self:end}
+.al-ent .sit.livre{color:var(--ok)}.al-ent .sit.ocupado{color:#5CC8FF}
+.al-acoes{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;margin-top:3px}
+.al-ent .tel{font:600 12.5px var(--mono);color:var(--ink);text-decoration:none}
+.al-ent a.tel:hover{color:var(--bee);text-decoration:underline}
+.al-ent a.tel:focus-visible,.zap-btn:focus-visible{outline:2px solid var(--bee);outline-offset:2px}
+.al-ent span.tel{color:var(--ink3);font-weight:400}
+.zap-btn{font:600 11px var(--mono);color:var(--ok);background:var(--panel2);border:1px solid var(--line2);border-radius:7px;padding:5px 9px;cursor:pointer;white-space:nowrap}
+.zap-btn:hover:not(:disabled){border-color:var(--ok)}
+.zap-btn:disabled{color:var(--ink3);cursor:default}
+.zap-erro{grid-column:1/-1;font-size:11px;color:var(--bad);margin-top:2px}
+#zapDlg{background:var(--panel);color:var(--ink);border:1px solid var(--line2);border-radius:12px;padding:18px;width:min(420px,calc(100vw - 32px))}
+#zapDlg::backdrop{background:rgba(0,0,0,.6)}
+#zapDlg h3{margin:0 0 4px;font:600 15px var(--display)}
+#zapDlg p{margin:0 0 10px;font-size:12.5px;color:var(--ink2)}
+#zapDlg blockquote{margin:0 0 12px;padding:9px 11px;border-left:3px solid var(--ok);background:var(--panel2);font-size:13px;line-height:1.4}
+.zap-acoes{display:flex;justify-content:flex-end;gap:8px}
+.zap-acoes button{min-height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font:600 13px var(--body);cursor:pointer}
+.zap-acoes button[type=submit]{background:var(--ok);border-color:var(--ok);color:#06140E}
+/* evolução: duas bandeiras em barras empilhadas; cores validadas no fundo escuro (CVD ΔE 19,9) */
+.evo-ctl{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.evo-seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line2);border-radius:9px;overflow:hidden}
+.evo-seg button{min-height:34px;padding:0 12px;background:var(--panel2);color:var(--ink2);border:0;border-right:1px solid var(--line2);font:500 12.5px var(--body);cursor:pointer}
+.evo-seg button:last-child{border-right:0}
+.evo-seg button:hover{color:var(--ink)}
+.evo-seg button[aria-pressed="true"]{background:var(--bee-d);color:var(--ink);box-shadow:inset 0 -2px 0 var(--bee)}
+.evo-seg button:focus-visible{outline:2px solid var(--bee);outline-offset:-2px}
+input[type=date]{background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:9px;padding:6px 9px;font:500 13px var(--body);min-height:36px;color-scheme:dark}
+.evo-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:0 0 14px}
+.evo-tile{background:rgba(19,26,35,.72);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
+.evo-tile span{display:block;color:var(--ink3);font:500 10.5px/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.evo-tile b{display:block;font:700 27px/1.2 var(--display);margin:5px 0 2px;font-variant-numeric:tabular-nums}
+.evo-tile small{display:block;color:var(--ink3);font-size:12px}
+.delta{display:inline-flex;align-items:center;gap:4px;font:600 12px/1.3 var(--body);color:var(--ink);white-space:nowrap}
+.evo-tile .delta,.delta{display:inline-flex;font:600 12.5px/1.3 var(--body);letter-spacing:0;text-transform:none;color:var(--ink);margin-bottom:3px}
+.delta::before{font-size:9px}
+.delta.sobe::before{content:"▲";color:var(--ok)}.delta.desce::before{content:"▼";color:var(--bad)}.delta.igual::before{content:"=";color:var(--ink3);font-size:12px}
+.evo-leg{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 8px;font-size:12px;color:var(--ink2)}
+.evo-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.evo-graf{display:flex;gap:3px;height:150px;align-items:flex-end;border-bottom:1px solid var(--line2);background-image:linear-gradient(to top,var(--line) 1px,transparent 1px);background-size:100% 25%}
+.evo-col{flex:1 1 0;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;cursor:default;border-radius:4px 4px 0 0}
+.evo-col:hover{background:rgba(148,170,196,.07)}
+.evo-col i{display:block;width:100%;min-height:0}
+.evo-col i.pm{background:#E0505C;border-radius:0 0 0 0}.evo-col i.ef{background:#7E63D6;border-radius:4px 4px 0 0}
+.evo-col.parcial i{opacity:.55}
+.evo-eixo{display:flex;gap:3px;margin:5px 0 14px;color:var(--ink3);font:400 10.5px var(--mono)}
+.evo-eixo span{flex:1 1 0;min-width:0;text-align:center;white-space:nowrap;overflow:visible}
+.evo-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px}
+.evo-grade h3{font:600 14px var(--display);margin:0 0 6px}
 .rota{margin:0;padding:0;list-style:none;display:grid;gap:5px;min-width:280px}
 .rota li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:7px;align-items:start;color:var(--ink);font-size:12.5px;text-align:left}
 .rota i{display:flex;align-items:center;justify-content:center;width:17px;height:17px;border:1px solid var(--ink3);border-radius:50%;font:500 10.5px var(--mono);font-style:normal;color:var(--ink2)}
@@ -215,6 +282,7 @@ body:not(.sem-entrada) #conteudo > *:nth-child(3){animation-delay:.1s}
   <div id="conteudo"></div>
 </div>
 <div id="dica"></div>
+<dialog id="zapDlg"><form><h3>Enviar WhatsApp?</h3><p id="zapPara"></p><blockquote id="zapTexto"></blockquote><div class="zap-acoes"><button type="button" id="zapNao">Cancelar</button><button type="submit">Enviar</button></div></form></dialog>
 <script>
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -310,6 +378,97 @@ function blocoPrioridade(a) {
   return `<section><h2>Lojas com prioridade de observação</h2><p class="nota">${LISTA_PRIO}, com os motivos de cancelamento em detalhe. Motivo como foi registrado na API.</p><div class="prio">${cards}</div></section>`;
 }
 
+// Entregadores até 3 km: o botão abre uma linha abaixo da entrega. A consulta só sai com o clique.
+const proxAbertos = new Set(), proxDados = {};
+const COLUNAS_ENTREGA = 7;
+const celProx = (id, p) => `<td class="nw">${p?.whatsapp ? `<small class="zap-conta">WhatsApp ${num(p.whatsapp)}/${num(p.whatsappMax)}</small>` : ''}<button type="button" class="prox-btn" data-pedido="${esc(id)}" aria-expanded="${proxAbertos.has(String(id))}">Até 3 km ${proxAbertos.has(String(id)) ? '▴' : '▾'}</button></td>`;
+function htmlTelefone(t) {
+  let d = String(t || '').replace(/\D/g, '');
+  if (d.length >= 12 && d.startsWith('55')) d = d.slice(2);
+  if (d.length !== 10 && d.length !== 11) return `<span class="tel">${t ? esc(t) : 'sem telefone'}</span>`;
+  return `<a class="tel" href="tel:+55${d}">(${d.slice(0, 2)}) ${d.slice(2, -4)}-${d.slice(-4)}</a>`;
+}
+const telefoneValido = (t) => { let d = String(t || '').replace(/\D/g, ''); if (d.length >= 12 && d.startsWith('55')) d = d.slice(2); return d.length === 10 || d.length === 11; };
+const zapEstado = {};
+function htmlZap(pedido, d, e) {
+  if (!d.whatsappAtivo || !telefoneValido(e.telefone)) return '';
+  const st = zapEstado[pedido + ':' + e.id] || {};
+  if (st.ok && st.semConfirmacao) return '<button type="button" class="zap-btn" disabled>Enviado ao GHL · sem confirmação</button>';
+  if (e.whatsappEnviado || st.ok) return '<button type="button" class="zap-btn" disabled>✓ WhatsApp enviado</button>';
+  if (st.enviando) return '<button type="button" class="zap-btn" disabled>Enviando…</button>';
+  return `<button type="button" class="zap-btn" data-pedido="${esc(pedido)}" data-zap="${esc(e.id)}" aria-label="Enviar WhatsApp para ${esc(e.nome)}">WhatsApp</button>`;
+}
+function corpoProx(id) {
+  const d = proxDados[id];
+  if (!d) return '<p class="vazio">Buscando entregadores perto da loja…</p>';
+  if (d.erro) return `<p class="vazio">${esc(d.erro)}</p>`;
+  if (d.semColeta) return '<p class="vazio">A API não informou a localização da loja neste pedido.</p>';
+  const hora = new Date(d.em).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' });
+  const livres = d.lista.filter((e) => !e.emEntrega).length, ocupados = d.lista.length - livres;
+  const avisos = [d.cpfCompleto ? '' : 'CPF mascarado enquanto o painel estiver sem login', d.buscando && !d.whatsappAtivo ? 'WhatsApp disponível assim que o Radar ler esta entrega; feche e abra de novo em 1 min' : ''].filter(Boolean).join(' · ');
+  const topo = `<div class="al-prox-top"><span><b>${num(livres)}</b> ${livres === 1 ? 'disponível' : 'disponíveis'}</span><span><b>${num(ocupados)}</b> com entrega</span><span>até ${num(d.raioKm)} km da loja, em linha reta · leitura das ${hora}</span></div>${avisos ? `<p class="nota" style="margin:0 0 8px">${avisos}</p>` : ''}`;
+  if (!d.lista.length) return topo + `<p class="vazio">Nenhum dos ${num(d.online)} entregadores online está a até ${num(d.raioKm)} km desta loja.</p>`;
+  return topo + `<div class="al-lista">${d.lista.map((e) => {
+    const erro = zapEstado[id + ':' + e.id]?.erro;
+    return `<div class="al-ent"><b>${esc(e.nome)}</b><span class="km">${Number(e.km).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km</span><small>ID ${esc(e.id)} · ${esc(e.veiculo)}</small><span class="sit ${e.emEntrega ? 'ocupado' : 'livre'}">${e.emEntrega ? 'com entrega' : 'disponível'}</span><small class="doc">CPF ${esc(e.cpf || 'não informado')}</small><div class="al-acoes">${htmlTelefone(e.telefone)}${htmlZap(id, d, e)}</div>${erro ? `<div class="zap-erro" role="alert">${esc(erro)}</div>` : ''}</div>`;
+  }).join('')}</div>`;
+}
+const linhaProx = (id) => (proxAbertos.has(String(id)) ? `<tr class="prox-linha"><td colspan="${COLUNAS_ENTREGA}"><div class="prox-caixa" id="prox-${esc(id)}">${corpoProx(String(id))}</div></td></tr>` : '');
+async function abrirProx(id) {
+  delete proxDados[id];
+  try {
+    const r = await fetch('/api/proximos?pedido=' + encodeURIComponent(id), { cache: 'no-store' });
+    proxDados[id] = await r.json();
+  } catch { proxDados[id] = { erro: 'Não foi possível ler os entregadores agora. Tente de novo em instantes.' }; }
+  const el = document.getElementById('prox-' + id);
+  if (el) el.innerHTML = corpoProx(id);
+}
+
+// Evolução: lê /api/evolucao ao abrir e quando muda o dia escolhido; não redesenha a cada leitura ao vivo.
+let evol = null, evoVisao = 'dia', evoAte = '', evoBusca = '';
+const sinal = (n) => (n > 0 ? '+' : '') + num(n);
+function htmlDelta(pct, dif) {
+  if (pct == null) return dif > 0 ? '<span class="delta sobe">Sem base anterior</span>' : '<span class="delta igual">Sem base anterior</span>';
+  const v = `${pct > 0 ? '+' : ''}${Number(pct).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+  if (Math.abs(pct) < 5) return `<span class="delta igual">${v} · estável</span>`;
+  return `<span class="delta ${pct > 0 ? 'sobe' : 'desce'}">${v}</span>`;
+}
+function linhasEvo(lista) {
+  return lista.map((l) => `<tr><td class="loja">${l.num ? esc(l.num) + ' · ' : ''}${esc(l.bairro)}<small>${l.band}</small>${l.prio ? '<span class="star" title="Loja prioritária">★</span>' : ''}</td><td class="forte">${num(l.dem)}</td><td>${num(l.base)}</td><td>${sinal(l.dif)}</td><td>${l.base ? htmlDelta(l.pct, l.dif) : (l.dem ? 'sem pedidos antes' : '—')}</td><td>${pc(l.taxaCanc)}</td></tr>`).join('');
+}
+const CAB_EVO = '<thead><tr><th>Loja</th><th>Agora</th><th>Antes</th><th>Diferença</th><th>Variação</th><th>% canc.</th></tr></thead>';
+function corpoTodasEvo(v) {
+  const f = evoBusca.trim().toLowerCase();
+  const ls = v.lojas.filter((l) => !f || `${l.num} ${l.bairro} ${l.nome}`.toLowerCase().includes(f));
+  return ls.length ? `<div class="rolagem"><table>${CAB_EVO}<tbody>${linhasEvo(ls)}</tbody></table></div>` : '<p class="vazio">Nenhuma loja encontrada.</p>';
+}
+function blocoEvolucao() {
+  if (!evol) return '<section id="evolucao"><h2>Evolução da demanda</h2><p class="vazio">Lendo o histórico…</p></section>';
+  const v = evol.visoes[evoVisao], faixa = (de, ate) => (de === ate ? dataBr(de) : `${dataBr(de)} a ${dataBr(ate)}`);
+  const botoes = [['dia', 'Dia × semana anterior'], ['diaAnterior', 'Dia × dia anterior'], ['semana', 'Semana'], ['mes', 'Mês']].map(([k, t]) => `<button type="button" data-evo="${k}" aria-pressed="${k === evoVisao}">${t}</button>`).join('');
+  const tile = (rot, g) => `<div class="evo-tile"><span>${rot}</span><b>${num(g.dem)}</b>${htmlDelta(g.pct, g.dem - g.base)}<small>antes ${num(g.base)} pedidos · canceladas ${pc(g.taxaCanc)} (antes ${pc(g.taxaCancBase)})</small></div>`;
+  const max = Math.max(1, ...v.serie.map((p) => p.PM + p.EF));
+  const colunas = v.serie.map((p) => `<div class="evo-col${p.parcial ? ' parcial' : ''}" data-r="${esc(p.rotulo)}" data-pm="${p.PM}" data-ef="${p.EF}" data-de="${p.de}" data-ate="${p.ate}" data-parcial="${p.parcial ? 1 : ''}" aria-label="${esc(p.rotulo)}: ${p.PM + p.EF} pedidos"><i class="ef" style="height:${(100 * p.EF) / max}%"></i><i class="pm" style="height:${(100 * p.PM) / max}%"></i></div>`).join('');
+  const passo = v.serie.length > 16 ? 5 : v.serie.length > 12 ? 2 : 1;
+  const eixo = v.serie.map((p, i) => `<span>${(v.serie.length - 1 - i) % passo === 0 ? esc(p.rotulo) : ''}</span>`).join('');
+  const c = v.contagem;
+  const avisos = [v.baseDe < evol.primeiro || !v.temBase ? 'Sem dados anteriores para comparar neste período.' : '', v.de < '2026-03-01' || v.baseDe < '2026-03-01' ? 'Janeiro e fevereiro vêm dos extratos, porque a API só guarda pedidos a partir de 01/03.' : '', v.serie.some((p) => p.parcial) ? 'A barra mais clara é um período ainda incompleto.' : ''].filter(Boolean).join(' ');
+  return `<section id="evolucao"><div class="topo-sec"><h2>Evolução da demanda</h2><div class="evo-ctl"><div class="evo-seg" role="group" aria-label="Comparação">${botoes}</div><label class="sub">Até <input type="date" id="evoAte" min="${evol.primeiro}" max="${evol.ultimo}" value="${evol.ate}"></label></div></div>
+    <p class="nota">${esc(v.titulo)}: <b style="color:var(--ink);font-weight:600">${faixa(v.de, v.ate)}</b> contra ${faixa(v.baseDe, v.baseAte)}. Pedidos criados, só dias fechados.${avisos ? ' ' + avisos : ''}</p>
+    <div class="evo-tiles">${tile('Grupo', v.grupo.total)}${tile('Pague Menos', v.grupo.PM)}${tile('Extrafarma', v.grupo.EF)}<div class="evo-tile"><span>Lojas</span><b>${num(c.ganhando)} <small style="display:inline;font-size:13px">ganhando</small></b><small>${num(c.perdendo)} perdendo · ${num(c.estaveis)} estáveis${c.novas ? ` · ${num(c.novas)} sem pedidos antes` : ''}. Estável: menos de 5%.</small></div></div>
+    <div class="evo-leg"><span><i style="background:#E0505C"></i>Pague Menos</span><span><i style="background:#7E63D6"></i>Extrafarma</span></div>
+    <div class="evo-graf" role="img" aria-label="Pedidos por período, por bandeira">${colunas}</div><div class="evo-eixo">${eixo}</div>
+    <div class="evo-grade"><div><h3>Lojas que mais ganharam</h3>${v.ganhos.length ? `<div class="rolagem"><table>${CAB_EVO}<tbody>${linhasEvo(v.ganhos)}</tbody></table></div>` : '<p class="vazio">Nenhuma loja ganhou demanda neste período.</p>'}</div><div><h3>Lojas que mais perderam</h3>${v.perdas.length ? `<div class="rolagem"><table>${CAB_EVO}<tbody>${linhasEvo(v.perdas)}</tbody></table></div>` : '<p class="vazio">Nenhuma loja perdeu demanda neste período.</p>'}</div></div>
+    <details data-chave="evo-todas" style="margin-top:12px"><summary>Ver todas as lojas (${num(v.lojas.length)})</summary><p style="margin:8px 0"><input id="evoBusca" type="search" placeholder="Buscar loja por número ou bairro" aria-label="Buscar loja na evolução" value="${esc(evoBusca)}"></p><div id="evoTodas">${corpoTodasEvo(v)}</div></details></section>`;
+}
+const redesenhaEvo = () => { const el = $('#evolucao'); if (el) { const aberto = el.querySelector('details')?.open; el.outerHTML = blocoEvolucao(); if (aberto) $('#evolucao details')?.setAttribute('open', ''); } };
+async function carregarEvolucao() {
+  try {
+    const j = await (await fetch('/api/evolucao' + (evoAte ? '?ate=' + evoAte : ''), { cache: 'no-store' })).json();
+    if (j) { evol = j; redesenhaEvo(); }
+  } catch {}
+}
+
 function blocoAndamento() {
   const b = busc || { andamento: [] };
   const lista = b.andamento || [];
@@ -320,10 +479,10 @@ function blocoAndamento() {
     <td class="loja">${esc(p.entregador)}</td>
     <td class="txt"><ol class="rota">${p.rota.map((r, i) => `<li><i>${i + 1}</i><span>${esc(r)}</span></li>`).join('')}</ol></td>
     <td class="nw forte">${p.minEtapa == null ? '—' : num(p.minEtapa) + ' min'}<br><small class="total">${p.minTotal == null ? '' : 'total ' + num(p.minTotal) + ' min'}</small></td>
-    <td class="nw"><span class="st">${esc(String(p.status).toUpperCase())}</span>${p.modalidade ? `<span class="mod">${esc(p.modalidade)}</span>` : ''}</td></tr>`).join('');
+    <td class="nw"><span class="st">${esc(String(p.status).toUpperCase())}</span>${p.modalidade ? `<span class="mod">${esc(p.modalidade)}</span>` : ''}</td>${celProx(p.id)}</tr>${linhaProx(p.id)}`).join('');
   return `<section id="andamento"><div class="topo-sec"><h2>Entregas em andamento nas lojas prioritárias<span class="cont ${lista.length ? '' : 'zero'}">${num(lista.length)}</span></h2><span class="sub">Leitura a cada minuto · última às ${hora}</span></div>
     <p class="nota">Lojas ${LISTA_PRIO}, da entrega aberta há mais tempo para a mais recente. Tempo é o da etapa atual; total conta desde a criação.${b.destinoCompleto ? '' : ' Destino só com bairro e cidade enquanto o painel estiver sem login.'}</p>
-    ${linhas ? `<div class="rolagem"><table class="busca"><thead><tr><th>ID</th><th class="txt">Loja</th><th class="txt">Entregador</th><th class="txt">Rota</th><th>Tempo</th><th class="txt">Status</th></tr></thead><tbody>${linhas}</tbody></table></div>` : '<p class="vazio">Nenhuma entrega em andamento nessas lojas agora.</p>'}</section>`;
+    ${linhas ? `<div class="rolagem"><table class="busca"><thead><tr><th>ID</th><th class="txt">Loja</th><th class="txt">Entregador</th><th class="txt">Rota</th><th>Tempo</th><th class="txt">Status</th><th class="txt">Entregadores</th></tr></thead><tbody>${linhas}</tbody></table></div>` : '<p class="vazio">Nenhuma entrega em andamento nessas lojas agora.</p>'}</section>`;
 }
 
 function blocoBuscando() {
@@ -336,10 +495,10 @@ function blocoBuscando() {
     <td class="nw">—</td>
     <td class="txt"><ol class="rota">${p.rota.map((r, i) => `<li><i>${i + 1}</i><span>${esc(r)}</span></li>`).join('')}</ol></td>
     <td class="nw forte">${p.min == null ? '—' : num(p.min) + ' min'}</td>
-    <td class="nw"><span class="st">BUSCANDO</span>${p.modalidade ? `<span class="mod">${esc(p.modalidade)}</span>` : ''}${p.min >= 5 ? ' <span class="chip mau">5 min ou mais</span>' : ''}</td></tr>`).join('');
+    <td class="nw"><span class="st">BUSCANDO</span>${p.modalidade ? `<span class="mod">${esc(p.modalidade)}</span>` : ''}${p.min >= 5 ? ' <span class="chip mau">5 min ou mais</span>' : ''}</td>${celProx(p.id, p)}</tr>${linhaProx(p.id)}`).join('');
   return `<section id="buscando" class="${b.lista.length ? 'ao-vivo' : ''}"><div class="topo-sec"><h2>Entregas buscando nas lojas prioritárias<span class="cont ${b.lista.length ? '' : 'zero'}">${num(b.lista.length)}</span></h2><span class="sub">Leitura a cada minuto · última às ${hora}</span></div>
     <p class="nota">Lojas ${LISTA_PRIO}.${b.destinoCompleto ? '' : ' Destino só com bairro e cidade enquanto o painel estiver sem login.'}</p>${erro}
-    ${linhas ? `<div class="rolagem"><table class="busca"><thead><tr><th>ID</th><th class="txt">Loja</th><th class="txt">Entregador</th><th class="txt">Rota</th><th>Tempo</th><th class="txt">Status</th></tr></thead><tbody>${linhas}</tbody></table></div>` : '<p class="vazio">Nenhuma entrega buscando nessas lojas agora.</p>'}</section>`;
+    ${linhas ? `<div class="rolagem"><table class="busca"><thead><tr><th>ID</th><th class="txt">Loja</th><th class="txt">Entregador</th><th class="txt">Rota</th><th>Tempo</th><th class="txt">Status</th><th class="txt">Entregadores</th></tr></thead><tbody>${linhas}</tbody></table></div>` : '<p class="vazio">Nenhuma entrega buscando nessas lojas agora.</p>'}</section>`;
 }
 
 const PERIODOS = { hoje: 'Hoje', d7: 'Últimos 7 dias', d30: 'Últimos 30 dias' };
@@ -398,8 +557,9 @@ function blocoRequisicoes(d) {
   const topo = `<div class="reqs">
     <div class="tot"><span>Última leitura dos indicadores (a cada ${num(d.kpiMinutos)} min)</span><b>${num(k?.total)}</b></div>
     <div class="tot"><span>Última leitura do buscando (a cada minuto)</span><b>${num(b?.total)}</b></div>
-    <div><span>Total no dia</span><b>${num((dk.total || 0) + (db.total || 0))}</b></div>
-    <div><span>Logins no dia</span><b>${num((dk.login || 0) + (db.login || 0))}</b></div>
+    <div><span>Total no dia</span><b>${num((dk.total || 0) + (db.total || 0) + (u.proximos?.total || 0))}</b></div>
+    <div><span>Consultas de até 3 km no dia</span><b>${num(u.proximos?.consultas || 0)}</b></div>
+    <div><span>Logins no dia</span><b>${num((dk.login || 0) + (db.login || 0) + (u.proximos?.login || 0))}</b></div>
     <div><span>Motivos lidos no dia</span><b>${num(dk.motivos || 0)}</b></div>
     <div><span>Repetidas por erro no dia</span><b>${num((dk.repeticoes || 0) + (db.repeticoes || 0))}</b></div></div>`;
   const hist = d.coletas.length ? `<div class="rolagem"><table><thead><tr><th>Quando</th><th class="txt">Tipo</th><th>Total</th><th>Login</th><th>Páginas</th><th>Motivos</th><th>Repetidas</th><th>Pedidos PM/EF</th><th>Tempo</th></tr></thead><tbody>${d.coletas.map((c) => `<tr><td>${quando(c.em)}</td><td class="txt">${esc(c.tipo)}</td><td class="forte">${num(c.total)}</td><td>${num(c.login)}</td><td>${num(c.paginas)}</td><td>${num(c.motivos)}</td><td>${num(c.repeticoes)}</td><td>${num(c.pedidos_lidos)}</td><td>${num(c.segundos)} s</td></tr>`).join('')}</tbody></table></div>` : '';
@@ -413,6 +573,8 @@ function regras() {
     <li><b>OTD ponta 1:</b> da criação à chegada na loja, em até 15 min. <b>Ponta 2:</b> da saída da loja à chegada no cliente, em até 15 min. Base: finalizadas com os dois tempos.</li>
     <li><b>Aceite:</b> do início da busca ao aceite, nos pedidos aceitos, finalizados ou não. Pedido de integração que já nasce com entregador não passa por busca e fica de fora ("sem busca").</li>
     <li><b>Em andamento:</b> entregas abertas nas lojas prioritárias, com o status que a API informa. Tempo é o da etapa atual, a partir do último carimbo da entrega.</li>
+    <li><b>Evolução:</b> pedidos criados em dias fechados, por loja e por bandeira. Dia contra o mesmo dia da semana anterior ou contra o dia anterior; semana de segunda a domingo; mês até o dia escolhido contra o mesmo intervalo do mês anterior. Estável é variação menor que 5%.</li>
+    <li><b>Até 3 km:</b> entregadores online a até 3 km da coleta da entrega, em linha reta, com ID, nome completo, CPF, telefone e WhatsApp. O CPF aparece mascarado enquanto o painel estiver sem login. O WhatsApp só aparece em entrega buscando e é enviado pelo Radar, com os mesmos limites e a mesma resposta Sim.</li>
     <li><b>Alerta sonoro:</b> toca quando uma entrega das lojas prioritárias aparece buscando e repete a cada minuto até ter entregador.</li>
     <li><b>Entregadores:</b> entregas finalizadas por loja, pela data de criação do pedido.</li>
     <li><b>Operacional:</b> motivo classificado como falta de entregador ou atraso/problema do entregador.</li>
@@ -442,7 +604,7 @@ function desenhar() {
   const a = d.atual;
   // Redesenhar a cada leitura não pode fechar o que a pessoa abriu
   const abertos = [...document.querySelectorAll('details[open][data-chave]')].map((x) => x.dataset.chave);
-  $('#conteudo').innerHTML = blocoKpis(a) + blocoBuscando() + blocoAndamento() + blocoPrioridade(a) + blocoCancPrioridade(a) + blocoEntregadores(d) + blocoOrientacoes(a) + blocoRankings(a)
+  $('#conteudo').innerHTML = blocoKpis(a) + blocoBuscando() + blocoAndamento() + blocoPrioridade(a) + blocoCancPrioridade(a) + blocoEvolucao() + blocoEntregadores(d) + blocoOrientacoes(a) + blocoRankings(a)
     + `<div class="grade2">${blocoMotivos(a)}${blocoHoras(a)}</div>` + blocoBandeiras(a)
     + `<section><h2>Todas as lojas</h2><p class="nota">${num(a.lojas.length)} lojas com pedido no dia, da maior para a menor demanda.</p><p><input id="busca" type="search" placeholder="Buscar loja por número ou bairro" aria-label="Buscar loja" value="${esc(busca)}"></p><div id="todas">${blocoLojas(a)}</div></section>`
     + blocoRequisicoes(d) + regras();
@@ -520,6 +682,56 @@ async function carregarBuscando() {
 }
 
 $('#dia').addEventListener('change', (e) => { escolhido = e.target.value; carregar(); });
+// WhatsApp: mesma confirmação do Radar, que é quem envia. A janela fica fora do conteúdo redesenhado.
+let zapAlvo = null;
+const redesenhaProx = (id) => { const el = document.getElementById('prox-' + id); if (el) el.innerHTML = corpoProx(id); };
+function abrirZap(pedido, ent) {
+  const x = (busc?.lista || []).find((p) => String(p.id) === String(pedido)) || {};
+  const primeiro = String(ent.nome || '').trim().split(/\s+/)[0] || '';
+  zapAlvo = { pedido, id: ent.id };
+  $('#zapPara').textContent = `Para ${ent.nome} · entrega #${pedido}`;
+  $('#zapTexto').textContent = `Olá, ${primeiro.charAt(0).toUpperCase()}${primeiro.slice(1).toLowerCase()}! Temos uma entrega disponível perto de você. Loja: ${x.loja || '—'}. A mensagem traz também origem, destino, distância e valor, com os botões Sim e Não. Se responder Sim, a entrega é atribuída a essa pessoa.`;
+  $('#zapDlg').showModal();
+}
+$('#zapNao').addEventListener('click', () => $('#zapDlg').close());
+$('#zapDlg form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const { pedido, id } = zapAlvo, k = pedido + ':' + id;
+  $('#zapDlg').close();
+  zapEstado[k] = { enviando: true };
+  redesenhaProx(pedido);
+  try {
+    const r = await fetch('/api/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pedido, entregador: id }) });
+    const j = await r.json();
+    zapEstado[k] = r.status === 200 || r.status === 409 ? { ok: true, semConfirmacao: r.status === 200 && j.confirmado === false } : { erro: j.erro || 'Não foi possível enviar.' };
+  } catch { zapEstado[k] = { erro: 'Sem conexão com o painel. Confira no GHL antes de tentar de novo.' }; }
+  redesenhaProx(pedido);
+});
+
+// O bloco é redesenhado a cada leitura, então clique e digitação são tratados no conteúdo
+$('#conteudo').addEventListener('input', (e) => {
+  if (e.target.id === 'evoBusca') { evoBusca = e.target.value; $('#evoTodas').innerHTML = corpoTodasEvo(evol.visoes[evoVisao]); }
+});
+$('#conteudo').addEventListener('change', (e) => {
+  if (e.target.id === 'evoAte' && e.target.value) { evoAte = e.target.value; carregarEvolucao(); }
+});
+$('#conteudo').addEventListener('click', (e) => {
+  const ev = e.target.closest('[data-evo]');
+  if (ev) { evoVisao = ev.dataset.evo; redesenhaEvo(); $(`[data-evo="${evoVisao}"]`)?.focus(); return; }
+  const z = e.target.closest('.zap-btn[data-zap]');
+  if (z) {
+    const ent = (proxDados[z.dataset.pedido]?.lista || []).find((n) => String(n.id) === z.dataset.zap);
+    if (ent) abrirZap(z.dataset.pedido, ent);
+    return;
+  }
+  const b = e.target.closest('.prox-btn');
+  if (!b) return;
+  const id = b.dataset.pedido;
+  if (proxAbertos.has(id)) proxAbertos.delete(id);
+  else { proxAbertos.add(id); abrirProx(id); }
+  for (const [sel, fn] of [['#buscando', blocoBuscando], ['#andamento', blocoAndamento]]) { const el = $(sel); if (el) el.outerHTML = fn(); }
+  document.querySelector(`.prox-btn[data-pedido="${id}"]`)?.focus();
+});
 
 // Relógio no horário de Fortaleza
 const relogio = $('#relogio');
@@ -530,9 +742,12 @@ setInterval(marcarHora, 1000);
 // Dica da barra por hora
 const dica = $('#dica');
 document.addEventListener('mousemove', (e) => {
-  const h = e.target.closest?.('.hora');
-  if (!h) { dica.style.display = 'none'; return; }
-  dica.innerHTML = `<b>${h.dataset.h.padStart(2, '0')}h</b> · ${num(h.dataset.d)} pedidos<br>${num(h.dataset.f)} finalizados · ${num(h.dataset.c)} cancelados`;
+  const h = e.target.closest?.('.hora'), ev = e.target.closest?.('.evo-col');
+  if (!h && !ev) { dica.style.display = 'none'; return; }
+  if (ev) {
+    const pm = Number(ev.dataset.pm), ef = Number(ev.dataset.ef);
+    dica.innerHTML = `<b>${ev.dataset.de === ev.dataset.ate ? dataBr(ev.dataset.de) : dataBr(ev.dataset.de) + ' a ' + dataBr(ev.dataset.ate)}</b>${ev.dataset.parcial ? ' · parcial' : ''}<br>${num(pm + ef)} pedidos<br>Pague Menos ${num(pm)} · Extrafarma ${num(ef)}`;
+  } else dica.innerHTML = `<b>${h.dataset.h.padStart(2, '0')}h</b> · ${num(h.dataset.d)} pedidos<br>${num(h.dataset.f)} finalizados · ${num(h.dataset.c)} cancelados`;
   dica.style.display = 'block';
   dica.style.left = Math.min(e.clientX + 12, innerWidth - dica.offsetWidth - 8) + 'px';
   dica.style.top = e.clientY - dica.offsetHeight - 10 + 'px';
@@ -548,6 +763,8 @@ function ligar() {
   es.onerror = () => { vivo.className = 'vivo'; vivo.lastElementChild.textContent = 'reconectando'; };
 }
 carregarBuscando().catch(() => {}).finally(carregar);
+carregarEvolucao();
+setInterval(carregarEvolucao, 30 * 60e3).unref?.();
 ligar();
 </script>
 </body>

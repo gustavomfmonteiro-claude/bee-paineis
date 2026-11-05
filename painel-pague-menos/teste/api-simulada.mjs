@@ -23,7 +23,7 @@ function pedido(dia, hhmm, [mid, nome], st, t = {}) {
   pedidos.push({ id: ++id, status: st, status_label: ROTULOS[st], franchise: { id: 7, name: 'FORTALEZA/CE' }, merchant: { id: mid, name: nome }, created_at: c, searching: t.semBusca ? null : c, dates: d, customer_name: 'NAO GUARDAR', motivo: t.motivo,
     address_origin: nome + ' - Av Teste, 100', address_destination: 'Rua Sigilosa, 595 - Vila Peri, Fortaleza - CE, 60730135, BR', badges: { type: st === '10' ? 'Turbo60' : '0' },
     deliveryman: t.ent ? { id: t.ent, name: 'Entregador ' + t.ent, phone: 'NAO GUARDAR' } : null,
-    waypoints: [{ type: 'pickup', position: 0, description: 'x' }, { type: 'delivery', position: 1, description: 'Rua Sigilosa, 595 - Vila Peri, Fortaleza - CE, 60730135, BR' }, ...(t.retorno ? [{ type: 'return', position: 2, description: 'x' }] : [])] });
+    waypoints: [{ type: 'pickup', position: 0, description: 'x', latitude: '-3.7300', longitude: '-38.5200' }, { type: 'delivery', position: 1, description: 'Rua Sigilosa, 595 - Vila Peri, Fortaleza - CE, 60730135, BR' }, ...(t.retorno ? [{ type: 'return', position: 2, description: 'x' }] : [])] });
 }
 for (const dia of [ontem, hoje]) {
   for (let i = 0; i < 12; i++) pedido(dia, `${String(8 + i).padStart(2, '0')}:10`, LOJAS[3], '50', { aceite: 2, p1: 10, saida: 14, p2: 9 });
@@ -63,7 +63,28 @@ http.createServer((req, res) => {
     const fatia = base.slice((pag - 1) * por, pag * por);
     return js(200, { data: fatia, links: { next: pag * por < base.length ? 'x' : null } });
   }
+  // Um entregador a ~1 km, outro a ~2,5 km em entrega, outro a ~9 km e outro sem GPS
+  if (u.pathname === '/api/dashboard') return js(200, { data: { online_deliverymen: {
+    available: [{ id: 71, name: 'Fulano  De Tal Silva', phone: '85998470001', photo: 'NAO GUARDAR', latitude: -3.7390, longitude: -38.5200, vehicle_type: 'moto' }, { id: 72, name: 'Longe Demais', phone: 'NAO GUARDAR', latitude: -3.8100, longitude: -38.5200 }, { id: 74, name: 'Sem Gps', latitude: null, longitude: null }],
+    in_delivery: [{ id: 73, name: 'Ciclana Souza Lima', phone: '(85) 99847-0002', latitude: -3.7525, longitude: -38.5200 }],
+  } } });
+  const ent = u.pathname.match(/^\/api\/deliverymen\/(\d+)$/);
+  if (ent) return js(200, { data: { id: Number(ent[1]), name: 'x', document: ent[1] === '73' ? '98765432100' : '12345678901', email: 'NAO GUARDAR' } });
   const m = u.pathname.match(/^\/api\/orders\/(\d+)$/);
   if (m) { const p = pedidos.find((x) => x.id === Number(m[1])); return p ? js(200, { data: { cancellation_reason: p.motivo || '' } }) : js(404, {}); }
   js(404, {});
-}).listen(PORTA, () => console.log(`API simulada em http://localhost:${PORTA}/api · ${pedidos.length} pedidos`));
+}).listen(PORTA, () => {
+  // Radar falso: o envio cai aqui e nunca sai do computador
+  const envios = [];
+  http.createServer((req, res) => {
+    const u = new URL(req.url, 'http://x');
+    const js = (s, o) => { res.writeHead(s, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
+    const buscando = pedidos.filter((p) => p.status === '10');
+    if (u.pathname === '/envios') return js(200, envios);
+    if (u.pathname === '/api/dados') return js(200, { 'live/alerta': { lista: buscando.map((p) => ({ id: p.id, whatsapp: 2, whatsappMax: 10 })) } });
+    if (u.pathname === '/api/proximos') return buscando.some((p) => String(p.id) === u.searchParams.get('pedido')) ? js(200, { lista: [{ id: 71, whatsappEnviado: true }, { id: 73, whatsappEnviado: false }] }) : js(404, { erro: 'não está no alerta' });
+    if (u.pathname === '/api/whatsapp' && req.method === 'POST') { let c = ''; req.on('data', (x) => { c += x; }); req.on('end', () => { envios.push(JSON.parse(c)); const d = JSON.parse(c); return d.entregador === 99 ? js(429, { erro: 'Limite de 60 envios por hora atingido.' }) : js(200, { status: 'delivered', confirmado: true }); }); return; }
+    js(404, {});
+  }).listen(PORTA + 1);
+});
+console.log(`API simulada em http://localhost:${PORTA}/api · ${pedidos.length} pedidos`);

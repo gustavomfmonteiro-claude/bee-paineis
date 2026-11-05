@@ -8,8 +8,8 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { configurar, coletar, lerBuscando, lerEntregadores, temAcesso } from './coletor.mjs';
-import { analisarDia, rankingEntregadores } from './analise.mjs';
+import { configurar, coletar, entregadoresProximos, lerBuscando, lerEntregadores, pedidoBuscando, temAcesso } from './coletor.mjs';
+import { analisarDia, evolucao, rankingEntregadores } from './analise.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 let arqEnv = '';
@@ -70,6 +70,11 @@ function autorizar(req, res) {
   return false;
 }
 
+// O WhatsApp é todo do Radar: ofertas, limites e a resposta "Sim" ficam lá, e um envio paralelo daqui
+// repetiria ofertas e perderia o "Sim". Este painel só repassa, pela rede interna da VPS.
+const RADAR = String(cfg('RADAR_URL', 'http://painel-tempo-real:3040')).replace(/\/+$/, '');
+const noRadar = (caminho, opcoes = {}, ms = 5000) => fetch(RADAR + caminho, { ...opcoes, signal: AbortSignal.timeout(ms) });
+
 // Lojas do grupo, do cadastro; loja nova entra quando aparece na conferência das 04:00.
 const LOJAS_CADASTRO = lerJson(path.join(DIR, 'lojas-pmef.json'), []);
 
@@ -92,6 +97,28 @@ for (const f of fs.readdirSync(DIAS)) {
 let coletas = lerJson(ARQ_COLETAS, []);
 let entregadoresHist = lerJson(ARQ_ENTREGADORES, { dias: {} });
 
+// Histórico de evolução: base importada do Painel de Evolução (importar-evolucao.py) + dias fechados aqui.
+const EVOL_BASE = lerJson(path.join(CACHE, 'evolucao-base.json'), { dias: {}, nomes: {} });
+const cacheEvolucao = new Map();
+function dadosEvolucao(ate) {
+  const porDia = { ...EVOL_BASE.dias }, nomes = { ...EVOL_BASE.nomes };
+  for (const d of Object.values(historico)) {
+    for (const [id, l] of Object.entries(d.lojas)) nomes[id] = l.n;
+    if (d.fechado) porDia[d.dia] = Object.fromEntries(Object.entries(d.lojas).map(([id, l]) => [id, [l.dem, l.fin, l.canc]]));
+  }
+  return evolucao(porDia, nomes, ate);
+}
+function respostaEvolucao(ate) {
+  // só muda quando um dia fecha ou é relido
+  const versao = Object.values(historico).filter((d) => d.fechado).map((d) => d.dia + d.lido_em).sort().join();
+  const chave = versao + '|' + (ate || '');
+  if (!cacheEvolucao.has(chave)) {
+    if (cacheEvolucao.size >= 8) cacheEvolucao.clear();
+    cacheEvolucao.set(chave, JSON.stringify(dadosEvolucao(ate)));
+  }
+  return cacheEvolucao.get(chave);
+}
+
 function gravarDia(d) {
   const arq = path.join(DIAS, d.dia + '.json');
   fs.writeFileSync(arq + '.tmp', JSON.stringify(d));
@@ -107,8 +134,14 @@ const idsDoGrupo = () => {
 
 // ------------------------------------------------------------------ requisições
 // Quantas requisições cada leitura gasta e o acumulado do dia: é o que o painel mostra.
-const usoVazio = (dia) => ({ dia, kpi: { leituras: 0, total: 0, login: 0, paginas: 0, motivos: 0, repeticoes: 0 }, busca: { leituras: 0, total: 0, login: 0, paginas: 0, repeticoes: 0 }, ultimaKpi: null, ultimaBusca: null });
+const usoVazio = (dia) => ({ dia, kpi: { leituras: 0, total: 0, login: 0, paginas: 0, motivos: 0, repeticoes: 0 }, busca: { leituras: 0, total: 0, login: 0, paginas: 0, repeticoes: 0 }, ultimaKpi: null, ultimaBusca: null, proximos: { consultas: 0, total: 0, login: 0, repeticoes: 0 } });
 let uso = lerJson(ARQ_USO, usoVazio(hoje()));
+function somarProximos(r) {
+  if (uso.dia !== hoje()) uso = usoVazio(hoje());
+  const u = (uso.proximos ||= { consultas: 0, total: 0, login: 0, repeticoes: 0 });
+  u.consultas++; u.total += r.total; u.login += r.login; u.repeticoes += r.repeticoes;
+  fs.writeFileSync(ARQ_USO, JSON.stringify(uso));
+}
 function somarUso(chave, r, extra) {
   if (uso.dia !== hoje()) uso = usoVazio(hoje());
   const u = uso[chave];
@@ -173,6 +206,16 @@ async function lerBuscandoAgora() {
   buscandoEmVoo = true;
   try {
     const r = await lerBuscando(hoje());
+    // Quantas ofertas o Radar já mandou em cada entrega; sem o Radar, a lista segue sem essa contagem
+    if (r.lista.length) {
+      try {
+        const alerta = (await (await noRadar('/api/dados')).json())['live/alerta']?.lista || [];
+        for (const p of r.lista) {
+          const x = alerta.find((a) => String(a.id) === String(p.id));
+          if (x?.whatsapp) { p.whatsapp = x.whatsapp; p.whatsappMax = x.whatsappMax; }
+        }
+      } catch (e) { log('contagem de WhatsApp indisponível:', String(e?.message || e).slice(0, 100)); }
+    }
     buscando = { em: r.em, lista: r.lista, andamento: r.andamento, erro: null, destinoCompleto: TEM_LOGIN };
     somarUso('busca', r.reqs, { encontradas: r.lista.length, andamento: r.andamento.length });
   } catch (e) {
@@ -240,9 +283,57 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     return res.end(montarDados(url.searchParams.get('dia')));
   }
+  if (url.pathname === '/api/evolucao') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    return res.end(respostaEvolucao(url.searchParams.get('ate')));
+  }
   if (url.pathname === '/api/buscando') {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     return res.end(JSON.stringify(buscando));
+  }
+  if (url.pathname === '/api/proximos') {
+    const json = (st, o) => { res.writeHead(st, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(o)); };
+    const pedido = url.searchParams.get('pedido') || '';
+    if (!/^\d{1,12}$/.test(pedido)) return json(400, { erro: 'Pedido inválido.' });
+    return void entregadoresProximos(pedido).then(async (r) => {
+      if (!r) return json(404, { erro: 'Esta entrega não está mais aberta nas lojas prioritárias.' });
+      const { reqs, ...resto } = r;
+      if (reqs.total) somarProximos(reqs);
+      // Só entrega buscando recebe oferta, e só se o Radar já estiver com ela no alerta
+      resto.whatsappAtivo = false;
+      if (r.buscando && !r.semColeta) {
+        try {
+          const q = await noRadar('/api/proximos?pedido=' + pedido);
+          if (q.ok) {
+            const enviados = new Set(((await q.json()).lista || []).filter((e) => e.whatsappEnviado).map((e) => String(e.id)));
+            resto.whatsappAtivo = true;
+            resto.lista = resto.lista.map((e) => ({ ...e, whatsappEnviado: enviados.has(String(e.id)) }));
+          }
+        } catch (e) { log('Radar indisponível para o WhatsApp:', String(e?.message || e).slice(0, 100)); }
+      }
+      json(200, resto);
+    }).catch((e) => { log('entregadores próximos falharam:', String(e?.message || e).slice(0, 160)); json(502, { erro: 'Não foi possível ler os entregadores agora. Tente de novo em instantes.' }); });
+  }
+  if (url.pathname === '/api/whatsapp' && req.method === 'POST') {
+    const json = (st, o) => { res.writeHead(st, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(o)); };
+    let corpo = '', grande = false;
+    req.on('data', (c) => { corpo += c; if (corpo.length > 2048) { grande = true; req.destroy(); } });
+    req.on('end', async () => {
+      if (grande) return;
+      let d;
+      try { d = JSON.parse(corpo); } catch { return json(400, { erro: 'Pedido inválido.' }); }
+      if (!/^\d{1,12}$/.test(String(d.pedido)) || !/^\d{1,12}$/.test(String(d.entregador))) return json(400, { erro: 'Pedido inválido.' });
+      if (!pedidoBuscando(d.pedido)) return json(404, { erro: 'Esta entrega não está mais buscando entregador.' });
+      try {
+        // o Radar confere de novo a entrega e a distância, e espera a confirmação do envio (até 24 s)
+        const r = await noRadar('/api/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pedido: d.pedido, entregador: d.entregador }) }, 40000);
+        json(r.status, await r.json());
+      } catch (e) {
+        log('WhatsApp pelo Radar falhou:', String(e?.message || e).slice(0, 100));
+        json(502, { erro: 'Sem resposta do Radar. Confira no GHL antes de tentar de novo.' });
+      }
+    });
+    return;
   }
   if (url.pathname === '/api/eventos') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });

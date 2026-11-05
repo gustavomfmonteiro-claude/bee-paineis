@@ -2,6 +2,7 @@
 //   coletar()           indicadores por dia e por loja (a cada 5 min, filtrada pelas lojas do grupo)
 //   lerBuscando()       entregas em busca e em andamento nas lojas prioritárias (a cada minuto, só em memória)
 //   lerEntregadores()   histórico de entregadores das lojas 933, 495 e 7362
+//   entregadoresProximos()  entregadores até 3 km da loja de uma entrega aberta, sob demanda
 // Dado de cliente não é guardado; do entregador ficam só id e nome.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -314,9 +315,18 @@ function inicioEtapa(d) {
   return ultimo;
 }
 
+// Coleta e status da entrega: só as entregas da última leitura aceitam a consulta de entregadores próximos.
+const coordsColeta = (p) => {
+  const w = (p.waypoints || []).find((x) => x.type === 'pickup');
+  const lat = Number(w?.latitude), lng = Number(w?.longitude);
+  return lat && lng ? [lat, lng] : null;
+};
+let origens = new Map();
+
 export async function lerBuscando(hoje) {
   const reqs = { total: 0, login: 0, paginas: 0, motivos: 0, repeticoes: 0 };
   const lista = [], andamento = [];
+  const novasOrigens = new Map();
   const agora = Date.now();
   const minutosDesde = (t) => (t == null || isNaN(t) ? null : Math.max(0, Math.floor((agora - t) / 60000)));
   const filtroStatus = ['10', ...STATUS_ANDAMENTO].map((s, i) => [`filters[status][$in][${i}]`, s]);
@@ -324,6 +334,7 @@ export async function lerBuscando(hoje) {
   await listar([['filters[created_at][$gte]', somaDias(hoje, -1) + ' 00:00:00'], ['filters[created_at][$lte]', hoje + ' 23:59:59'], ...filtroStatus], IDS_PRIORITARIAS, reqs, (p) => {
     const st = String(p.status);
     if (!IDS_PRIORITARIAS.includes(String(p.merchant?.id))) return;
+    novasOrigens.set(String(p.id), { coords: coordsColeta(p), buscando: st === '10' });
     const base = {
       id: p.id,
       bandeira: /EXTRAFARMA/i.test(p.merchant.name) ? 'Extrafarma' : 'Pague Menos',
@@ -349,7 +360,66 @@ export async function lerBuscando(hoje) {
   });
   lista.sort((a, b) => (b.min ?? 0) - (a.min ?? 0));
   andamento.sort((a, b) => (b.minTotal ?? 0) - (a.minTotal ?? 0));
+  origens = novasOrigens;
   return { em: new Date().toISOString(), lista, andamento, reqs };
+}
+
+// ---------------------------------------------------- entregadores até 3 km
+// Mesma conta do Radar: distância em linha reta da coleta até o GPS do /dashboard. O GPS e a foto do
+// entregador não saem daqui. O CPF fica só em memória e vai mascarado sem login no painel.
+const RAIO_KM = 3;
+const MAX_CPF_POR_CONSULTA = 40;
+const distanciaKm = ([a, b], [c, d]) => {
+  const rad = Math.PI / 180, s1 = Math.sin((c - a) * rad / 2), s2 = Math.sin((d - b) * rad / 2);
+  return 2 * 6371 * Math.asin(Math.sqrt(s1 * s1 + Math.cos(a * rad) * Math.cos(c * rad) * s2 * s2));
+};
+const veiculoDe = (v) => { const s = String(v || '').toLowerCase(); return /moto/.test(s) ? 'Moto' : /bike|bicy|bicicleta/.test(s) ? 'Bike' : /car|van|pickup/.test(s) ? 'Carro' : 'Outro'; };
+export const pedidoBuscando = (pedido) => !!origens.get(String(pedido))?.buscando;
+export function formataCpf(valor, completo) {
+  const d = String(valor || '').replace(/\D/g, '');
+  if (d.length !== 11) return null;
+  return completo ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}` : `***.${d.slice(3, 6)}.${d.slice(6, 9)}-**`;
+}
+const cpfs = new Map();
+let cacheOnline = { t: 0, dados: null, voo: null };
+async function onlineAgora(reqs) {
+  // 30 s de cache: vários cliques seguidos custam uma requisição só
+  if (cacheOnline.dados && Date.now() - cacheOnline.t < 30e3) return cacheOnline.dados;
+  cacheOnline.voo ||= api('/dashboard?franchiseId=' + FRANQUIA_ID, reqs, 'dashboard').then((j) => {
+    cacheOnline.dados = (j?.data || j || {}).online_deliverymen || {};
+    cacheOnline.t = Date.now();
+    return cacheOnline.dados;
+  }).finally(() => { cacheOnline.voo = null; });
+  return cacheOnline.voo;
+}
+// `null` = a entrega não está aberta nas lojas prioritárias
+export async function entregadoresProximos(pedido) {
+  const chave = String(pedido);
+  if (!origens.has(chave)) return null;
+  const reqs = { total: 0, login: 0, dashboard: 0, cadastro: 0, repeticoes: 0 };
+  const { coords: origem, buscando } = origens.get(chave);
+  if (!origem) return { em: new Date().toISOString(), raioKm: RAIO_KM, semColeta: true, lista: [], reqs };
+  const od = await onlineAgora(reqs);
+  const perto = [[od.available || [], false], [od.in_delivery || [], true]].flatMap(([l, emEntrega]) => l.map((e) => {
+    const lat = Number(e.latitude), lng = Number(e.longitude);
+    return lat && lng ? { id: e.id, nome: String(e.name || '—').replace(/\s+/g, ' ').trim(), telefone: e.phone ? String(e.phone) : null, veiculo: veiculoDe(e.vehicle_type), emEntrega, km: Math.round(distanciaKm(origem, [lat, lng]) * 100) / 100 } : null;
+  })).filter((e) => e && e.km <= RAIO_KM).sort((a, b) => a.emEntrega - b.emEntrega || a.km - b.km);
+
+  // Cadastro um por vez, na ordem da lista; quem passar do teto aparece sem CPF até a próxima consulta.
+  let lidos = 0;
+  for (const e of perto) {
+    if (cpfs.has(e.id) || lidos >= MAX_CPF_POR_CONSULTA) continue;
+    try {
+      const j = await api('/deliverymen/' + e.id, reqs, 'cadastro');
+      cpfs.set(e.id, j?.data?.document || null);
+      lidos++;
+      await espera(150);
+    } catch (erro) { console.error('cadastro do entregador', e.id, erro.message); break; }
+  }
+  return {
+    em: new Date().toISOString(), raioKm: RAIO_KM, cpfCompleto: DESTINO_COMPLETO, buscando, online: (od.available || []).length + (od.in_delivery || []).length, reqs,
+    lista: perto.map((e) => ({ ...e, cpf: formataCpf(cpfs.get(e.id), DESTINO_COMPLETO) })),
+  };
 }
 
 // ----------------------------------------------------------------- entregadores

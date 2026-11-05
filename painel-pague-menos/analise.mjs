@@ -141,6 +141,105 @@ export function rankingEntregadores(porDia, hoje) {
   });
 }
 
+// ------------------------------------------------------------------- evolução
+// Compara só dias fechados. `porDia` = { dia: { lojaId: [demanda, finalizadas, canceladas] } }.
+const somaData = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 86400e3).toISOString().slice(0, 10);
+const diaSemana = (d) => new Date(d + 'T12:00:00Z').getUTCDay();
+const ultimoDoMes = (a, m) => new Date(Date.UTC(a, m, 0)).getUTCDate();
+const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const curta = (d) => `${d.slice(8)}/${d.slice(5, 7)}`;
+const ESTAVEL_PCT = 5;
+
+function somaPeriodo(porDia, de, ate) {
+  const lojas = {};
+  let dias = 0;
+  for (let d = de; d <= ate; d = somaData(d, 1)) {
+    const v = porDia[d];
+    if (!v) continue;
+    dias++;
+    for (const [id, x] of Object.entries(v)) {
+      const t = (lojas[id] ||= [0, 0, 0]);
+      for (let i = 0; i < 3; i++) t[i] += x[i] || 0;
+    }
+  }
+  return { dias, lojas };
+}
+const variacao = (atual, base) => (base ? Math.round((1000 * (atual - base)) / base) / 10 : null);
+
+function visao(porDia, nomes, periodo, titulo, serie) {
+  const atual = somaPeriodo(porDia, periodo.de, periodo.ate);
+  const base = somaPeriodo(porDia, periodo.baseDe, periodo.baseAte);
+  const temBase = base.dias > 0;
+  const band = (id) => (/EXTRAFARMA/i.test(nomes[id] || '') ? 'EF' : 'PM');
+  const grupo = { total: [0, 0, 0, 0, 0, 0], PM: [0, 0, 0, 0, 0, 0], EF: [0, 0, 0, 0, 0, 0] };
+  const ids = new Set([...Object.keys(atual.lojas), ...Object.keys(base.lojas)]);
+  const lojas = [...ids].map((id) => {
+    const a = atual.lojas[id] || [0, 0, 0], b = base.lojas[id] || [0, 0, 0], g = band(id);
+    for (const c of ['total', g]) for (let i = 0; i < 3; i++) { grupo[c][i] += a[i]; grupo[c][i + 3] += b[i]; }
+    const nome = nomes[id] || 'Loja ' + id;
+    return { id, ...identificar(nome), prio: PRIORITARIAS.includes(identificar(nome).num), dem: a[0], fin: a[1], canc: a[2], base: b[0], dif: a[0] - b[0], pct: temBase ? variacao(a[0], b[0]) : null, taxaCanc: pct(a[2], a[0]), taxaCancBase: pct(b[2], b[0]) };
+  });
+  const resumo = (x) => ({ dem: x[0], fin: x[1], canc: x[2], base: x[3], finBase: x[4], cancBase: x[5], pct: temBase ? variacao(x[0], x[3]) : null, taxaCanc: pct(x[2], x[0]), taxaCancBase: pct(x[5], x[3]) });
+  const comBase = temBase ? lojas : [];
+  return {
+    titulo, de: periodo.de, ate: periodo.ate, baseDe: periodo.baseDe, baseAte: periodo.baseAte, temBase,
+    diasAtual: atual.dias, diasBase: base.dias,
+    grupo: { total: resumo(grupo.total), PM: resumo(grupo.PM), EF: resumo(grupo.EF) },
+    contagem: {
+      ganhando: comBase.filter((l) => l.base && l.pct >= ESTAVEL_PCT).length,
+      perdendo: comBase.filter((l) => l.base && l.pct <= -ESTAVEL_PCT).length,
+      estaveis: comBase.filter((l) => l.base && Math.abs(l.pct) < ESTAVEL_PCT).length,
+      novas: comBase.filter((l) => !l.base && l.dem).length,
+    },
+    ganhos: comBase.filter((l) => l.dif > 0).sort((a, b) => b.dif - a.dif || b.dem - a.dem).slice(0, TOP),
+    perdas: comBase.filter((l) => l.dif < 0).sort((a, b) => a.dif - b.dif || b.base - a.base).slice(0, TOP),
+    lojas: lojas.sort((a, b) => b.dif - a.dif || b.dem - a.dem),
+    serie,
+  };
+}
+
+function pontoSerie(porDia, nomes, rotulo, de, ate, limite, parcial) {
+  const s = somaPeriodo(porDia, de, ate > limite ? limite : ate);
+  let PM = 0, EF = 0;
+  for (const [id, x] of Object.entries(s.lojas)) { if (/EXTRAFARMA/i.test(nomes[id] || '')) EF += x[0]; else PM += x[0]; }
+  return { rotulo, de, ate: ate > limite ? limite : ate, PM, EF, parcial: !!parcial };
+}
+
+export function evolucao(porDia, nomes, pedidoAte) {
+  const fechados = Object.keys(porDia).sort();
+  if (!fechados.length) return null;
+  const primeiro = fechados[0], ultimo = fechados[fechados.length - 1];
+  const ate = /^\d{4}-\d{2}-\d{2}$/.test(pedidoAte || '') && pedidoAte >= primeiro && pedidoAte <= ultimo ? pedidoAte : ultimo;
+  const [ano, mes, dia] = ate.split('-').map(Number);
+
+  const inicioSemana = (d) => somaData(d, -((diaSemana(d) + 6) % 7)); // segunda-feira
+  const seg = inicioSemana(ate), diasSemana = Math.round((Date.parse(ate) - Date.parse(seg)) / 86400e3);
+  const iniMes = ate.slice(0, 8) + '01';
+  const anoBase = mes === 1 ? ano - 1 : ano, mesBase = mes === 1 ? 12 : mes - 1;
+  const fimBase = Math.min(dia, ultimoDoMes(anoBase, mesBase));
+  const baseMes = `${anoBase}-${String(mesBase).padStart(2, '0')}`;
+
+  const serieDias = [];
+  for (let i = 29; i >= 0; i--) { const d = somaData(ate, -i); if (d >= primeiro) serieDias.push(pontoSerie(porDia, nomes, curta(d), d, d, ate)); }
+  const serieSemanas = [];
+  for (let i = 15; i >= 0; i--) { const d = somaData(seg, -7 * i); if (somaData(d, 6) >= primeiro) serieSemanas.push(pontoSerie(porDia, nomes, curta(d), d, somaData(d, 6), ate, somaData(d, 6) > ate)); }
+  const serieMeses = [];
+  for (let m = Number(primeiro.slice(5, 7)); m <= mes; m++) {
+    const ini = `${ano}-${String(m).padStart(2, '0')}-01`, fim = `${ano}-${String(m).padStart(2, '0')}-${String(ultimoDoMes(ano, m)).padStart(2, '0')}`;
+    serieMeses.push(pontoSerie(porDia, nomes, MESES[m - 1], ini, fim, ate, fim > ate));
+  }
+
+  return {
+    ate, primeiro, ultimo,
+    visoes: {
+      dia: visao(porDia, nomes, { de: ate, ate, baseDe: somaData(ate, -7), baseAte: somaData(ate, -7) }, 'Dia contra o mesmo dia da semana anterior', serieDias),
+      diaAnterior: visao(porDia, nomes, { de: ate, ate, baseDe: somaData(ate, -1), baseAte: somaData(ate, -1) }, 'Dia contra o dia anterior', serieDias),
+      semana: visao(porDia, nomes, { de: seg, ate, baseDe: somaData(seg, -7), baseAte: somaData(seg, diasSemana - 7) }, diasSemana === 6 ? 'Semana contra a semana anterior' : 'Semana até o dia escolhido contra os mesmos dias da semana anterior', serieSemanas),
+      mes: visao(porDia, nomes, { de: iniMes, ate, baseDe: `${baseMes}-01`, baseAte: `${baseMes}-${String(fimBase).padStart(2, '0')}` }, 'Mês até o dia escolhido contra o mesmo intervalo do mês anterior', serieMeses),
+    },
+  };
+}
+
 export function analisarDia(d) {
   const brutas = Object.entries(d.lojas);
   const perdidas = {};
