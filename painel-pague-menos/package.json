@@ -1,0 +1,9 @@
+{
+  "name": "painel-pague-menos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Demanda operacional da Pague Menos e Extrafarma: coleta diária às 23:00 e relatório executivo.",
+  "scripts": { "start": "node server.mjs" },
+  "engines": { "node": ">=20" }
+}

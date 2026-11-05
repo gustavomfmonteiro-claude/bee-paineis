@@ -1,0 +1,14 @@
+# Este repositório versiona só os painéis abaixo. Tudo o mais nesta pasta tem dados de clientes,
+# entregadores e planilhas e fica de fora: para entrar, precisa ser liberado aqui, pasta por pasta.
+/*
+!/.gitignore
+!/README.md
+!/painel-bee/
+!/painel-pague-menos/
+
+# Nunca versionar acessos nem dados coletados
+.env
+.env.*
+cache/
+node_modules/
+*.log
