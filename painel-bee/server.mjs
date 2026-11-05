@@ -73,7 +73,7 @@ const whatsapp = criarEnvio({
   limiteAbertas: Number(cfg('WHATSAPP_LIMITE_ABERTAS', 3)),
   blocoPorEntrega: Number(cfg('WHATSAPP_BLOCO_POR_ENTREGA', 10)),
   pausaBlocoMs: Number(cfg('WHATSAPP_PAUSA_BLOCO_MIN', 2)) * 60e3,
-  porRodada: Number(cfg('WHATSAPP_POR_RODADA', 3)),
+  limiteGhl10s: Number(cfg('WHATSAPP_GHL_POR_10S', 80)),
   pausaAposAtribuirMs: Number(cfg('WHATSAPP_PAUSA_MIN', 15)) * 60e3,
   limiteHora: Number(cfg('WHATSAPP_LIMITE_HORA', 60)),
   esperaStatusMs: Number(cfg('WHATSAPP_ESPERA_MS', 24000)),
@@ -189,7 +189,8 @@ async function rodarAlerta() {
     if (WHATSAPP_AUTO) {
       await whatsapp.rodadaAuto(leitura.lista.filter((x) => WHATSAPP_AUTO_AMERICANAS || x.classe !== 'americanas'), { proximos: entregadoresProximos, detalhe: detalheAlerta, limiteDe: limiteOferta }).catch((e) => log('whatsapp auto falhou:', e?.message));
     }
-    leitura.lista = leitura.lista.map((p) => ({ ...p, whatsapp: whatsapp.tentativas(p.id), whatsappRetoma: whatsapp.retomaEm(p.id) }));
+    leitura.lista = leitura.lista.map((p) => ({ ...p, whatsapp: whatsapp.tentativas(p.id), whatsappRetoma: whatsapp.retomaEm(p.id), whatsappAviso: whatsapp.aviso(p.id) }));
+    leitura.whatsappPausaAte = whatsapp.pausaGeralAte();
     docs['live/alerta'] = leitura;
   } catch (e) {
     docs['live/alerta'] = { ...(docs['live/alerta'] || { lista: [] }), erro: String(e?.message || e).slice(0, 160), erroEm: new Date().toISOString() };

@@ -448,7 +448,7 @@ body.franq-sem-acesso .wrap > *:not(.top):not(#franqAviso){display:none}
     <div class="ph"><div class="sectitle"><span class="tag bad">ALERTA</span><h2>Sem rede, grupos regionais<span class="so-principal">, Americanas e lojas selecionadas</span><span class="so-outras"> e Americanas</span> buscando há mais de 5 min</h2></div>
       <div class="al-ctl"><span class="sub" id="alertaSub">aguardando a primeira leitura…</span><button type="button" class="chip som" id="btnSom" aria-pressed="false">🔕 Som desligado</button></div></div>
     <div id="alertaCorpo"></div>
-    <div class="foot">Entregas com status "buscando" de lojas sem rede (sem key account e sem grupo regional no cadastro), de grupos regionais e da Americanas<span class="so-principal">, mais as lojas 933, 890, 495, 678 e 839 Pague Menos e 7300 e 7362 Extrafarma</span>, lidas da API a cada 1 min. <span class="so-principal">O WhatsApp automático começa com 1 min de busca nessas lojas e com 5 min em sem rede e grupos regionais; a Americanas não recebe oferta automática, só pelo botão. A cada 10 mensagens de uma entrega, o envio pausa 2 min e segue para quem ainda não recebeu; o mesmo entregador não recebe a mesma entrega duas vezes. </span>Espera contada do início da busca e atualizada a cada segundo — uma entrega aceita entre duas leituras sai da lista na leitura seguinte. Com o som ligado, cada entrega que passa de 5 min toca o alerta; enquanto houver entregas na lista, um bipe curto a cada 2 min. Clique em uma entrega para ver os entregadores online até 3 km da loja, em linha reta, pela última posição enviada pelo app, com a lista atualizada a cada 1 min.</div>
+    <div class="foot">Entregas com status "buscando" de lojas sem rede (sem key account e sem grupo regional no cadastro), de grupos regionais e da Americanas<span class="so-principal">, mais as lojas 933, 890, 495, 678 e 839 Pague Menos e 7300 e 7362 Extrafarma</span>, lidas da API a cada 1 min. <span class="so-principal">O WhatsApp automático começa com 1 min de busca nessas lojas e com 5 min em sem rede e grupos regionais; a Americanas não recebe oferta automática, só pelo botão. As mensagens saem em lotes de 10 por entrega, para os disponíveis mais próximos, com pausa de 2 min entre um lote e outro; mensagem recusada pelo WhatsApp não conta no lote, e o mesmo entregador não recebe a mesma entrega duas vezes. </span>Espera contada do início da busca e atualizada a cada segundo — uma entrega aceita entre duas leituras sai da lista na leitura seguinte. Com o som ligado, cada entrega que passa de 5 min toca o alerta; enquanto houver entregas na lista, um bipe curto a cada 2 min. Clique em uma entrega para ver os entregadores online até 3 km da loja, em linha reta, pela última posição enviada pelo app, com a lista atualizada a cada 1 min.</div>
   </section>
 
   <!-- visão da franquia inteira -->
@@ -1571,7 +1571,7 @@ function tickAlerta() {
   if (novos.length) alarme(false); else if (acima.length && agora - ultimoBip > 120e3) alarme(true);
   box.classList.toggle('ativo', acima.length > 0);
   document.title = acima.length ? '(' + acima.length + ') ⚠ ' + tituloBase : tituloBase;
-  $('alertaSub').textContent = 'leitura das ' + new Date(ALERTA.em).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) + ' · a cada 1 min' + (window.WHATSAPP_AUTO ? ' · WhatsApp automático ligado' : '');
+  $('alertaSub').textContent = 'leitura das ' + new Date(ALERTA.em).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) + ' · a cada 1 min' + (window.WHATSAPP_AUTO ? (ALERTA.whatsappPausaAte > agora ? ' · WhatsApp automático pausado até ' + new Date(ALERTA.whatsappPausaAte).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) + ' por erro no GHL' : ' · WhatsApp automático ligado') : '');
   var corpo;
   if (!acima.length) {
     corpo = '<div class="al-calmo">✓ Nenhuma entrega deste alerta buscando há mais de ' + LIMITE_MIN + ' min' +
@@ -1583,11 +1583,11 @@ function tickAlerta() {
       acima.map(function (x) {
         var tipo = x.classe === 'loja' || x.classe === 'americanas' ? esc(x.grupo) : x.classe === 'gr' ? 'Grupo regional' + (x.grupo ? ' · ' + esc(x.grupo) : '') : 'Sem rede';
         var aberta = proxAberto === String(x.id);
-        return '<tr data-prox="' + x.id + '"' + (aberta ? ' class="aberta"' : '') + '><td>' + esc(x.loja) + (x.agendado ? ' <span class="pill n">agendado</span>' : '') + '</td>' +
+        return '<tr data-prox="' + x.id + '"' + (aberta ? ' class="aberta"' : '') + '><td>' + esc(x.loja) + (x.agendado ? ' <span class="pill n">agendado</span>' : '') + (x.whatsappAviso ? '<small style="display:block;margin-top:3px;color:var(--warn);white-space:normal">' + esc(x.whatsappAviso) + '</small>' : '') + '</td>' +
           '<td style="text-align:left; font-family:var(--body); white-space:normal">' + tipo + '</td>' +
           '<td style="text-align:left; font-family:var(--body); white-space:normal">' + esc(x.bairro) + '</td>' +
           '<td>' + (x.desde || '—') + '</td><td class="esp" style="color:' + corEspera(x.min) + '">' + esperaTxt(x.min) + '</td><td style="color:var(--ink3)">#' + x.id + '</td>' +
-          '<td>' + (x.whatsapp ? '<small style="display:block;margin-bottom:3px;color:var(--ok);white-space:nowrap">WhatsApp ' + x.whatsapp + (x.whatsappRetoma > agora ? ' · pausa até ' + new Date(x.whatsappRetoma).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) : '') + '</small>' : '') + '<button type="button" class="prox-btn" aria-expanded="' + aberta + '">Até 3 km ' + (aberta ? '▴' : '▾') + '</button></td></tr>' +
+          '<td>' + (x.whatsapp ? '<small style="display:block;margin-bottom:3px;color:var(--ok);white-space:nowrap">WhatsApp ' + x.whatsapp + (x.whatsappRetoma > agora ? '<br>pausa até ' + new Date(x.whatsappRetoma).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) : '') + '</small>' : '') + '<button type="button" class="prox-btn" aria-expanded="' + aberta + '">Até 3 km ' + (aberta ? '▴' : '▾') + '</button></td></tr>' +
           (aberta ? '<tr><td colspan="7" class="al-prox">' + htmlProximos(proxDados[proxAberto]) + '</td></tr>' : '');
       }).join('') + '</tbody></table></div>';
   }

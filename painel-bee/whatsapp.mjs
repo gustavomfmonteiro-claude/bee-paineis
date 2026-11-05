@@ -10,7 +10,7 @@ const HORA_MS = 60 * 60e3, INTERVALO_STATUS_MS = 4000;
 const RECUSA_MS = 6 * HORA_MS;
 // Por quanto tempo depois de vencer a oferta o painel ainda lê a conversa, para o "Sim" não ficar sem resposta
 const LEITURA_TARDIA_MS = 20 * 60e3;
-const FOLGA_PAUSA_MS = 5000;
+const FOLGA_PAUSA_MS = 5000, JANELA_GHL_MS = 10e3;
 // Campos do contato que o template alocar_detalhes lê
 const CAMPOS = { loja: 'contact.bee__loja', origem: 'contact.bee__endereco_origem', destino: 'contact.bee__endereco_destino', distancia: 'contact.bee__distancia_km', valor: 'contact.bee__valor_entregador' };
 // O Meta recusa variável com quebra de linha, tabulação ou 4+ espaços seguidos
@@ -46,15 +46,24 @@ export function separaNome(nome) {
   return { firstName: tituloNome(partes[0] || 'Entregador'), lastName: partes.slice(1).map(tituloNome).join(' ') };
 }
 
-export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit, locationId, tag, arquivo, arquivoOfertas, chaveWebhook, validadeOfertaMs = 5 * 60e3, respostaTardiaMs = 20 * 60e3, limiteAbertas = 3, blocoPorEntrega = 10, pausaBlocoMs = 2 * 60e3, porRodada = 3, pausaAposAtribuirMs = 15 * 60e3, limiteHora = 60, esperaStatusMs = 24000, intervaloStatusMs = INTERVALO_STATUS_MS, log = () => {} }) {
+export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit, locationId, tag, arquivo, arquivoOfertas, chaveWebhook, validadeOfertaMs = 5 * 60e3, respostaTardiaMs = 20 * 60e3, limiteAbertas = 3, blocoPorEntrega = 10, pausaBlocoMs = 2 * 60e3, pausaAposAtribuirMs = 15 * 60e3, limiteHora = 60, limiteGhl10s = 80, esperaStatusMs = 24000, intervaloStatusMs = INTERVALO_STATUS_MS, log = () => {} }) {
   const ativo = !!(pit && locationId && tag);
   const enviados = new Set(), emAndamento = new Set(), pedidosEmAtribuicao = new Set();
   const entregadoresEmEnvio = new Set(), tentativas = new Map(), jaTentados = new Set(), recusadosAte = new Map();
   let ofertas = {}, idsCampos = null, pausadoAte = 0, conferindoTardias = false;
-  const conversasLidas = new Map(), ultimoEnvio = new Map();
-  // A cada `blocoPorEntrega` mensagens a entrega descansa `pausaBlocoMs`, contados da última mensagem do
-  // bloco, e depois segue para os entregadores que ainda não receberam. A folga evita que a variação de
-  // 1 ou 2 s entre as leituras do alerta, que rodam de minuto em minuto, transforme 2 min em 3.
+  const conversasLidas = new Map(), ultimoEnvio = new Map(), avisos = new Map();
+  // O GHL aceita 100 requisições a cada 10 s (cabeçalho x-ratelimit-max). Um lote gasta umas 5 por envio, mais a
+  // leitura do status: toda chamada passa por esta fila, para um 429 não derrubar o lote no meio.
+  const chamadasGhl = [];
+  let filaGhl = Promise.resolve();
+  const vagaGhl = () => (filaGhl = filaGhl.then(async () => {
+    while (chamadasGhl.length && Date.now() - chamadasGhl[0] >= JANELA_GHL_MS) chamadasGhl.shift();
+    if (chamadasGhl.length >= limiteGhl10s) { await dorme(JANELA_GHL_MS - (Date.now() - chamadasGhl[0])); chamadasGhl.shift(); }
+    chamadasGhl.push(Date.now());
+  }));
+  // As mensagens saem em lotes de `blocoPorEntrega`: fechado o lote, a entrega descansa `pausaBlocoMs`, contados
+  // da última mensagem, e depois segue para quem ainda não recebeu. A folga evita que a variação de 1 ou 2 s
+  // entre as leituras do alerta, que rodam de minuto em minuto, transforme 2 min em 3.
   const retomaEm = (pedido) => {
     const p = String(pedido), n = tentativas.get(p) || 0;
     if (!n || n % blocoPorEntrega) return 0;
@@ -86,7 +95,7 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
         // `tag: false` = parou antes de acionar o Workflow, nenhuma mensagem saiu
         if (r.tag !== false) {
           const p = String(r.pedido);
-          tentativas.set(p, (tentativas.get(p) || 0) + 1);
+          if (r.status !== 'failed') tentativas.set(p, (tentativas.get(p) || 0) + 1); // recusada não conta no lote
           ultimoEnvio.set(p, Math.max(ultimoEnvio.get(p) || 0, Date.parse(r.em)));
           jaTentados.add(r.pedido + ':' + r.entregador);
         }
@@ -96,18 +105,35 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
     } catch {}
   }
   const chave = (pedido, id) => pedido + ':' + id;
+  // Por que um entregador disponível fica fora da oferta automática desta entrega (null = pode receber)
+  const motivoFora = (pedido, e, agora) => {
+    if (!normalizaTelefone(e.telefone)) return 'sem telefone';
+    if (jaTentados.has(chave(pedido, e.id)) || enviados.has(chave(pedido, e.id))) return 'já receberam';
+    if (entregadoresEmEnvio.has(String(e.id)) || ofertaAberta(e.id)) return 'em outra oferta';
+    return (recusadosAte.get(String(e.id)) || 0) > agora ? 'recusados pelo WhatsApp' : null;
+  };
 
   async function ghl(caminho, versao, opcoes = {}) {
-    const r = await fetch(base + caminho, {
-      ...opcoes,
-      headers: { Authorization: 'Bearer ' + pit, Version: versao, Accept: 'application/json', ...(opcoes.body ? { 'Content-Type': 'application/json' } : {}) },
-      signal: AbortSignal.timeout(20e3),
-    });
-    const texto = await r.text();
-    let json = null;
-    try { json = JSON.parse(texto); } catch {}
-    if (!r.ok) throw new ErroEnvio(r.status === 401 || r.status === 403 ? 'token' : 'ghl', `GHL respondeu ${r.status} em ${caminho.split('?')[0]}: ${String(json?.message || texto).slice(0, 160)}`);
-    return json;
+    for (let tentativa = 0; ; tentativa++) {
+      await vagaGhl();
+      const r = await fetch(base + caminho, {
+        ...opcoes,
+        headers: { Authorization: 'Bearer ' + pit, Version: versao, Accept: 'application/json', ...(opcoes.body ? { 'Content-Type': 'application/json' } : {}) },
+        signal: AbortSignal.timeout(20e3),
+      });
+      const texto = await r.text();
+      // 429 = o GHL não processou o pedido, então repetir é seguro: o resto do lote não precisa parar por isso
+      if (r.status === 429 && tentativa < 2) {
+        const espera = Math.min(Number(r.headers.get('retry-after')) * 1000 || JANELA_GHL_MS, 30e3);
+        log('whatsapp: GHL pediu para esperar', espera / 1000, 's em', caminho.split('?')[0]);
+        await dorme(espera);
+        continue;
+      }
+      let json = null;
+      try { json = JSON.parse(texto); } catch {}
+      if (!r.ok) throw new ErroEnvio(r.status === 401 || r.status === 403 ? 'token' : 'ghl', `GHL respondeu ${r.status} em ${caminho.split('?')[0]}: ${String(json?.message || texto).slice(0, 160)}`);
+      return json;
+    }
   }
 
   async function contatoDe(entregador, digitos) {
@@ -179,11 +205,16 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
     webhookAtivo: !!chaveWebhook,
     tentativas: (pedido) => tentativas.get(String(pedido)) || 0,
     retomaEm,
+    // o que a tela mostra quando o envio não anda: por que o lote ficou incompleto, e a pausa geral por erro do GHL
+    aviso: (pedido) => avisos.get(String(pedido)) || null,
+    pausaGeralAte: () => (Date.now() < pausadoAte ? pausadoAte : 0),
 
-    // Uma rodada por leitura do alerta: até `porRodada` entregadores disponíveis mais próximos por entrega,
-    // sem passar do fim do bloco. Entrega em pausa fica de fora; entrega que sai do alerta sai da rodada seguinte.
-    // `limiteDe(entrega)` diz em quantos minutos de busca a entrega passa a receber ofertas.
+    // Uma rodada por leitura do alerta: o lote inteiro sai de uma vez, para os disponíveis mais próximos. A mensagem
+    // recusada pelo WhatsApp é reposta na rodada seguinte. Entrega em pausa fica de fora; entrega que sai do alerta
+    // sai da rodada seguinte. `limiteDe(entrega)` diz em quantos minutos de busca a entrega passa a receber ofertas.
     async rodadaAuto(alertas, { proximos, detalhe, limiteDe = () => 5 }) {
+      const anteriores = new Map(avisos);
+      avisos.clear();
       if (Date.now() < pausadoAte) return 0;
       const agora = Date.now();
       const lista = alertas.filter((x) => x.origem && !x.agendado && x.desdeIso && agora - Date.parse(x.desdeIso) >= limiteDe(x) * 60e3).sort((a, b) => a.desdeIso.localeCompare(b.desdeIso));
@@ -193,13 +224,27 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
         const dados = detalhe(x.id);
         if (retomaEm(x.id) || !dados) continue;
         const { lista: perto } = await proximos(x.origem);
-        const escolhidos = perto.filter((e) => !e.emEntrega && normalizaTelefone(e.telefone) && !jaTentados.has(x.id + ':' + e.id) && !enviados.has(chave(x.id, e.id)) && !entregadoresEmEnvio.has(String(e.id)) && !ofertaAberta(e.id) && !((recusadosAte.get(String(e.id)) || 0) > agora)).slice(0, Math.min(restam, porRodada));
+        const fora = {};
+        const aptos = perto.filter((e) => {
+          if (e.emEntrega) return false;
+          const motivo = motivoFora(x.id, e, agora);
+          if (motivo) fora[motivo] = (fora[motivo] || 0) + 1;
+          return !motivo;
+        });
+        envios = envios.filter((t) => Date.now() - t < HORA_MS);
+        const vagas = Math.max(0, limiteHora - envios.length);
+        const escolhidos = aptos.slice(0, Math.min(restam, vagas));
+        const motivos = Object.entries(fora).map(([m, n]) => `${m}: ${n}`).join(', ');
+        const aviso = vagas < Math.min(restam, aptos.length) ? `teto de ${limiteHora} mensagens por hora atingido`
+          : aptos.length >= restam ? null
+          : motivos ? `sem mais entregadores para este lote (${motivos})` : 'sem mais entregadores disponíveis até 3 km';
+        if (aviso) avisos.set(String(x.id), aviso);
+        if (escolhidos.length || (aviso && aviso !== anteriores.get(String(x.id)))) log('whatsapp rodada:', x.id, `${escolhidos.length} de ${restam} do lote`, aviso || '');
         for (const e of escolhidos) {
           disparados++;
           // não espera a confirmação de entrega (até 24 s): a rodada não pode segurar a leitura do alerta
           this.enviar(x.id, e, dados).catch((erro) => {
             if (erro?.cod === 'token' || erro?.cod === 'ghl') { pausadoAte = Date.now() + 5 * 60e3; log('whatsapp auto: pausado por 5 min,', erro.message); }
-            else if (erro?.cod === 'limite') { pausadoAte = Date.now() + 60e3; log('whatsapp auto:', erro.message); }
             else log('whatsapp auto:', x.id, e.id, erro?.message);
           });
         }
@@ -309,7 +354,9 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
         contactId = await contatoDe(entregador, digitos);
         // preenche o que o template lê e guarda a oferta antes da tag: o "Sim" pode chegar a qualquer momento
         await gravaCampos(contactId, camposDoTemplate(dados));
-        ofertas[contactId] = { pedido, entregador: entregador.id, merchantId: dados.merchantId, loja: dados.loja, em: new Date(marca).toISOString(), expira: new Date(marca + validadeOfertaMs).toISOString(), estado: 'aberta' };
+        // o prazo conta de agora, não da entrada na fila do GHL: é quando o Workflow começa a esperar o botão
+        const criada = Date.now();
+        ofertas[contactId] = { pedido, entregador: entregador.id, merchantId: dados.merchantId, loja: dados.loja, em: new Date(criada).toISOString(), expira: new Date(criada + validadeOfertaMs).toISOString(), estado: 'aberta' };
         salvaOfertas();
         // remove antes de reaplicar: só uma tag nova gera o evento que aciona o Workflow
         await ghl(`/contacts/${contactId}/tags`, '2021-07-28', { method: 'DELETE', body: JSON.stringify({ tags: [tag] }) });
@@ -329,7 +376,9 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
         if (!registro.erro) registro.erro = String(e?.message || e).slice(0, 200);
         registro.status = 'failed';
         envios = envios.filter((t) => t !== marca);
-        if (!registro.tag) { tentativas.set(pid, Math.max(0, (tentativas.get(pid) || 1) - 1)); jaTentados.delete(pedido + ':' + entregador.id); }
+        // Não chegou ao entregador: libera o lugar no lote. Quem o WhatsApp recusou continua sem receber esta entrega de novo.
+        tentativas.set(pid, Math.max(0, (tentativas.get(pid) || 1) - 1));
+        if (!registro.tag) jaTentados.delete(pedido + ':' + entregador.id);
         if (e?.cod === 'recusado') recusadosAte.set(idEnt, Date.now() + RECUSA_MS);
         if (contactId && ofertas[contactId]?.pedido === pedido && ofertas[contactId].estado === 'aberta') { ofertas[contactId].estado = 'falhou'; salvaOfertas(); }
         throw e instanceof ErroEnvio ? e : new ErroEnvio('ghl', 'Não foi possível falar com o GHL agora.');
