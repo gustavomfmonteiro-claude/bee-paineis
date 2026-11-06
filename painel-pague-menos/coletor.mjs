@@ -17,11 +17,17 @@ const META_MIN = 15;           // referência de 15 min em cada ponta (tempo das
 // Modalidade do pedido pelo prazo (time_to_delivery, em minutos), a mesma regra do Radar para PM/EF.
 // OTD = finalizada que chegou ao cliente dentro do prazo da própria modalidade, contado da criação.
 export const MODALIDADES = { 30: 'Super Expressa', 60: 'Expressa', 1440: 'Econômica' };
-export const PRAZO_MOD = { 'Super Expressa': 30, Expressa: 60, 'Econômica': 1440 };
+// Prazo do OTD de cada modalidade, definido pelo usuário: a Econômica conta 2 h (a API marca 24 h no pedido).
+export const PRAZO_MOD = { 'Super Expressa': 30, Expressa: 60, 'Econômica': 120 };
 export const ORDEM_MOD = ['Super Expressa', 'Expressa', 'Econômica', 'Agendada', 'Padrão'];
 export const modalidadeDe = (p) => MODALIDADES[Number(p.time_to_delivery)] || (p.schedule_time ? 'Agendada' : 'Padrão');
-// Dia gravado antes da modalidade (versão 1) é relido pelo servidor.
-export const VERSAO_DIA = 2;
+// Dia gravado numa versão anterior é relido pelo servidor. 3 = pedidos um a um e Econômica com 2 h.
+export const VERSAO_DIA = 3;
+// Pedido gravado um a um para a análise de lojas, sem dado de cliente, endereço ou entregador:
+// [loja, modalidade, situação F/C/A, hora, aceite, sem busca 0/1, ponta 1, espera na loja, ponta 2, total, km,
+//  min da busca ao cancelamento, min da criação ao cancelamento]. Tempos em minutos com 1 casa; null = sem carimbo.
+export const P = { loja: 0, mod: 1, st: 2, hora: 3, aceite: 4, semBusca: 5, p1: 6, espera: 7, p2: 8, total: 9, km: 10, cancBusca: 11, cancCriacao: 12 };
+const um = (v) => (v == null ? null : Math.round(v * 10) / 10);
 const espera = (ms) => new Promise((s) => setTimeout(s, ms));
 
 // Ids de merchant, do cadastro de lojas: 678, 7300, 933, 495, 890, 7362, 839
@@ -265,12 +271,21 @@ function somar(dias, p) {
   const ac = busca ? valido(minutos(busca, d.accepted_at), 180) : null;
   if (ac != null) { l.acSoma += ac; l.acN++; if (ac <= 5) l.ac5++; }
 
+  const km = Number(p.distance) > 0 ? Number(p.distance) / 1000 : null;
+  const reg = [id, mod, st === '50' ? 'F' : st === '60' ? 'C' : 'A', hora.slice(0, 5), um(ac), d.accepted_at && !busca ? 1 : 0,
+    null, null, null, null, km == null ? null : Math.round(km * 100) / 100, null, null];
+  D.pedidos.push(reg);
+
   if (st === '50') {
     l.fin++; D.horas[h][1]++; M.fin++;
     somarEntregador(D.entregadores, p);
     const prazo = PRAZO_MOD[mod];
     const total = prazo ? valido(minutos(criado, d.arrival_at_destination), Math.max(480, 2 * prazo)) : null;
     if (total != null) { M.n++; M.soma += total; if (total <= prazo) M.on++; }
+    reg[P.p1] = um(valido(minutos(criado, d.arrival_at_origin)));
+    reg[P.espera] = um(valido(minutos(d.arrival_at_origin, d.departure_at_origin)));
+    reg[P.p2] = um(valido(minutos(d.departure_at_origin, d.arrival_at_destination)));
+    reg[P.total] = um(valido(minutos(criado, d.arrival_at_destination), 480));
     // Pontas: 1 = criação -> chegada à loja; 2 = saída -> chegada ao cliente (tempos médios).
     const a = valido(minutos(criado, d.arrival_at_origin));
     const b = valido(minutos(d.departure_at_origin, d.arrival_at_destination));
@@ -285,7 +300,10 @@ function somar(dias, p) {
     if (!d.accepted_at) l.semAceite++;
     const min = valido(minutos(criado, d.cancelled_at));
     if (min != null && min <= 5) l.c05++;
-    D.cancs.push({ id: p.id, l: id, h: hora.slice(0, 5), min: min == null ? null : Math.round(min * 10) / 10, f: fase(d), md: mod });
+    // minutos de busca até o cancelamento: do início da busca (ou da criação, se não houve busca)
+    const mb = valido(minutos(busca || criado, d.cancelled_at));
+    reg[P.cancBusca] = um(mb); reg[P.cancCriacao] = um(min);
+    D.cancs.push({ id: p.id, l: id, h: hora.slice(0, 5), min: um(min), mb: um(mb), f: fase(d), md: mod });
   } else l.and++;
   return true;
 }
@@ -304,7 +322,7 @@ export async function coletar(dias, aoLerDia, ids = null) {
   const reqs = { total: 0, login: 0, paginas: 0, motivos: 0, repeticoes: 0 };
   const inicio = Date.now();
   const alvo = {};
-  for (const { dia, fechado } of dias) alvo[dia] = { dia, fechado, versao: VERSAO_DIA, lojas: {}, horas: Array.from({ length: 24 }, () => [0, 0, 0]), cancs: [], entregadores: {} };
+  for (const { dia, fechado } of dias) alvo[dia] = { dia, fechado, versao: VERSAO_DIA, lojas: {}, horas: Array.from({ length: 24 }, () => [0, 0, 0]), cancs: [], entregadores: {}, pedidos: [] };
   const nomes = dias.map((d) => d.dia).sort();
   const vistos = new Set();
   let daFranquia = 0;

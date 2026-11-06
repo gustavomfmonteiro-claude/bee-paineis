@@ -1,5 +1,5 @@
 // Transforma um dia coletado nos KPIs, rankings, orientações e lojas prioritárias do painel e do relatório.
-import { LOJAS_ENTREGADORES, PRAZO_MOD, ORDEM_MOD } from './coletor.mjs';
+import { LOJAS_ENTREGADORES, PRAZO_MOD, ORDEM_MOD, P } from './coletor.mjs';
 
 export const PRIORITARIAS = ['678', '7300', '933', '495', '890', '7362', '839'];
 const MIN_DEMANDA_TAXA = 10;   // volume mínimo para taxa e tempo médio entrarem em ranking ou orientação
@@ -17,7 +17,7 @@ function identificar(nome) {
   return m ? { num: m[1], band, bairro: m[3] } : { num: '', band, bairro: String(nome) };
 }
 
-// OTD por modalidade: finalizada que chegou ao cliente dentro do prazo da modalidade (30 min, 60 min, 24 h).
+// OTD por modalidade: finalizada que chegou ao cliente dentro do prazo da modalidade (30 min, 60 min, 2 h).
 // Agendada e Padrão não têm prazo e ficam fora do OTD. `fontes` = lojas brutas do coletor.
 function porModalidade(fontes) {
   const t = {};
@@ -128,13 +128,11 @@ function orientar(linhas, cancs) {
     }
     for (const m of l.mods) {
       if (!m.prazo || m.otdN < MIN_OTD_MOD || m.otd >= 70) continue;
-      const prazo = m.prazo >= 1440 ? '24 h' : m.prazo + ' min';
+      const prazo = m.prazo >= 120 ? m.prazo / 60 + ' h' : m.prazo + ' min';
       const pontas = l.p1Med != null ? ` No dia, a chegada à loja levou ${br(l.p1Med)} min e a saída até o cliente ${br(l.p2Med)} min, em média.` : '';
       add(m.otd < 50 ? 'alta' : 'media', 'OTD ' + m.mod,
         `${br(m.otd)}% das ${m.otdN} entregas ${m.mod} chegaram ao cliente em até ${prazo}; média de ${br(m.tempo)} min da criação à entrega.${pontas}`,
-        m.prazo >= 1440
-          ? 'Entrega econômica passou de 24 h: levantar com a operação por que ficou sem entregador.'
-          : l.p1Med != null && l.p1Med > l.p2Med
+        l.p1Med != null && l.p1Med > l.p2Med
             ? 'O atraso está antes da coleta: priorizar a oferta perto da loja e o aceite nas entregas com prazo curto.'
             : 'O atraso está depois da coleta: conferir a espera na loja, a distância das entregas e o raio de atendimento.');
     }
@@ -326,5 +324,122 @@ export function analisarDia(d) {
     prioridade,
     lojas: [...linhas].sort((a, b) => b.dem - a.dem),
     minDemandaTaxa: MIN_DEMANDA_TAXA,
+  };
+}
+
+// ------------------------------------------------------------ análise de lojas
+// Aba "Análise de lojas": tudo sai dos pedidos gravados um a um (P), filtrados pela loja e pelo período,
+// para os números serem só da loja escolhida. Sem loja = análise geral do grupo.
+const FAIXA_KM = 2;            // faixas de 2 km: 0 a 2, 3 a 4 (acima de 2 até 4), 5 a 6...
+const LIMITE_LISTA = 400;      // cancelamentos listados um a um, do mais recente para o mais antigo
+const MIN_BUSCA = 5;           // "cancelado com menos de 5 min de busca"
+
+const novoAcc = () => ({ dem: 0, fin: 0, canc: 0, and: 0, n: 0, on: 0, tot: 0, totN: 0, p1: 0, p1N: 0, esp: 0, espN: 0, p2: 0, p2N: 0,
+  ac: 0, acN: 0, ac5: 0, semBusca: 0, km: 0, kmN: 0, cOp: 0, c5: 0 });
+function acumular(a, r, prazo) {
+  a.dem++;
+  if (r[P.aceite] != null) { a.ac += r[P.aceite]; a.acN++; if (r[P.aceite] <= 5) a.ac5++; }
+  if (r[P.semBusca]) a.semBusca++;
+  if (r[P.km] != null) { a.km += r[P.km]; a.kmN++; }
+  if (r[P.st] === 'F') {
+    a.fin++;
+    const t = r[P.total];
+    if (t != null) { a.tot += t; a.totN++; if (prazo) { a.n++; if (t <= prazo) a.on++; } }
+    if (r[P.p1] != null) { a.p1 += r[P.p1]; a.p1N++; }
+    if (r[P.espera] != null) { a.esp += r[P.espera]; a.espN++; }
+    if (r[P.p2] != null) { a.p2 += r[P.p2]; a.p2N++; }
+  } else if (r[P.st] === 'C') {
+    a.canc++;
+    if (r[P.cancBusca] != null && r[P.cancBusca] < MIN_BUSCA) a.c5++;
+  } else a.and++;
+}
+const fechar = (a) => ({
+  dem: a.dem, fin: a.fin, canc: a.canc, and: a.and, taxaCanc: pct(a.canc, a.dem), taxaFin: pct(a.fin, a.dem),
+  otd: pct(a.on, a.n), otdN: a.n, noPrazo: a.on,
+  total: media(a.tot, a.totN), totalN: a.totN, p1: media(a.p1, a.p1N), espera: media(a.esp, a.espN), p2: media(a.p2, a.p2N), pontasN: a.p2N,
+  aceite: media(a.ac, a.acN), aceiteN: a.acN, ate5: pct(a.ac5, a.acN), semBusca: a.semBusca,
+  km: media(a.km, a.kmN), c5: a.c5,
+});
+const faixaDe = (km) => (km <= FAIXA_KM ? 0 : Math.ceil(km / FAIXA_KM) - 1);
+const rotuloFaixa = (i) => (i === 0 ? `0 a ${FAIXA_KM} km` : `${i * FAIXA_KM + 1} a ${(i + 1) * FAIXA_KM} km`);
+
+// Agrupa os registros por faixa de distância; pedidos sem distância ficam numa linha à parte.
+function porFaixa(regs, prazoDe) {
+  const f = new Map();
+  for (const r of regs) {
+    const i = r[P.km] == null ? -1 : faixaDe(r[P.km]);
+    if (!f.has(i)) f.set(i, novoAcc());
+    acumular(f.get(i), r, prazoDe(r));
+  }
+  return [...f.entries()].sort((a, b) => (a[0] === -1) - (b[0] === -1) || a[0] - b[0])
+    .map(([i, a]) => ({ faixa: i === -1 ? 'Sem distância' : rotuloFaixa(i), ...fechar(a) }));
+}
+
+// `dias` = dias do período (com pedidos um a um), `loja` = id do merchant ou vazio para o grupo.
+export function analisarLojas(dias, loja) {
+  const nomes = {}, demanda = {};
+  for (const d of dias) for (const [id, l] of Object.entries(d.lojas)) { nomes[id] = l.n; demanda[id] = (demanda[id] || 0) + l.dem; }
+  const lojas = Object.keys(nomes).map((id) => ({ id, ...identificar(nomes[id]), dem: demanda[id], prio: PRIORITARIAS.includes(identificar(nomes[id]).num) }))
+    .sort((a, b) => Number(b.prio) - Number(a.prio) || b.dem - a.dem);
+  const escolhida = loja && nomes[loja] ? String(loja) : '';
+  const semRegistro = dias.filter((d) => !Array.isArray(d.pedidos)).map((d) => d.dia);
+
+  const regs = [], cancs = [];
+  for (const d of dias) {
+    for (const r of d.pedidos || []) if (!escolhida || r[P.loja] === escolhida) regs.push(r);
+    for (const c of d.cancs) if (!escolhida || c.l === escolhida) cancs.push({ ...c, dia: d.dia });
+  }
+  const prazoDe = (r) => PRAZO_MOD[r[P.mod]] || null;
+
+  // geral e por modalidade
+  const geral = novoAcc();
+  for (const r of regs) acumular(geral, r, prazoDe(r));
+  const mods = ORDEM_MOD.map((m) => {
+    const rs = regs.filter((r) => r[P.mod] === m);
+    if (!rs.length) return null;
+    const a = novoAcc();
+    for (const r of rs) acumular(a, r, PRAZO_MOD[m]);
+    return { mod: m, prazo: PRAZO_MOD[m] || null, ...fechar(a), faixas: porFaixa(rs, () => PRAZO_MOD[m]) };
+  }).filter(Boolean);
+
+  // cancelamentos: motivos, operacional e não operacional, menos de 5 min de busca
+  const motivos = new Map(), grupos = new Map(), fases = new Map();
+  for (const c of cancs) {
+    const k = c.m || 'Sem motivo informado';
+    const x = motivos.get(k) || { motivo: k, grupo: c.g, op: !!c.op, n: 0, c5: 0 };
+    x.n++; if (c.mb != null && c.mb < MIN_BUSCA) x.c5++;
+    motivos.set(k, x);
+    const g = grupos.get(c.g) || { grupo: c.g, op: !!c.op, n: 0, c5: 0 };
+    g.n++; if (c.mb != null && c.mb < MIN_BUSCA) g.c5++;
+    grupos.set(c.g, g);
+    fases.set(c.f, (fases.get(c.f) || 0) + 1);
+  }
+  const ordena = (m) => [...m.values()].sort((a, b) => b.n - a.n).map((x) => ({ ...x, pct: pct(x.n, cancs.length) }));
+  const op = cancs.filter((c) => c.op).length, c5 = cancs.filter((c) => c.mb != null && c.mb < MIN_BUSCA).length;
+  const semMb = cancs.filter((c) => c.mb == null).length;
+  const cancPorMod = ORDEM_MOD.map((m) => {
+    const cs = cancs.filter((c) => c.md === m);
+    const dem = regs.filter((r) => r[P.mod] === m).length;
+    return cs.length || dem ? { mod: m, dem, canc: cs.length, taxa: pct(cs.length, dem), op: cs.filter((c) => c.op).length, naoOp: cs.filter((c) => !c.op).length, c5: cs.filter((c) => c.mb != null && c.mb < MIN_BUSCA).length } : null;
+  }).filter(Boolean);
+  const lista = [...cancs].sort((a, b) => (b.dia + b.h).localeCompare(a.dia + a.h)).slice(0, LIMITE_LISTA).map((c) => ({
+    id: c.id, dia: c.dia, h: c.h, loja: identificar(nomes[c.l] || '').num || c.l, bairro: identificar(nomes[c.l] || '').bairro,
+    mod: c.md || null, minBusca: c.mb ?? null, minCriacao: c.min ?? null, fase: c.f, motivo: c.m || 'Sem motivo informado', grupo: c.g, op: !!c.op, pendente: !!c.pendente,
+  }));
+
+  return {
+    de: dias[0]?.dia || null, ate: dias[dias.length - 1]?.dia || null, fechado: dias.every((d) => d.fechado), lido_em: dias.map((d) => d.lido_em).sort().pop() || null,
+    loja: escolhida ? lojas.find((l) => l.id === escolhida) : null, lojas, semRegistro,
+    prazos: PRAZO_MOD, faixaKm: FAIXA_KM, minBusca: MIN_BUSCA,
+    geral: { ...fechar(geral), faixas: porFaixa(regs, prazoDe) },
+    modalidades: mods,
+    cancelamentos: {
+      total: cancs.length, taxa: pct(cancs.length, regs.length), op, naoOp: cancs.length - op, pctOp: pct(op, cancs.length),
+      c5, pctC5: pct(c5, cancs.length), semMinBusca: semMb,
+      pendentes: cancs.filter((c) => c.pendente).length,
+      fases: [...fases.entries()].sort((a, b) => b[1] - a[1]).map(([fase, n]) => ({ fase, n, pct: pct(n, cancs.length) })),
+      grupos: ordena(grupos), motivos: ordena(motivos), porModalidade: cancPorMod,
+      lista, listaCortada: cancs.length > LIMITE_LISTA,
+    },
   };
 }

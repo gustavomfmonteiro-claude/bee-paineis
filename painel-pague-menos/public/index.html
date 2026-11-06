@@ -276,6 +276,25 @@ body:not(.sem-entrada) #conteudo > *:nth-child(3){animation-delay:.1s}
   .relogio{display:none}
 }
 @media (forced-colors:active){.medidor i,.barra i,.hora i,.motivo .bar i{background:CanvasText}}
+/* abas e análise de lojas */
+.abas{display:flex;gap:4px;margin:0 0 14px;border-bottom:1px solid var(--line2);overflow-x:auto}
+.abas button{background:transparent;border:0;border-bottom:2px solid transparent;color:var(--ink2);font:600 14px var(--display);padding:10px 14px 9px;cursor:pointer;white-space:nowrap;margin-bottom:-1px}
+.abas button:hover{color:var(--ink)}
+.abas button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--bee)}
+.filtro-lojas .per{margin-top:10px;max-width:520px}
+.filtro-lojas select{width:100%;text-transform:none;letter-spacing:0;font:500 14px var(--body);color:var(--ink)}
+.pontas{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:8px;margin-top:2px}
+.pontas div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:rgba(19,26,35,.55);min-width:0}
+.pontas span{display:block;color:var(--ink3);font:500 10px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
+.pontas b{font:700 20px/1.2 var(--display);font-variant-numeric:tabular-nums}
+.pontas small{display:block;color:var(--ink3);font-size:11px;margin-top:2px}
+.modgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,560px),1fr));gap:14px;margin-bottom:14px}
+.modgrid section{margin:0}
+.modsec .kpis{margin:10px 0}
+.sub-h{font:600 12.5px/1.3 var(--display);color:var(--ink2);margin:16px 0 7px}
+.selo{font:500 11px var(--mono);color:var(--ink3);margin-left:6px;letter-spacing:.03em}
+.grade2.dentro{margin:6px 0 0}
+td.quente{color:var(--warn);font-weight:600}
 </style>
 </head>
 <body>
@@ -293,8 +312,10 @@ body:not(.sem-entrada) #conteudo > *:nth-child(3){animation-delay:.1s}
       <span class="vivo" id="vivo"><i></i><span>conectando</span></span>
     </div>
   </header>
+  <nav class="abas" role="tablist" aria-label="Visões do painel"><button type="button" role="tab" data-aba="operacao" aria-selected="true">Operação ao vivo</button><button type="button" role="tab" data-aba="lojas" aria-selected="false">Análise de lojas</button></nav>
   <div id="avisos"></div>
   <div id="conteudo"></div>
+  <div id="analise" hidden></div>
 </div>
 <div id="dica"></div>
 <dialog id="zapDlg"><form><h3>Enviar WhatsApp?</h3><p id="zapPara"></p><blockquote id="zapTexto"></blockquote><div class="zap-acoes"><button type="button" id="zapNao">Cancelar</button><button type="submit">Enviar</button></div></form></dialog>
@@ -343,8 +364,8 @@ function blocoKpis(a) {
   </div>`;
 }
 
-// OTD por modalidade: Super Expressa 30 min, Expressa 60 min, Econômica 24 h, da criação à chegada no cliente.
-const PRAZO_TXT = { 'Super Expressa': '30 min', Expressa: '60 min', 'Econômica': '24 h' };
+// OTD por modalidade: Super Expressa 30 min, Expressa 60 min, Econômica 2 h, da criação à chegada no cliente.
+const PRAZO_TXT = { 'Super Expressa': '30 min', Expressa: '60 min', 'Econômica': '2 h' };
 const prazoTxt = (m) => PRAZO_TXT[m] || 'sem prazo';
 const ORDEM_MODS = ['Super Expressa', 'Expressa', 'Econômica'];
 const achaMod = (k, m) => (k?.mods || []).find((x) => x.mod === m);
@@ -629,7 +650,7 @@ function regras() {
     <li><b>Dia:</b> pedidos criados das 00:00 às 23:59 em Fortaleza. O dia corrente fica parcial até virar o dia.</li>
     <li><b>Período (De/Até):</b> soma os dias gravados no painel no intervalo; taxas e tempos médios são recalculados sobre o total, não a média dos dias. Entregas buscando e em andamento são sempre as de agora. "Hoje" volta para o dia ao vivo.</li>
     <li><b>Atualização:</b> buscando a cada minuto; indicadores a cada 5 min, só das lojas do grupo; às 04:00 uma conferência relê ontem na franquia inteira e inclui loja nova.</li>
-    <li><b>Modalidade:</b> vem do prazo do pedido, como no Radar: Super Expressa 30 min, Expressa 60 min, Econômica 24 h. Sem prazo, é Agendada (com horário marcado) ou Padrão, e fica fora do OTD.</li>
+    <li><b>Modalidade:</b> vem do prazo do pedido, como no Radar: Super Expressa (30 min), Expressa (60 min) e Econômica (24 h no pedido). O prazo do OTD é 30 min, 60 min e 2 h. Sem prazo, é Agendada (com horário marcado) ou Padrão, e fica fora do OTD.</li>
     <li><b>OTD:</b> finalizada que chegou ao cliente dentro do prazo da sua modalidade, contado da criação do pedido. O OTD geral junta as modalidades, cada entrega contra o próprio prazo.</li>
     <li><b>Tempo das pontas:</b> média da criação à chegada na loja e da saída da loja à chegada no cliente, nas finalizadas com os dois tempos.</li>
     <li><b>Aceite:</b> do início da busca ao aceite, nos pedidos aceitos, finalizados ou não. Pedido de integração que já nasce com entregador não passa por busca e fica de fora ("sem busca").</li>
@@ -685,6 +706,7 @@ async function carregar() {
   const r = await fetch('/api/dados' + qs, { cache: 'no-store' });
   dados = await r.json();
   desenhar();
+  if (aba === 'lojas') carregarLojas();
   setTimeout(() => document.body.classList.add('sem-entrada'), 700);
 }
 
@@ -832,6 +854,129 @@ document.addEventListener('mousemove', (e) => {
   dica.style.top = e.clientY - dica.offsetHeight - 10 + 'px';
 });
 
+// ------------------------------------------------------------ aba Análise de lojas
+// Tudo vem de /api/lojas, calculado pedido a pedido só com a loja escolhida (ou o grupo inteiro) no período De/Até.
+let aba = location.hash === '#lojas' ? 'lojas' : 'operacao', lojaSel = '', lojasDados = null, lojasEmVoo = false;
+try { lojaSel = localStorage.getItem('pm-loja') || ''; } catch {}
+const base = (n, txt = 'entregas') => (n ? `${num(n)} ${n === 1 ? txt.replace(/s$/, '') : txt}` : 'sem base');
+const prazoMod = (m, prazos) => (prazos[m] ? (prazos[m] >= 120 ? prazos[m] / 60 + ' h' : prazos[m] + ' min') : 'sem prazo');
+
+function mostrarAba() {
+  for (const b of document.querySelectorAll('.abas button')) b.setAttribute('aria-selected', String(b.dataset.aba === aba));
+  $('#conteudo').hidden = aba !== 'operacao';
+  $('#analise').hidden = aba !== 'lojas';
+  if (aba === 'lojas') carregarLojas();
+}
+
+async function carregarLojas() {
+  if (lojasEmVoo) return;
+  lojasEmVoo = true;
+  try {
+    const qs = new URLSearchParams({ de: periodo.de, ate: periodo.ate, loja: lojaSel });
+    lojasDados = await (await fetch('/api/lojas?' + qs, { cache: 'no-store' })).json();
+    desenharLojas();
+  } catch (e) {
+    $('#analise').innerHTML = `<section><p class="vazio">Não foi possível carregar a análise (${esc(e.message)}).</p></section>`;
+  } finally { lojasEmVoo = false; }
+}
+
+function tabelaFaixas(fs, comMod) {
+  if (!fs.length) return '<p class="vazio">Sem pedidos.</p>';
+  return `<div class="rolagem"><table><thead><tr><th>Distância</th><th>Pedidos</th><th>Finalizadas</th><th>Canceladas</th>${comMod ? '<th>OTD</th>' : '<th>OTD geral</th>'}<th>Tempo total</th><th>Até a loja</th><th>Loja ao cliente</th></tr></thead><tbody>${fs.map((f) => `<tr><td class="loja">${esc(f.faixa)}</td><td class="forte">${num(f.dem)}</td><td>${num(f.fin)}</td><td>${num(f.canc)}<small class="b">${pc(f.taxaCanc)}</small></td><td>${f.otdN ? `${pc(f.otd)}<small class="b">${num(f.noPrazo)} de ${num(f.otdN)}</small>` : '—'}</td><td>${min(f.total)}</td><td>${min(f.p1)}</td><td>${min(f.p2)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function desenharLojas() {
+  const j = lojasDados, a = j?.analise;
+  if (!a) { $('#analise').innerHTML = '<section><p class="vazio">Ainda não há dados coletados.</p></section>'; return; }
+  const g = a.geral, c = a.cancelamentos, pz = a.prazos;
+  const titulo = a.loja ? `Loja ${esc(a.loja.num)} · ${esc(a.loja.bairro)} <small class="selo">${a.loja.band === 'EF' ? 'Extrafarma' : 'Pague Menos'}</small>` : 'Grupo inteiro · Pague Menos + Extrafarma';
+  const faixaTxt = a.de === a.ate ? dataBr(a.de) : `${dataBr(a.de)} a ${dataBr(a.ate)}`;
+  const grupoOpcoes = (prio) => a.lojas.filter((l) => l.prio === prio).map((l) => `<option value="${l.id}"${l.id === lojaSel ? ' selected' : ''}>${esc(l.num || '—')} · ${esc(l.bairro)} (${l.band}) · ${num(l.dem)} ped.</option>`).join('');
+  const avisos = [];
+  if (j.periodoVazio) avisos.push(`<div class="aviso erro"><b>Nenhum dia com dados nesse período.</b> Mostrando ${dataBr(a.ate)}.</div>`);
+  if (a.semRegistro.length) avisos.push(`<div class="aviso erro"><b>Dias ainda sem pedidos um a um:</b> ${a.semRegistro.map(dataBr).join(', ')}. Eles estão sendo relidos e entram nos próximos minutos.</div>`);
+  if (lojaSel && !a.loja) avisos.push('<div class="aviso">A loja escolhida não teve pedido nesse período; mostrando o grupo inteiro.</div>');
+
+  const filtro = `<section class="filtro-lojas"><div class="topo-sec"><h2>Análise de lojas</h2><span class="sub">${faixaTxt}${a.fechado ? '' : ' · inclui hoje, ao vivo'} · troque o período em De/Até no topo</span></div>
+    <label class="per" for="selLoja">Loja<select id="selLoja"><option value="">Análise geral · todas as lojas (${num(a.lojas.length)})</option><optgroup label="Lojas prioritárias">${grupoOpcoes(true)}</optgroup><optgroup label="Demais lojas, da maior demanda para a menor">${grupoOpcoes(false)}</optgroup></select></label></section>`;
+
+  const kpis = `<section><h2>${titulo}</h2><p class="nota">Todos os números abaixo são só ${a.loja ? 'desta loja' : 'do grupo'} em ${faixaTxt}, contados pedido a pedido.</p>
+    <div class="kpis">
+      ${kpi('Pedidos', num(g.dem), g.and ? `${num(g.and)} ainda em andamento` : `${num(a.loja ? 1 : a.lojas.length)} ${a.loja ? 'loja' : 'lojas'}`)}
+      ${kpi('Finalizadas', num(g.fin), `${pc(g.taxaFin)} dos pedidos`, '', medidor(g.taxaFin))}
+      ${kpi('Canceladas', num(g.canc), `${pc(g.taxaCanc)} dos pedidos · ${num(c.op)} operacionais`, '', medidor(g.taxaCanc))}
+      ${kpi('OTD geral', pc(g.otd), g.otdN ? `${num(g.noPrazo)} de ${num(g.otdN)} no prazo da modalidade` : 'sem entrega com prazo', chipOtd(g.otd), medidor(g.otd, classeOtd(g.otd)))}
+      ${kpi('Tempo médio de aceite', min(g.aceite), `${base(g.aceiteN, 'pedidos com busca')}${g.semBusca ? ` · ${num(g.semBusca)} sem busca` : ''}`, '', medidor(g.ate5))}
+      ${kpi('Tempo médio de entrega', min(g.total), `da criação ao cliente · ${base(g.totalN)}`)}
+    </div>
+    <div class="pontas">
+      <div><span>Ponta 1 · até a loja</span><b>${min(g.p1)}</b><small>criação até a chegada na loja</small></div>
+      <div><span>Espera na loja</span><b>${min(g.espera)}</b><small>chegada até a saída</small></div>
+      <div><span>Ponta 2 · loja ao cliente</span><b>${min(g.p2)}</b><small>saída até a chegada no cliente</small></div>
+      <div><span>Distância média</span><b>${g.km == null ? '—' : num(Math.round(g.km * 10) / 10) + ' km'}</b><small>da loja ao cliente</small></div>
+    </div></section>`;
+
+  const linhasMod = a.modalidades.map((m) => `<tr><td class="loja">${esc(m.mod)}<small>${prazoMod(m.mod, pz)}</small></td><td class="forte">${num(m.dem)}</td><td>${num(m.fin)}</td><td>${num(m.canc)}<small class="b">${pc(m.taxaCanc)}</small></td><td>${m.prazo ? (m.otdN ? `${pc(m.otd)}<small class="b">${num(m.noPrazo)} de ${num(m.otdN)}</small>` : '—') : 'fora do OTD'}</td><td>${min(m.aceite)}<small class="b">${base(m.aceiteN, 'com busca')}</small></td><td>${min(m.p1)}</td><td>${min(m.espera)}</td><td>${min(m.p2)}</td><td>${min(m.total)}</td><td>${m.km == null ? '—' : num(Math.round(m.km * 10) / 10) + ' km'}</td></tr>`).join('');
+  const comparacao = `<section><h2>Comparação entre modalidades</h2><p class="nota">OTD: finalizada que chegou ao cliente dentro do prazo da modalidade, contado da criação. Tempos são médias das finalizadas; aceite, dos pedidos que passaram por busca.</p>
+    <div class="rolagem"><table><thead><tr><th>Modalidade</th><th>Pedidos</th><th>Finalizadas</th><th>Canceladas</th><th>OTD</th><th>Aceite</th><th>Até a loja</th><th>Espera</th><th>Loja ao cliente</th><th>Total</th><th>Km médio</th></tr></thead><tbody>${linhasMod || '<tr><td colspan="11" class="vazio">Sem pedidos.</td></tr>'}</tbody></table></div></section>`;
+
+  const blocos = a.modalidades.filter((m) => m.prazo).map((m) => `<section class="modsec"><div class="topo-sec"><h2>${esc(m.mod)} <small class="selo">prazo de ${prazoMod(m.mod, pz)}</small></h2>${chipOtd(m.otd)}</div>
+    <div class="kpis">
+      ${kpi('OTD', pc(m.otd), m.otdN ? `${num(m.noPrazo)} de ${num(m.otdN)} no prazo` : 'nenhuma finalizada', '', medidor(m.otd, classeOtd(m.otd)))}
+      ${kpi('Pedidos', num(m.dem), `${num(m.fin)} finalizadas · ${num(m.canc)} canceladas (${pc(m.taxaCanc)})`)}
+      ${kpi('Aceite médio', min(m.aceite), `${pc(m.ate5)} em até 5 min · ${base(m.aceiteN, 'com busca')}`)}
+      ${kpi('Tempo total', min(m.total), `da criação ao cliente · ${base(m.totalN)}`)}
+    </div>
+    <div class="pontas">
+      <div><span>Ponta 1 · até a loja</span><b>${min(m.p1)}</b></div><div><span>Espera na loja</span><b>${min(m.espera)}</b></div><div><span>Ponta 2 · loja ao cliente</span><b>${min(m.p2)}</b></div><div><span>Distância média</span><b>${m.km == null ? '—' : num(Math.round(m.km * 10) / 10) + ' km'}</b></div>
+    </div>
+    <h3 class="sub-h">Entregas por distância · faixas de ${num(a.faixaKm)} km</h3>${tabelaFaixas(m.faixas, true)}</section>`).join('');
+  const semPrazo = a.modalidades.filter((m) => !m.prazo);
+  const notaSemPrazo = semPrazo.length ? `<p class="nota">${semPrazo.map((m) => `${esc(m.mod)}: ${num(m.dem)} pedidos`).join(' · ')}. Sem prazo de modalidade, ficam fora do OTD.</p>` : '';
+
+  const faixasGeral = `<section><h2>Entregas por distância · todas as modalidades</h2><p class="nota">Faixas de ${num(a.faixaKm)} km pela distância do pedido (0 a 2 km; 3 a 4 km = acima de 2 até 4 km; e assim por diante). OTD de cada entrega contra o prazo da sua modalidade.</p>${notaSemPrazo}${tabelaFaixas(g.faixas, false)}</section>`;
+
+  const barras = (lista) => lista.length ? lista.map((x) => `<div class="motivo${x.op ? ' op' : ''}"><div class="tt">${esc(x.grupo)}${x.op ? '<span class="tag">Operacional</span>' : ''}</div><div class="vv">${num(x.n)} · ${pc(x.pct)}${x.c5 ? ` · ${num(x.c5)} com menos de ${num(a.minBusca)} min de busca` : ''}</div><div class="bar"><i style="width:${x.pct}%"></i></div></div>`).join('') : '<p class="vazio">Nenhum cancelamento.</p>';
+  const cancelamentos = `<section><h2>Cancelamentos</h2><p class="nota">Operacional: falta de entregador ou atraso/problema do entregador. "Menos de ${num(a.minBusca)} min de busca": cancelado antes de completar ${num(a.minBusca)} min desde o início da busca (sem busca, conta da criação).${c.pendentes ? ` ${num(c.pendentes)} ainda sem leitura de motivo.` : ''}</p>
+    <div class="kpis">
+      ${kpi('Cancelados', num(c.total), `${pc(c.taxa)} dos pedidos`, '', medidor(c.taxa))}
+      ${kpi('Operacionais', num(c.op), `${pc(c.pctOp)} dos cancelamentos`, '', medidor(c.pctOp))}
+      ${kpi('Não operacionais', num(c.naoOp), `${pc(c.total ? 100 - c.pctOp : null)} dos cancelamentos`)}
+      ${kpi(`Menos de ${num(a.minBusca)} min de busca`, num(c.c5), `${pc(c.pctC5)} dos cancelamentos`, '', medidor(c.pctC5))}
+    </div>
+    <div class="grade2 dentro"><div><h3 class="sub-h">Por tipo de motivo</h3>${barras(c.grupos)}</div>
+      <div><h3 class="sub-h">Em que fase cancelou</h3>${c.fases.length ? `<div class="rolagem"><table><thead><tr><th>Fase</th><th>Qtde</th><th>%</th></tr></thead><tbody>${c.fases.map((f) => `<tr><td class="loja">${esc(f.fase)}</td><td class="forte">${num(f.n)}</td><td>${pc(f.pct)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="vazio">Nenhum cancelamento.</p>'}
+      <h3 class="sub-h">Por modalidade</h3><div class="rolagem"><table><thead><tr><th>Modalidade</th><th>Canceladas</th><th>% dos pedidos</th><th>Operacional</th><th>Não operacional</th><th>Menos de ${num(a.minBusca)} min</th></tr></thead><tbody>${c.porModalidade.map((m) => `<tr><td class="loja">${esc(m.mod)}</td><td class="forte">${num(m.canc)}</td><td>${pc(m.taxa)}</td><td>${num(m.op)}</td><td>${num(m.naoOp)}</td><td>${num(m.c5)}</td></tr>`).join('')}</tbody></table></div></div></div>
+    <h3 class="sub-h">Motivos como foram registrados</h3>${c.motivos.length ? `<div class="rolagem"><table><thead><tr><th class="txt">Motivo</th><th class="txt">Tipo</th><th>Qtde</th><th>%</th><th>Menos de ${num(a.minBusca)} min de busca</th></tr></thead><tbody>${c.motivos.map((m) => `<tr><td class="txt">${esc(m.motivo)}</td><td class="txt">${m.op ? '<span class="tag" style="margin:0">Operacional</span>' : esc(m.grupo)}</td><td class="forte">${num(m.n)}</td><td>${pc(m.pct)}</td><td>${num(m.c5)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="vazio">Nenhum cancelamento.</p>'}
+    ${c.lista.length ? `<details data-chave="lista-canc-lojas"${a.loja ? ' open' : ''}><summary>${c.listaCortada ? `Ver os ${num(c.lista.length)} mais recentes de ${num(c.total)} cancelamentos` : `Ver os ${num(c.lista.length)} cancelamentos, um a um`}</summary><div class="rolagem"><table><thead><tr><th>Data</th><th>Hora</th>${a.loja ? '' : '<th class="txt">Loja</th>'}<th class="txt">Modalidade</th><th>Min de busca</th><th>Min desde a criação</th><th class="txt">Fase</th><th class="txt">Motivo</th><th class="txt">Tipo</th><th>Pedido</th></tr></thead><tbody>${c.lista.map((x) => `<tr><td>${dataBr(x.dia).slice(0, 5)}</td><td class="forte">${esc(x.h)}</td>${a.loja ? '' : `<td class="txt">${esc(x.loja)} · ${esc(x.bairro)}</td>`}<td class="txt">${esc(x.mod || '—')}</td><td${x.minBusca != null && x.minBusca < a.minBusca ? ' class="quente"' : ''}>${min(x.minBusca)}</td><td>${min(x.minCriacao)}</td><td class="txt">${esc(x.fase)}</td><td class="txt">${esc(x.motivo)}</td><td class="txt">${x.op ? '<span class="tag" style="margin:0">Operacional</span>' : 'Não operacional'}</td><td>${esc(x.id)}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+  </section>`;
+
+  const regrasLojas = `<section><details><summary>Como cada número desta aba é calculado</summary><ul class="regras">
+    <li><b>Base:</b> cada pedido do período, gravado um a um na leitura da API (loja, modalidade, horários e distância; sem cliente nem endereço). Escolhida uma loja, entram só os pedidos dela.</li>
+    <li><b>Modalidade:</b> pelo prazo do pedido, como no Radar. Prazo do OTD: Super Expressa 30 min, Expressa 60 min, Econômica 2 h.</li>
+    <li><b>OTD:</b> finalizada com chegada ao cliente até o prazo, contada da criação. Base: finalizadas com o carimbo de chegada.</li>
+    <li><b>Pontas:</b> ponta 1 da criação à chegada na loja; espera da chegada à saída da loja; ponta 2 da saída à chegada no cliente. Médias das finalizadas que têm cada carimbo; tempo acima de 8 h é descartado como carimbo errado.</li>
+    <li><b>Aceite:</b> do início da busca ao aceite. Pedido de integração que já nasce com entregador não passa por busca e fica de fora ("sem busca").</li>
+    <li><b>Distância:</b> a do pedido (campo distance da API), em faixas de 2 km: 0 a 2, 3 a 4 (acima de 2 até 4), 5 a 6 e assim por diante.</li>
+    <li><b>Cancelamento com menos de 5 min de busca:</b> do início da busca (ou da criação, sem busca) até o cancelamento.</li>
+  </ul></details></section>`;
+
+  const abertos = [...document.querySelectorAll('#analise details[open][data-chave]')].map((x) => x.dataset.chave);
+  $('#analise').innerHTML = avisos.join('') + filtro + kpis + comparacao + `<div class="modgrid">${blocos}</div>` + faixasGeral + cancelamentos + regrasLojas;
+  for (const k of abertos) document.querySelector(`#analise details[data-chave="${k}"]`)?.setAttribute('open', '');
+  $('#selLoja').addEventListener('change', (e) => {
+    lojaSel = e.target.value;
+    try { localStorage.setItem('pm-loja', lojaSel); } catch {}
+    carregarLojas();
+  });
+}
+
+for (const b of document.querySelectorAll('.abas button')) b.addEventListener('click', () => {
+  aba = b.dataset.aba;
+  history.replaceState(null, '', aba === 'lojas' ? '#lojas' : location.pathname);
+  mostrarAba();
+});
+
 // A página recarrega sozinha quando chega coleta nova
 const vivo = $('#vivo');
 function ligar() {
@@ -841,6 +986,7 @@ function ligar() {
   es.addEventListener('buscando', () => carregarBuscando());
   es.onerror = () => { vivo.className = 'vivo'; vivo.lastElementChild.textContent = 'reconectando'; };
 }
+mostrarAba();
 carregarBuscando().catch(() => {}).finally(carregar);
 carregarEvolucao();
 setInterval(carregarEvolucao, 30 * 60e3).unref?.();

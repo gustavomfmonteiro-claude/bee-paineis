@@ -41,8 +41,8 @@ function tabela(cab, linhas, vazio) {
   return `<table><thead><tr>${cab.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas.map((l) => `<tr>${l.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
 
-// OTD por modalidade: no prazo da própria modalidade (Super Expressa 30 min, Expressa 60 min, Econômica 24 h)
-const PRAZO_TXT = { 'Super Expressa': '30 min', Expressa: '60 min', 'Econômica': '24 h' };
+// OTD por modalidade: no prazo da própria modalidade (Super Expressa 30 min, Expressa 60 min, Econômica 2 h)
+const PRAZO_TXT = { 'Super Expressa': '30 min', Expressa: '60 min', 'Econômica': '2 h' };
 const MODS = ['Super Expressa', 'Expressa', 'Econômica'];
 const otdMod = (k, m) => { const x = (k?.mods || []).find((y) => y.mod === m); return x?.otdN ? `${pc(x.otd)} <small>(${num(x.otdN)})</small>` : '—'; };
 const textoMods = (k) => (k.mods || []).filter((x) => x.prazo && x.otdN).map((x) => `${x.mod} ${pc(x.otd)}`).join(', ');
@@ -111,7 +111,7 @@ function montar(d, ontem) {
   </div>
   <h2>Motivos de cancelamento do grupo</h2>
   ${tabela(['Motivo', 'Tipo', 'Qtde', '%'], a.motivos.map((m) => [esc(m.grupo), m.op ? 'Operacional' : 'Não operacional', num(m.n), pc(m.pct)]), 'Nenhum cancelamento.')}
-  <footer>${u?.kpi ? `Requisições à API até agora em ${br(u.dia)}: ${num(u.kpi.total + u.busca.total)} (indicadores ${num(u.kpi.total)} em ${num(u.kpi.leituras)} leituras, buscando ${num(u.busca.total)} em ${num(u.busca.leituras)} leituras, logins ${num(u.kpi.login + u.busca.login)}). ` : ''}Aceite: só pedidos que passaram por busca. OTD: finalizada que chegou ao cliente dentro do prazo da modalidade, contado da criação (Super Expressa 30 min, Expressa 60 min, Econômica 24 h); a modalidade vem do prazo do pedido, como no Radar. Pontas: tempo médio até a loja e da loja ao cliente. Operacional: falta de entregador ou atraso/problema do entregador. Painel: ${esc(URL_PAINEL)}</footer>
+  <footer>${u?.kpi ? `Requisições à API até agora em ${br(u.dia)}: ${num(u.kpi.total + u.busca.total)} (indicadores ${num(u.kpi.total)} em ${num(u.kpi.leituras)} leituras, buscando ${num(u.busca.total)} em ${num(u.busca.leituras)} leituras, logins ${num(u.kpi.login + u.busca.login)}). ` : ''}Aceite: só pedidos que passaram por busca. OTD: finalizada que chegou ao cliente dentro do prazo da modalidade, contado da criação (Super Expressa 30 min, Expressa 60 min, Econômica 2 h); a modalidade vem do prazo do pedido, como no Radar. Pontas: tempo médio até a loja e da loja ao cliente. Operacional: falta de entregador ou atraso/problema do entregador. Painel: ${esc(URL_PAINEL)}</footer>
   </body></html>`;
 }
 
