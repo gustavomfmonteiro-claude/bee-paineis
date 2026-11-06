@@ -46,7 +46,7 @@ export function separaNome(nome) {
   return { firstName: tituloNome(partes[0] || 'Entregador'), lastName: partes.slice(1).map(tituloNome).join(' ') };
 }
 
-export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit, locationId, tag, arquivo, arquivoOfertas, chaveWebhook, validadeOfertaMs = 5 * 60e3, respostaTardiaMs = 20 * 60e3, limiteAbertas = 3, blocoPorEntrega = 10, pausaBlocoMs = 2 * 60e3, pausaAposAtribuirMs = 15 * 60e3, limiteHora = 60, limiteGhl10s = 80, esperaStatusMs = 24000, intervaloStatusMs = INTERVALO_STATUS_MS, log = () => {} }) {
+export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit, locationId, tag, arquivo, arquivoOfertas, arquivoRespostas, chaveWebhook, validadeOfertaMs = 5 * 60e3, respostaTardiaMs = 20 * 60e3, limiteAbertas = 3, blocoPorEntrega = 10, pausaBlocoMs = 2 * 60e3, pausaAposAtribuirMs = 15 * 60e3, limiteHora = 60, limiteGhl10s = 80, esperaStatusMs = 24000, intervaloStatusMs = INTERVALO_STATUS_MS, log = () => {} }) {
   const ativo = !!(pit && locationId && tag);
   const enviados = new Set(), emAndamento = new Set(), pedidosEmAtribuicao = new Set();
   const entregadoresEmEnvio = new Set(), tentativas = new Map(), jaTentados = new Set(), recusadosAte = new Map();
@@ -299,7 +299,11 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
     // Resposta do botão do template. bee = { lerPedido, entregasAbertas, atribuirEntrega }.
     async responder(contactId, resposta, bee) {
       const o = ofertas[contactId];
-      const reg = (resultado, extra = '') => log('whatsapp resposta:', contactId, resposta, o?.pedido ?? '-', o?.entregador ?? '-', resultado, extra);
+      const reg = (resultado, extra = '') => {
+        log('whatsapp resposta:', contactId, resposta, o?.pedido ?? '-', o?.entregador ?? '-', resultado, extra);
+        // a auditoria lê este arquivo: o de ofertas apaga o que passou de 24 h
+        if (arquivoRespostas) { try { fs.appendFileSync(arquivoRespostas, JSON.stringify({ em: new Date().toISOString(), contactId, resposta, pedido: o?.pedido ?? null, entregador: o?.entregador ?? null, resultado, extra: String(extra || '') }) + '\n'); } catch (e) { log('whatsapp: log de resposta falhou', e.message); } }
+      };
       if (!o) { reg('sem oferta'); if (resposta === 'sim') await responde(contactId, 'Não encontramos uma oferta de entrega ativa para você. Fique de olho nas próximas!'); return 'sem oferta'; }
       if (o.estado !== 'aberta') { reg('repetida', o.estado); return 'repetida'; } // reenvio do webhook ou segundo toque
       if (resposta === 'nao') { o.estado = 'recusada'; salvaOfertas(); reg('recusada'); return 'recusada'; }

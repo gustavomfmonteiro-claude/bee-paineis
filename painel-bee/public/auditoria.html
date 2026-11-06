@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auditoria WhatsApp Bee</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Open+Sans:ital,wght@0,300;1,400&display=swap">
+<style>
+:root{
+  color-scheme: dark;
+  --ground:#0A0A09; --panel:#141412; --panel2:#1C1B18; --line:#27261F; --line2:#38362C;
+  --ink:#F3F1E8; --ink2:#B7B3A3; --ink3:#7E7A6B;
+  --bee:#FFD200; --bee-d:rgba(255,210,0,.12); --bee-ink:#111008;
+  --cyan:#35D6EE; --ok:#34E0A1; --bad:#FF5F6D; --warn:#FF9A3C; --violet:#9C8CFF;
+  --display:"Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--ground); color:var(--ink); font-family:var(--body); font-size:14px; line-height:1.45}
+.wrap{max-width:1320px; margin:0 auto; padding:18px 20px 48px; display:grid; gap:18px}
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--display); margin:0; letter-spacing:.01em; text-wrap:balance}
+h2{font-size:18px}
+.eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink3)}
+.top{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:14px 28px; background:var(--bee); color:var(--bee-ink); border-radius:10px; padding:16px 24px}
+.logo{display:block; width:120px; height:auto} .logo text{fill:var(--bee-ink)}
+.ttl{border-left:2px solid rgba(17,16,8,.18); padding-left:24px}
+.ttl .eyebrow{color:rgba(17,16,8,.62)}
+.top h1{font-size:clamp(22px,3vw,32px); line-height:1.05}
+.acoes{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; font-family:var(--mono); font-size:12px}
+.chip{background:var(--bee-ink); color:var(--bee); border:0; padding:5px 12px; border-radius:999px; text-decoration:none; font:500 12px var(--mono); cursor:pointer}
+.chip[aria-pressed="true"]{background:#fff; color:var(--bee-ink); box-shadow:inset 0 0 0 2px var(--bee-ink)}
+.chip:focus-visible{outline:2px solid var(--bee-ink); outline-offset:2px}
+.datas{display:inline-flex; gap:4px; align-items:center}
+.datas input{background:var(--bee-ink); color:var(--bee); border:0; border-radius:999px; padding:4px 8px; font:12px var(--mono); color-scheme:dark}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px 20px}
+.card > header{display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:14px; flex-wrap:wrap}
+.sub{color:var(--ink2); font-size:13px; margin:0}
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px}
+.kpi{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; display:grid; gap:4px}
+.kpi .v{font:700 30px var(--display); line-height:1}
+.kpi .d{color:var(--ink2); font-size:12px}
+.kpi.dest{border-color:var(--bee); background:linear-gradient(180deg,var(--bee-d),transparent)}
+.kpi.dest .v{color:var(--bee)}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+@media (max-width:1100px){.top{grid-template-columns:auto 1fr} .acoes{grid-column:1/-1; justify-content:flex-start} .estado{text-align:left}}
+@media (max-width:900px){.grid2{grid-template-columns:1fr} .top{grid-template-columns:1fr} .ttl{border:0; padding:0} .acoes{justify-content:flex-start}}
+/* funil */
+.funil{display:grid; gap:8px}
+.f-row{display:grid; grid-template-columns:200px 1fr 120px; gap:12px; align-items:center}
+.f-bar{height:22px; background:var(--panel2); border-radius:4px; overflow:hidden}
+.f-bar span{display:block; height:100%; background:var(--bee); border-radius:4px}
+.f-row .n{text-align:right}
+.f-row .l{color:var(--ink2)}
+@media (max-width:600px){.f-row{grid-template-columns:1fr 70px} .f-row .f-bar{grid-column:1/-1; order:3}}
+/* barra empilhada */
+.stack{display:flex; height:28px; border-radius:6px; overflow:hidden; gap:2px; background:var(--panel2)}
+.stack span{display:block; height:100%}
+.leg{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:12px; font-size:13px}
+.leg i{display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:6px; vertical-align:-1px}
+table{width:100%; border-collapse:collapse; font-size:13px}
+th,td{padding:7px 8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top}
+th{font:500 11px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--ink3)}
+td.r,th.r{text-align:right}
+.tab{overflow-x:auto}
+.tag{display:inline-block; padding:1px 8px; border-radius:999px; font-size:12px; background:var(--panel2); color:var(--ink2)}
+.tag.ok{background:rgba(52,224,161,.13); color:var(--ok)} .tag.bad{background:rgba(255,95,109,.13); color:var(--bad)} .tag.warn{background:rgba(255,154,60,.14); color:var(--warn)} .tag.bee{background:var(--bee-d); color:var(--bee)}
+.horas{display:grid; grid-template-columns:repeat(24,1fr); gap:3px; align-items:end; height:140px}
+.horas div{display:flex; flex-direction:column; justify-content:flex-end; height:100%; position:relative}
+.horas .b{background:var(--line2); border-radius:3px 3px 0 0; min-height:1px}
+.horas .b.s{background:var(--bee)}
+.horas-x{display:grid; grid-template-columns:repeat(24,1fr); gap:3px; font:10px var(--mono); color:var(--ink3); text-align:center; margin-top:4px}
+.nota{color:var(--ink3); font-size:12px; margin:10px 0 0}
+.custo-box{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px}
+.custo-box div{background:var(--panel2); border-radius:8px; padding:12px}
+.custo-box b{display:block; font:700 22px var(--display)}
+.estado{font:12px var(--mono); color:rgba(17,16,8,.7); flex-basis:100%; text-align:right}
+.vazio{color:var(--ink3); padding:20px 0; text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <svg class="logo" viewBox="0 0 200 118" role="img" aria-label="bee Delivery">
+      <text x="100" y="74" text-anchor="middle" style="font:italic 400 92px 'Open Sans', 'Segoe UI', sans-serif; letter-spacing:-2px">bee</text>
+      <text x="101" y="106" text-anchor="middle" style="font:300 19px 'Open Sans', 'Segoe UI', sans-serif; letter-spacing:5.5px">DELIVERY</text>
+    </svg>
+    <div class="ttl">
+      <div class="eyebrow">Workflow "Painel Radar - alocar" · GHL + API Bee</div>
+      <h1>Auditoria do WhatsApp de alocação</h1>
+    </div>
+    <div class="acoes">
+      <a class="chip" href="/">← Radar</a>
+      <button class="chip" data-p="hoje">Hoje</button>
+      <button class="chip" data-p="ontem">Ontem</button>
+      <button class="chip" data-p="tudo" aria-pressed="true">Desde o início</button>
+      <span class="datas"><input type="date" id="de" aria-label="De"><input type="date" id="ate" aria-label="Até"></span>
+      <span class="estado" id="estado">carregando…</span>
+    </div>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="grid2">
+    <div class="card"><header><h2>Funil das mensagens</h2><p class="sub">de cada disparo até a entrega ficar com o entregador</p></header><div class="funil" id="funil"></div></div>
+    <div class="card"><header><h2>Custo estimado</h2><p class="sub" id="custoSub"></p></header><div class="custo-box" id="custo"></div><p class="nota" id="custoNota"></p></div>
+  </section>
+
+  <section class="card">
+    <header><h2>Desfecho das entregas que receberam oferta</h2><p class="sub" id="desfSub"></p></header>
+    <div class="stack" id="stack"></div><div class="leg" id="leg"></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card"><header><h2>Por dia</h2></header><div class="tab"><table id="dias"></table></div></div>
+    <div class="card"><header><h2>Falhas de envio</h2><p class="sub">mensagens que o WhatsApp recusou</p></header><div class="tab"><table id="falhas"></table></div></div>
+  </section>
+
+  <section class="card">
+    <header><h2>Disparos por hora</h2><p class="sub"><span class="tag">cinza = disparos</span> <span class="tag bee">amarelo = respostas "Sim"</span></p></header>
+    <div class="horas" id="horas"></div><div class="horas-x" id="horasX"></div>
+  </section>
+
+  <section class="card">
+    <header><h2>Entregas atribuídas pelo "Sim"</h2><p class="sub">PATCH do painel na API da Bee depois do botão do template</p></header>
+    <div class="tab"><table id="atrib"></table></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card"><header><h2>Lojas com mais disparos</h2></header><div class="tab"><table id="lojas"></table></div></div>
+    <div class="card"><header><h2>Entregadores que responderam</h2><p class="sub">ID do cadastro na Bee</p></header><div class="tab"><table id="entreg"></table></div></div>
+  </section>
+
+  <section class="card">
+    <header><h2>Entregas alcançadas</h2><p class="sub">mais recentes primeiro (até 200)</p></header>
+    <div class="tab"><table id="entregas"></table></div>
+  </section>
+</div>
+<script>
+var TZ = 'America/Fortaleza';
+var $ = function (id) { return document.getElementById(id); };
+var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+var int = function (n) { return n == null ? '—' : Number(n).toLocaleString('pt-BR'); };
+var pct = function (x) { return x == null ? '—' : (x * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%'; };
+var brl = function (n) { return n == null ? '—' : Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); };
+var hora = function (iso) { return iso ? new Date(iso).toLocaleString('pt-BR', { timeZone: TZ, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; };
+var diaHoje = function (d) { return new Date(Date.now() - (d || 0) * 864e5).toLocaleString('sv-SE', { timeZone: TZ }).slice(0, 10); };
+var DESF = [
+  ['workflowFinalizada', 'Alocada pelo workflow e finalizada', 'var(--bee)'],
+  ['workflowEmAndamento', 'Alocada pelo workflow, em andamento', '#C9A600'],
+  ['appOfertado', 'Aceita no app por quem recebeu a oferta', 'var(--cyan)'],
+  ['workflowDevolvida', 'Alocada pelo workflow e devolvida', 'var(--warn)'],
+  ['outroEntregador', 'Ficou com outro entregador', 'var(--violet)'],
+  ['cancelada', 'Cancelada', 'var(--bad)'],
+  ['aberta', 'Ainda sem entregador', 'var(--line2)'],
+  ['semLeitura', 'Ainda não lida na API', '#444'],
+];
+var NOME_DESF = {}; DESF.forEach(function (d) { NOME_DESF[d[0]] = d; });
+var STATUS = { '05': 'Aguardando preparo', '07': 'Agendada', '10': 'Buscando', '20': 'Indo à loja', '25': 'Na loja', '28': 'Liberada', '30': 'Indo ao cliente', '32': 'Paradas', '35': 'No cliente', '40': 'Retornando', '50': 'Finalizada', '60': 'Cancelada' };
+var periodo = { de: null, ate: null };
+
+function kpi(rotulo, valor, desc, dest) { return '<div class="kpi' + (dest ? ' dest' : '') + '"><span class="eyebrow">' + rotulo + '</span><span class="v num">' + valor + '</span><span class="d">' + desc + '</span></div>'; }
+function tabela(el, cab, linhas) {
+  $(el).innerHTML = linhas.length ? '<thead><tr>' + cab.map(function (c) { return '<th' + (c[1] ? ' class="r"' : '') + '>' + c[0] + '</th>'; }).join('') + '</tr></thead><tbody>' + linhas.map(function (l) { return '<tr>' + l.map(function (v, i) { return '<td' + (cab[i][1] ? ' class="r num"' : '') + '>' + v + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody>' : '<tbody><tr><td class="vazio">Nada no período.</td></tr></tbody>';
+}
+
+function render(d) {
+  var k = d.kpis, c = d.custo;
+  $('estado').textContent = (d.emAtualizacao ? 'relendo GHL e Bee… · ' : '') + 'dados de ' + hora(d.atualizadoEm) + (d.erro ? ' · falha: ' + d.erro : '') + ' · período ' + hora(d.periodo.primeiro) + ' a ' + hora(d.periodo.ultimo);
+  $('kpis').innerHTML = [
+    kpi('Disparos', int(k.disparos), int(k.entregasAlcancadas) + ' entregas · ' + int(k.entregadoresAlcancados) + ' entregadores'),
+    kpi('Chegaram ao WhatsApp', int(k.chegaram), pct(k.taxaEntrega) + ' dos disparos · ' + int(k.falhas) + ' recusadas'),
+    kpi('Responderam "Sim"', int(k.respostasSim), pct(k.taxaSim) + ' das que chegaram · ' + int(k.respostasNao) + ' "Não"'),
+    kpi('Alocadas pelo workflow', int(k.alocadasWorkflow), pct(k.alocacaoPorEntrega) + ' das entregas alcançadas · ' + int(k.alocadasFinalizadas) + ' finalizadas', true),
+    kpi('Ficaram com quem recebeu a oferta', int(k.comOfertado), 'workflow + aceite no app de quem recebeu o WhatsApp · ' + brl(c.porComOfertado) + ' cada'),
+    kpi('Mensagens por alocação', k.mensagensPorAlocacao == null ? '—' : k.mensagensPorAlocacao.toLocaleString('pt-BR', { maximumFractionDigits: 1 }), 'disparos ÷ entregas alocadas'),
+    kpi('Custo estimado', brl(c.total), int(c.mensagensCobradas) + ' mensagens cobradas · ' + brl(c.porAlocacao) + ' por alocação', true),
+  ].join('');
+
+  var etapas = [['Disparos (tag aplicada)', k.disparos], ['Chegaram ao WhatsApp', k.chegaram], ['Entrega confirmada (cobrada)', k.cobradas], ['Responderam (Sim ou Não)', k.respostasSim + k.respostasNao], ['Responderam "Sim"', k.respostasSim], ['Atribuídas pelo painel', k.atribuidas], ['Ficaram com a entrega', k.alocadasWorkflow]];
+  $('funil').innerHTML = etapas.map(function (e) { var w = k.disparos ? Math.max(e[1] / k.disparos * 100, e[1] ? .6 : 0) : 0; return '<div class="f-row"><span class="l">' + e[0] + '</span><div class="f-bar"><span style="width:' + w + '%"></span></div><span class="n num">' + int(e[1]) + ' · ' + pct(k.disparos ? e[1] / k.disparos : null) + '</span></div>'; }).join('')
+    + '<p class="nota">"Sim" que não virou atribuição: ' + int(k.outroJaPegou) + ' outro entregador já tinha pegado · ' + int(k.expiradas) + ' oferta vencida · ' + int(k.limiteAbertas) + ' com 3+ entregas abertas · ' + int(k.falhaAtribuir) + ' falha da API.' + (k.esperaMediaAteSimMin != null ? ' Tempo médio da criação da entrega até a atribuição: ' + k.esperaMediaAteSimMin.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' min.' : '') + '</p>';
+
+  $('custoSub').textContent = 'US$ ' + c.usdPorMensagem.toLocaleString('pt-BR', { minimumFractionDigits: 4 }) + ' por template de marketing entregue × câmbio ' + c.cambio.toLocaleString('pt-BR') + ' = ' + brl(c.brlPorMensagem);
+  $('custo').innerHTML = [['Total no período', brl(c.total)], ['Por entrega alocada', brl(c.porAlocacao)], ['Por entrega alcançada', brl(c.porEntregaAlcancada)], ['Se as ' + int(c.semConfirmacao) + ' sem confirmação forem cobradas', brl(c.totalSeSemConfirmacaoCobrar)], ['Repasse ao entregador nas alocadas finalizadas', brl(k.valorEntregadorWorkflow / 100)], ['Valor das lojas nessas entregas', brl(k.valorLojaWorkflow / 100)]]
+    .map(function (x) { return '<div><span class="eyebrow">' + x[0] + '</span><b class="num">' + x[1] + '</b></div>'; }).join('');
+  $('custoNota').textContent = 'A Meta só cobra template entregue; os ' + int(c.desperdicioFalhas) + ' recusados não custam. "Sem confirmação" = o GHL ainda mostra só "enviada". A mensalidade do WhatsApp no GHL e o preço do workflow não entram aqui: confira o extrato da carteira do GHL para o valor faturado.';
+
+  var tot = d.entregas.length ? Object.values(d.desfecho).reduce(function (a, b) { return a + b; }, 0) : 0;
+  $('desfSub').textContent = int(tot) + ' entregas · status atual na API da Bee';
+  $('stack').innerHTML = DESF.filter(function (x) { return d.desfecho[x[0]]; }).map(function (x) { return '<span title="' + x[1] + ': ' + d.desfecho[x[0]] + '" style="flex:' + d.desfecho[x[0]] + ';background:' + x[2] + '"></span>'; }).join('');
+  $('leg').innerHTML = DESF.filter(function (x) { return d.desfecho[x[0]]; }).map(function (x) { return '<span><i style="background:' + x[2] + '"></i>' + x[1] + ' <b class="num">' + int(d.desfecho[x[0]]) + '</b> <span class="num" style="color:var(--ink3)">' + pct(d.desfecho[x[0]] / tot) + '</span></span>'; }).join('');
+
+  tabela('dias', [['Dia'], ['Disparos', 1], ['Chegaram', 1], ['Sim', 1], ['Não', 1], ['Alocadas', 1], ['Entregas', 1], ['Custo', 1]], d.porDia.map(function (x) { return [x.dia.split('-').reverse().slice(0, 2).join('/'), int(x.disparos), int(x.chegaram), int(x.sim), int(x.nao), int(x.atribuidas), int(x.pedidos), brl(x.custo)]; }));
+  tabela('falhas', [['Motivo'], ['Mensagens', 1], ['% dos disparos', 1]], d.falhas.map(function (x) { return [esc(x.motivo), int(x.n), pct(x.n / k.disparos)]; }));
+
+  var max = Math.max.apply(null, d.porHora.map(function (h) { return h.disparos; }).concat(1));
+  $('horas').innerHTML = d.porHora.map(function (h) { return '<div title="' + h.hora + 'h: ' + h.disparos + ' disparos, ' + h.sim + ' Sim, ' + h.atribuidas + ' alocadas"><span class="b s" style="height:' + (h.sim / max * 100) + '%"></span><span class="b" style="height:' + ((h.disparos - h.sim) / max * 100) + '%"></span></div>'; }).join('');
+  $('horasX').innerHTML = d.porHora.map(function (h) { return '<span>' + (h.hora % 3 ? '' : h.hora + 'h') + '</span>'; }).join('');
+
+  tabela('atrib', [['Quando'], ['Entrega'], ['Loja'], ['Entregador'], ['Disparos', 1], ['Min. até o Sim', 1], ['Situação']], d.atribuicoes.map(function (a) {
+    var s = a.ficou === false ? '<span class="tag warn">devolveu</span>' : a.status === '50' ? '<span class="tag ok">finalizada</span>' : a.status === '60' ? '<span class="tag bad">cancelada</span>' : '<span class="tag bee">' + esc(STATUS[a.status] || a.status || '—') + '</span>';
+    return [hora(a.em), '#' + esc(a.pedido), esc(a.loja), esc(a.entregador), int(a.disparosAntes), a.minutosAteSim == null ? '—' : int(a.minutosAteSim), s];
+  }));
+  tabela('lojas', [['Loja'], ['Entregas', 1], ['Disparos', 1], ['Workflow', 1], ['App', 1], ['Outro', 1], ['Canc.', 1]], d.lojas.map(function (l) { return [esc(l.loja), int(l.entregas), int(l.disparos), int(l.workflow), int(l.app), int(l.outro), int(l.cancelada)]; }));
+  tabela('entreg', [['Entregador'], ['Receberam', 1], ['Sim', 1], ['Não', 1], ['Alocadas', 1]], d.entregadores.map(function (e) { return [esc(e.id), int(e.recebidas), int(e.sim), int(e.nao), int(e.atribuidas)]; }));
+  tabela('entregas', [['1º disparo'], ['Entrega'], ['Loja'], ['Disparos', 1], ['Chegaram', 1], ['Sim', 1], ['Desfecho']], d.entregas.map(function (x) { var n = NOME_DESF[x.desfecho]; return [hora(x.primeiro), '#' + esc(x.pedido), esc(x.loja), int(x.disparos), int(x.chegaram), int(x.sim), '<span class="tag" style="box-shadow:inset 3px 0 0 ' + n[2] + '">' + n[1] + '</span>']; }));
+}
+
+function carregar() {
+  var q = new URLSearchParams(); if (periodo.de) q.set('de', periodo.de); if (periodo.ate) q.set('ate', periodo.ate);
+  fetch('/api/auditoria?' + q).then(function (r) { return r.json(); }).then(function (d) { if (d.erro && !d.kpis) throw new Error(d.erro); render(d); }).catch(function (e) { $('estado').textContent = 'Não foi possível ler a auditoria: ' + e.message; });
+}
+document.querySelectorAll('[data-p]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.querySelectorAll('[data-p]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+    var p = b.dataset.p;
+    periodo = p === 'hoje' ? { de: diaHoje(), ate: diaHoje() } : p === 'ontem' ? { de: diaHoje(1), ate: diaHoje(1) } : { de: null, ate: null };
+    $('de').value = periodo.de || ''; $('ate').value = periodo.ate || '';
+    carregar();
+  });
+});
+['de', 'ate'].forEach(function (id) { $(id).addEventListener('change', function () { document.querySelectorAll('[data-p]').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); }); periodo = { de: $('de').value || null, ate: $('ate').value || null }; carregar(); }); });
+carregar();
+setInterval(carregar, 60e3);
+</script>
+</body>
+</html>

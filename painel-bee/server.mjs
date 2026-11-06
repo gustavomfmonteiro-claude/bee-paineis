@@ -9,6 +9,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { criarEnvio, ErroEnvio } from './whatsapp.mjs';
+import { criarAuditoria } from './auditoria.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const env = Object.fromEntries(fs.readFileSync(path.join(DIR, '.env'), 'utf8').split(/\r?\n/).map((l) => l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/)).filter(Boolean).map((m) => [m[1], m[2].trim()]));
@@ -54,7 +55,7 @@ for (const [i, f] of FRANQUIAS.entries()) {
   f.col.configurar({ ...baseColetor, franquia: f, sessao: i ? sessaoOutras : sessao, ...(i ? { ...loginOutras, cancelamentos: null, observacao: [], alertaLojas: [] } : {}) });
 }
 const principal = FRANQUIAS[0], outras = FRANQUIAS.slice(1);
-const { coletar, buscandoSemRede, entregadoresProximos, detalheAlerta, lerPedido, entregasAbertas, atribuirEntrega } = principal.col;
+const { coletar, buscandoSemRede, entregadoresProximos, detalheAlerta, lerPedido, entregasAbertas, atribuirEntrega, lerPedidoAuditoria } = principal.col;
 const franquiaDe = (url) => FRANQUIAS.find((f) => f.chave === url.searchParams.get('franquia')) || principal;
 
 // Botão de WhatsApp: só aparece com token, location e tag do Workflow no .env. Sem senha, por decisão do usuário (04/11/2026)
@@ -65,6 +66,7 @@ const whatsapp = criarEnvio({
   tag: cfg('GHL_TAG'),
   arquivo: path.join(CACHE, 'whatsapp-envios.jsonl'),
   arquivoOfertas: path.join(CACHE, 'whatsapp-ofertas.json'),
+  arquivoRespostas: path.join(CACHE, 'whatsapp-respostas.jsonl'),
   chaveWebhook: cfg('GHL_WEBHOOK_CHAVE'),
   // igual ao tempo limite da ação do Workflow: depois disso o botão não aciona mais o webhook
   validadeOfertaMs: Number(cfg('WHATSAPP_VALIDADE_MIN', 5)) * 60e3,
@@ -80,6 +82,11 @@ const whatsapp = criarEnvio({
   intervaloStatusMs: Number(cfg('WHATSAPP_INTERVALO_MS', 4000)),
   log,
 });
+// Auditoria do WhatsApp (página /auditoria): custo = templates de marketing entregues × preço da Meta no Brasil
+const auditoria = whatsapp.ativo ? criarAuditoria({
+  cache: CACHE, ghlBase: cfg('GHL_BASE_URL', 'https://services.leadconnectorhq.com'), pit: cfg('GHL_PIT'), lerPedidoAuditoria,
+  custoUsd: Number(cfg('WHATSAPP_CUSTO_USD', 0.0625)), cambio: Number(cfg('CAMBIO_USD_BRL', 5.4)), log,
+}) : null;
 const COD_HTTP = { telefone: 422, repetido: 409, ocupado: 423, limite: 429, pausa: 429, recusado: 502, token: 502, ghl: 502 };
 // Envio automático: 1 liga. Sem isso, só o botão manual envia.
 const WHATSAPP_AUTO = whatsapp.ativo && cfg('WHATSAPP_AUTO') === '1';
@@ -338,6 +345,18 @@ http.createServer((req, res) => {
       }
     });
     return;
+  }
+  if (url.pathname === '/auditoria') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    return res.end(fs.readFileSync(path.join(DIR, 'public', 'auditoria.html')));
+  }
+  if (url.pathname === '/api/auditoria') {
+    const json = (cod, o) => { res.writeHead(cod, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(o)); };
+    if (!auditoria) return json(503, { erro: 'O WhatsApp não está configurado neste servidor.' });
+    const dia = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : null);
+    // releitura das APIs no máximo a cada 3 min, mesmo com muita gente na página
+    if (auditoria.idadeMs() > 3 * 60e3) auditoria.atualizar();
+    return json(200, auditoria.calcular({ de: dia(url.searchParams.get('de')), ate: dia(url.searchParams.get('ate')) }));
   }
   if (url.pathname === '/api/dados') {
     res.writeHead(200, { 'Content-Type': 'application/json' });

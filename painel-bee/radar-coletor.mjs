@@ -803,6 +803,19 @@ export async function lerPedido(id) {
   const p = j?.data || j || {};
   return { id: p.id, status: String(p.status), entregador: p.deliveryman?.id ?? p.deliveryman_id ?? null, loja: (p.merchant?.name || '').replace(/\s+/g, ' ').trim() };
 }
+// Auditoria do WhatsApp: desfecho da entrega (status, quem ficou, valores em centavos, datas)
+export async function lerPedidoAuditoria(id) {
+  const j = await api('/orders/' + encodeURIComponent(id));
+  const p = j?.data || j || {};
+  const d = p.dates || {};
+  return {
+    status: String(p.status), entregador: p.deliveryman?.id ?? p.deliveryman_id ?? null,
+    loja: (p.merchant?.name || '').replace(/\s+/g, ' ').trim(), merchantId: p.merchant?.id ?? p.merchant_id ?? null,
+    criado: d.created_at || p.created_at || null, aceito: d.accepted_at || null, finalizado: d.finished_at || null, cancelado: d.cancelled_at || null,
+    valorEntregador: Number(p.price_deliveryman ?? p.total_deliveryman_value ?? p.values?.deliveryman) || 0, valorLoja: Number(p.price ?? p.total_merchant_value ?? p.values?.merchant) || 0,
+    camposValor: Object.keys(p).filter((c) => /price|value/i.test(c)).slice(0, 12),
+  };
+}
 // A chave do filtro é `entregador_id`; com `deliveryman_id` a API ignora o filtro em silêncio.
 // Confere o id de novo aqui para nunca contar entregas de outros se o filtro for ignorado.
 export async function entregasAbertas(entregadorId) {
