@@ -449,7 +449,7 @@ body.franq-sem-acesso .wrap > *:not(.top):not(#franqAviso){display:none}
     <div class="ph"><div class="sectitle"><span class="tag bad">ALERTA</span><h2>Sem rede, grupos regionais<span class="so-principal">, Americanas e lojas selecionadas</span><span class="so-outras"> e Americanas</span> buscando há mais de 5 min</h2></div>
       <div class="al-ctl"><span class="sub" id="alertaSub">aguardando a primeira leitura…</span><button type="button" class="chip som" id="btnSom" aria-pressed="false">🔕 Som desligado</button></div></div>
     <div id="alertaCorpo"></div>
-    <div class="foot">Entregas com status "buscando" de lojas sem rede (sem key account e sem grupo regional no cadastro), de grupos regionais e da Americanas<span class="so-principal">, mais as lojas 933, 890, 495, 678 e 839 Pague Menos e 7300 e 7362 Extrafarma</span>, lidas da API a cada 1 min. <span class="so-principal">O WhatsApp automático começa com 1 min de busca nessas lojas e com 5 min em sem rede e grupos regionais; a Americanas não recebe oferta automática, só pelo botão. As mensagens saem em lotes de 10 por entrega, para os disponíveis mais próximos, com pausa de 2 min entre um lote e outro; mensagem recusada pelo WhatsApp não conta no lote, e o mesmo entregador não recebe a mesma entrega duas vezes. </span>Espera contada do início da busca e atualizada a cada segundo — uma entrega aceita entre duas leituras sai da lista na leitura seguinte. Com o som ligado, cada entrega que passa de 5 min toca o alerta; enquanto houver entregas na lista, um bipe curto a cada 2 min. Clique em uma entrega para ver os entregadores online até 3 km da loja, em linha reta, pela última posição enviada pelo app, com a lista atualizada a cada 1 min.</div>
+    <div class="foot">Entregas com status "buscando" de lojas sem rede (sem key account e sem grupo regional no cadastro), de grupos regionais e da Americanas<span class="so-principal">, mais as lojas 933, 890, 495, 678 e 839 Pague Menos e 7300 e 7362 Extrafarma</span>, lidas da API a cada 1 min. <span class="so-principal">O WhatsApp automático começa com 1 min de busca nessas lojas e com 5 min em sem rede e grupos regionais; a Americanas não recebe oferta automática, só pelo botão. As mensagens saem em lotes de 10 por entrega, para os disponíveis mais próximos, com pausa de 2 min entre um lote e outro; mensagem recusada pelo WhatsApp não conta no lote, e o mesmo entregador não recebe a mesma entrega duas vezes no automático. O botão WhatsApp fica sempre liberado para envio manual, inclusive para reenviar ou tentar de novo depois de recusa, e só trava enquanto a mensagem sai ou se o entregador estiver com uma oferta aberta. </span>Espera contada do início da busca e atualizada a cada segundo — uma entrega aceita entre duas leituras sai da lista na leitura seguinte. Com o som ligado, cada entrega que passa de 5 min toca o alerta; enquanto houver entregas na lista, um bipe curto a cada 2 min. Clique em uma entrega para ver os entregadores online até 3 km da loja, em linha reta, pela última posição enviada pelo app, com a lista atualizada a cada 1 min.</div>
   </section>
 
   <!-- visão da franquia inteira -->
@@ -1642,13 +1642,14 @@ function htmlZap(e) {
   if (d.length >= 12 && d.indexOf('55') === 0) d = d.slice(2);
   if (d.length !== 10 && d.length !== 11) return '';
   var st = zapEstado[zapChave(e.id)] || {};
-  // o servidor é quem sabe: vale também para o envio automático e sobrevive a recarregar a página
-  if (e.whatsappSituacao === 'falhou') return '<button type="button" class="zap-btn" disabled>WhatsApp não entregue</button>';
-  if (e.whatsappSituacao === 'enviado') return '<button type="button" class="zap-btn" disabled>✓ WhatsApp enviado</button>';
-  if (st.ok && st.semConfirmacao) return '<button type="button" class="zap-btn" disabled>Enviado ao GHL · sem confirmação</button>';
-  if (st.ok) return '<button type="button" class="zap-btn" disabled>✓ WhatsApp enviado</button>';
-  if (st.enviando || e.whatsappSituacao === 'enviando') return '<button type="button" class="zap-btn" disabled>Enviando…</button>';
-  return '<button type="button" class="zap-btn" data-zap="' + esc(e.id) + '" aria-label="Enviar WhatsApp para ' + esc(e.nome) + '">WhatsApp</button>';
+  // O envio manual fica sempre liberado: só trava enquanto a mensagem está saindo. O clique desta tela vale mais
+  // que a leitura da lista (de até 1 min atrás), que pode ter sido feita no meio do envio.
+  if (st.enviando || (!st.ok && !st.erro && e.whatsappSituacao === 'enviando')) return '<button type="button" class="zap-btn" disabled>Enviando…</button>';
+  var rotulo = st.erro ? 'Tentar de novo'
+    : st.ok ? (st.semConfirmacao ? 'Enviado ao GHL · reenviar' : '✓ Enviado · reenviar')
+    : e.whatsappSituacao === 'falhou' ? 'Não entregue · tentar de novo'
+    : e.whatsappSituacao === 'enviado' ? '✓ Enviado · reenviar' : 'WhatsApp';
+  return '<button type="button" class="zap-btn" data-zap="' + esc(e.id) + '" aria-label="Enviar WhatsApp para ' + esc(e.nome) + '">' + rotulo + '</button>';
 }
 var zapDlg = document.createElement('dialog');
 zapDlg.id = 'zapDlg';

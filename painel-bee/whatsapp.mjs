@@ -73,9 +73,10 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
   // O Workflow espera o botão por 5 min e ignora nova entrada enquanto isso: uma segunda oferta
   // nesse intervalo não sairia, e o "Sim" da primeira cairia na oferta errada.
   // Quem acabou de receber uma entrega também fica um tempo sem ofertas, mesmo se a devolver.
-  const ofertaAberta = (id) => Object.values(ofertas).some((o) => String(o.entregador) === String(id) && (
+  // `manual` (botão): só a oferta aberta segura, porque o Workflow não mandaria a mensagem nova.
+  const ofertaAberta = (id, manual = false) => Object.values(ofertas).some((o) => String(o.entregador) === String(id) && (
     (['aberta', 'processando'].includes(o.estado) && Date.now() < Date.parse(o.expira) + 60e3) ||
-    (o.atribuidaEm && Date.now() < Date.parse(o.atribuidaEm) + pausaAposAtribuirMs)
+    (!manual && o.atribuidaEm && Date.now() < Date.parse(o.atribuidaEm) + pausaAposAtribuirMs)
   ));
   if (arquivoOfertas) { try { ofertas = JSON.parse(fs.readFileSync(arquivoOfertas, 'utf8')); } catch {} }
   // A oferta é gravada antes da tag e o log só depois da confirmação (até 24 s): sem isto, reiniciar
@@ -332,17 +333,20 @@ export function criarEnvio({ base = 'https://services.leadconnectorhq.com', pit,
       }
     },
 
-    async enviar(pedido, entregador, dados) {
+    // `manual` = botão da tela: libera reenvio ao mesmo entregador (inclusive depois de recusa do WhatsApp), a pausa
+    // do lote e a pausa depois de atribuir. Seguem valendo: envio em andamento, oferta aberta e o teto por hora.
+    async enviar(pedido, entregador, dados, { manual = false } = {}) {
       if (!dados || !/^[1-9]\d*$/.test(String(dados.merchantId))) throw new ErroEnvio('ghl', 'Os dados desta entrega não estão disponíveis agora. Tente de novo em instantes.');
       const k = chave(pedido, entregador.id);
       const digitos = normalizaTelefone(entregador.telefone);
       if (!digitos) throw new ErroEnvio('telefone', 'A API da Bee não trouxe um telefone válido para este entregador.');
       if (emAndamento.has(k)) throw new ErroEnvio('repetido', 'Este envio já está em andamento.');
-      if (enviados.has(k) || jaTentados.has(k)) throw new ErroEnvio('repetido', 'Este entregador já recebeu a mensagem desta entrega.');
+      if (!manual && (enviados.has(k) || jaTentados.has(k))) throw new ErroEnvio('repetido', 'Este entregador já recebeu a mensagem desta entrega.');
       const pid = String(pedido), idEnt = String(entregador.id);
-      const retoma = retomaEm(pid);
+      const retoma = manual ? 0 : retomaEm(pid);
       if (retoma) throw new ErroEnvio('pausa', `Esta entrega está em pausa depois de ${tentativas.get(pid)} mensagens. O envio volta às ${new Date(retoma).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' })}.`);
-      if (entregadoresEmEnvio.has(idEnt) || ofertaAberta(entregador.id)) throw new ErroEnvio('ocupado', 'Este entregador recebeu uma oferta ou uma entrega há pouco. Tente de novo em alguns minutos.');
+      if (entregadoresEmEnvio.has(idEnt) || ofertaAberta(entregador.id, manual)) throw new ErroEnvio('ocupado', 'Este entregador está com uma oferta aberta agora. Espere ele responder ou a oferta vencer.');
+      if (manual) enviados.delete(k);
       envios = envios.filter((t) => Date.now() - t < HORA_MS);
       if (envios.length >= limiteHora) throw new ErroEnvio('limite', `Limite de ${limiteHora} envios por hora atingido.`);
       emAndamento.add(k);

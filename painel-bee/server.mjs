@@ -337,7 +337,7 @@ http.createServer((req, res) => {
         const { lista } = await entregadoresProximos(x.origem);
         const e = lista.find((n) => String(n.id) === String(d.entregador));
         if (!e) return json(404, { erro: 'Este entregador não está mais online a até 3 km da loja.' });
-        json(200, await whatsapp.enviar(x.id, e, detalheAlerta(x.id)));
+        json(200, await whatsapp.enviar(x.id, e, detalheAlerta(x.id), { manual: true }));
       } catch (e) {
         if (e instanceof ErroEnvio) { log('whatsapp recusado:', e.message); return json(COD_HTTP[e.cod] || 502, { erro: e.cod === 'token' ? 'O GHL recusou o token do painel.' : e.cod === 'ghl' ? 'O GHL não aceitou o envio agora. Tente de novo em instantes.' : e.message }); }
         log('whatsapp falhou:', e?.message);
