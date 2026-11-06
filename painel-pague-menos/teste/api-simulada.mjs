@@ -47,13 +47,17 @@ pedido(hoje, horaLocal(12), LOJAS[2], '20', { aceite: 3, ent: 55, retorno: true 
 pedido(hoje, horaLocal(7), LOJAS[0], '10', { retorno: true });
 pedido(hoje, horaLocal(1), LOJAS[1], '10', {});
 pedido(hoje, horaLocal(1), LOJAS[3], '10', {});
-let chamadas = 0;
+let chamadas = 0, selecoes = 0, franquias = process.env.SEM_FRANQUIA === '1' ? [] : [7];
 http.createServer((req, res) => {
   chamadas++;
   const u = new URL(req.url, 'http://x');
   const js = (s, o) => { res.writeHead(s, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
   if (u.pathname === '/api/public/login') return js(200, { data: { token: 't' } });
   if (req.headers.authorization !== 'Bearer t') return js(401, {});
+  // franquia selecionada do usuário: SEM_FRANQUIA=1 começa sem nenhuma; /api/perder-franquia limpa de novo
+  if (u.pathname === '/api/perder-franquia') { franquias = []; return js(200, { ok: true }); }
+  if (u.pathname === '/api/user/active-franchises' && req.method === 'POST') { let c = ''; req.on('data', (x) => { c += x; }); req.on('end', () => { franquias = JSON.parse(c).franchises; selecoes++; console.log('franquia selecionada', franquias, 'vez', selecoes); js(202, { status: 'success', data: franquias }); }); return; }
+  if (!franquias.length && /^\/api\/(orders|dashboard)/.test(u.pathname)) return js(422, { status: 'error', message: 'Selecione uma franquia para continuar.', error_internal_code: 'user-has-no-selected-franchise' });
   if (u.pathname === '/api/orders') {
     const por = 20, pag = Number(u.searchParams.get('page'));
     // mesmos filtros da API real: lojas e status

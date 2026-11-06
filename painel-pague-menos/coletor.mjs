@@ -56,10 +56,42 @@ function login(reqs) {
   })().finally(() => { loginEmVoo = null; });
   return loginEmVoo;
 }
+// O usuário da API às vezes fica sem franquia selecionada e /orders responde 422
+// "user-has-no-selected-franchise". Aí o painel seleciona Fortaleza sozinho (POST /user/active-franchises)
+// e repete a leitura. No máximo uma vez a cada 2 min, para um erro diferente não virar laço.
+const FRANQUIA_INTERVALO_MS = 2 * 60e3;
+let ultimaSelecao = 0, selecaoEmVoo = null;
+function selecionarFranquia(reqs) {
+  selecaoEmVoo ||= (async () => {
+    ultimaSelecao = Date.now();
+    reqs.total++; reqs.repeticoes++;
+    const r = await fetch(BASE + '/user/active-franchises', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + TOKEN, Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ franchises: [Number(FRANQUIA_ID)] }),
+    });
+    const j = await r.json().catch(() => null);
+    const ok = r.ok && (j?.data || []).map(String).includes(FRANQUIA_ID);
+    console.log(new Date().toLocaleString('pt-BR', { timeZone: 'America/Fortaleza' }), `usuário da API estava sem franquia: seleção de Fortaleza ${ok ? 'feita' : 'falhou (HTTP ' + r.status + ')'}`);
+    return ok;
+  })().finally(() => { selecaoEmVoo = null; });
+  return selecaoEmVoo;
+}
+
 async function api(caminho, reqs, tipo, tentativa = 0) {
   if (!TOKEN) await login(reqs);
   reqs.total++; reqs[tipo]++;
   const r = await fetch(BASE + caminho, { headers: { Authorization: 'Bearer ' + TOKEN, Accept: 'application/json' } });
+  if (r.status === 422 && tentativa < 6) {
+    const corpo = await r.text().catch(() => '');
+    if (/user-has-no-selected-franchise/.test(corpo)) {
+      if (selecaoEmVoo || Date.now() - ultimaSelecao >= FRANQUIA_INTERVALO_MS) {
+        if (await selecionarFranquia(reqs)) return api(caminho, reqs, tipo, tentativa + 1);
+      }
+      throw new Error('HTTP 422: usuário da API sem franquia selecionada');
+    }
+    throw new Error('HTTP 422 em ' + caminho.slice(0, 60));
+  }
   // o login é dividido com o Radar: um login derruba o outro
   if (r.status === 401 && tentativa < 6) {
     reqs.repeticoes++;
