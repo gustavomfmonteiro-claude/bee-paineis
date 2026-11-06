@@ -9,7 +9,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { configurar, coletar, entregadoresProximos, lerBuscando, lerEntregadores, pedidoBuscando, temAcesso, VERSAO_DIA } from './coletor.mjs';
-import { analisarDia, evolucao, rankingEntregadores } from './analise.mjs';
+import { analisarDia, evolucao, rankingEntregadores, somarDias } from './analise.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 let arqEnv = '';
@@ -266,16 +266,23 @@ async function completarEntregadores() {
 }
 
 // --------------------------------------------------------------------- dados
-function montarDados(diaPedido) {
+// Sem filtro mostra o dia mais recente. Com `de` e `ate` soma os dias do período que existem no histórico.
+const ehData = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+function montarDados(diaPedido, dePedido, atePedido) {
   const lista = Object.keys(historico).sort().reverse();
+  let de = ehData(dePedido) ? dePedido : null, ate = ehData(atePedido) ? atePedido : null;
+  if (de && ate && de > ate) [de, ate] = [ate, de];
+  const noPeriodo = de || ate ? lista.filter((d) => (!de || d >= de) && (!ate || d <= ate)).reverse() : [];
   const dia = historico[diaPedido] ? diaPedido : lista[0];
+  const base = noPeriodo.length ? somarDias(noPeriodo.map((d) => historico[d])) : dia ? historico[dia] : null;
   // o dia lido pela leitura ao vivo vale sobre o histórico carregado antes
   const porDia = { ...entregadoresHist.dias };
   for (const [d, h] of Object.entries(historico)) if (h.entregadores) porDia[d] = h.entregadores;
   return JSON.stringify({
     gerado_em: new Date().toISOString(),
     dias: lista.map((d) => ({ dia: d, fechado: !!historico[d].fechado })),
-    atual: dia ? analisarDia(historico[dia]) : null,
+    atual: base ? analisarDia(base) : null,
+    periodoPedido: de || ate ? { de, ate, vazio: !noPeriodo.length } : null,
     entregadores: rankingEntregadores(porDia, hoje()),
     coletas: [...coletas].reverse().slice(0, 15),
     uso, kpiMinutos: KPI_MS / 60e3, buscaSegundos: BUSCA_MS / 1000,
@@ -301,7 +308,7 @@ http.createServer((req, res) => {
   }
   if (url.pathname === '/api/dados') {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-    return res.end(montarDados(url.searchParams.get('dia')));
+    return res.end(montarDados(url.searchParams.get('dia'), url.searchParams.get('de'), url.searchParams.get('ate')));
   }
   if (url.pathname === '/api/evolucao') {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });

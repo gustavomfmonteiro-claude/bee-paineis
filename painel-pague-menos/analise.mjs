@@ -265,6 +265,32 @@ export function evolucao(porDia, nomes, pedidoAte) {
   };
 }
 
+// Junta vários dias num só para o filtro De/Até: soma os contadores de cada loja, as horas e as modalidades
+// e junta os cancelamentos, cada um com a data dele. `dias` em ordem de data.
+export function somarDias(dias) {
+  if (dias.length === 1) return dias[0];
+  const lojas = {}, horas = Array.from({ length: 24 }, () => [0, 0, 0]), cancs = [];
+  for (const d of dias) {
+    for (const [id, l] of Object.entries(d.lojas)) {
+      const t = (lojas[id] ||= { n: l.n, h: Array(24).fill(0), m: {} });
+      t.n = l.n;
+      for (const [k, v] of Object.entries(l)) if (typeof v === 'number') t[k] = (t[k] || 0) + v;
+      l.h.forEach((v, i) => { t.h[i] += v; });
+      for (const [m, x] of Object.entries(l.m || {})) {
+        const y = (t.m[m] ||= {});
+        for (const [k, v] of Object.entries(x)) y[k] = (y[k] || 0) + v;
+      }
+    }
+    (d.horas || []).forEach((h, i) => { for (let j = 0; j < 3; j++) horas[i][j] += h[j] || 0; });
+    for (const c of d.cancs) cancs.push({ ...c, dia: d.dia });
+  }
+  return {
+    dia: dias[dias.length - 1].dia, de: dias[0].dia, ate: dias[dias.length - 1].dia,
+    fechado: dias.every((d) => d.fechado), lido_em: dias.map((d) => d.lido_em).sort().pop(),
+    lojas, horas, cancs,
+  };
+}
+
 export function analisarDia(d) {
   const brutas = Object.entries(d.lojas);
   const perdidas = {};
@@ -278,12 +304,13 @@ export function analisarDia(d) {
   const prioridade = PRIORITARIAS.map((num) => {
     const l = linhas.find((x) => x.num === num);
     if (!l) return { num, semPedidos: true };
-    const cs = d.cancs.filter((c) => c.l === l.id).sort((a, b) => a.h.localeCompare(b.h));
-    return { ...l, grupos: contarMotivos(cs), motivos: contarTextos(cs), cancelamentos: cs.map((c) => ({ id: c.id, h: c.h, min: c.min, fase: c.f, motivo: c.m || 'Sem motivo informado', grupo: c.g, op: c.op, mod: c.md || null })) };
+    const cs = d.cancs.filter((c) => c.l === l.id).sort((a, b) => ((a.dia || '') + a.h).localeCompare((b.dia || '') + b.h));
+    return { ...l, grupos: contarMotivos(cs), motivos: contarTextos(cs), cancelamentos: cs.map((c) => ({ id: c.id, dia: c.dia || d.dia, h: c.h, min: c.min, fase: c.f, motivo: c.m || 'Sem motivo informado', grupo: c.g, op: c.op, mod: c.md || null })) };
   });
 
   return {
-    dia: d.dia, fechado: !!d.fechado, lido_em: d.lido_em,
+    dia: d.dia, de: d.de || d.dia, ate: d.ate || d.dia, periodo: !!d.de && d.de !== d.ate,
+    fechado: !!d.fechado, lido_em: d.lido_em,
     kpis: kpis(brutas.map(([, l]) => l)),
     bandeiras: { PM: kpis(pm), EF: kpis(ef) },
     horas: d.horas,

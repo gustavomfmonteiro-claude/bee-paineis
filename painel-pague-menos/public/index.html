@@ -233,6 +233,10 @@ td small.b{display:block;color:var(--ink3);font-size:10.5px;font-weight:400}
 .evo-seg button:hover{color:var(--ink)}
 .evo-seg button[aria-pressed="true"]{background:var(--bee-d);color:var(--ink);box-shadow:inset 0 -2px 0 var(--bee)}
 .evo-seg button:focus-visible{outline:2px solid var(--bee);outline-offset:-2px}
+.per{display:flex;flex-direction:column;gap:3px;color:var(--ink3);font:500 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.per input{min-width:138px}
+.hoje{background:transparent;color:var(--ink2);border:1px solid var(--line2);border-radius:9px;padding:0 11px;min-height:36px;font:600 12px var(--body);cursor:pointer;align-self:flex-end}
+.hoje:hover{border-color:var(--bee);color:var(--ink)}.hoje[hidden]{display:none}
 input[type=date]{background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:9px;padding:6px 9px;font:500 13px var(--body);min-height:36px;color-scheme:dark}
 .evo-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:0 0 14px}
 .evo-tile{background:rgba(19,26,35,.72);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
@@ -282,7 +286,8 @@ body:not(.sem-entrada) #conteudo > *:nth-child(3){animation-delay:.1s}
       <div><span class="olho">Bee · Torre operacional</span><h1>Demanda Operacional</h1><div class="sub">Pague Menos + Extrafarma · Fortaleza · das 00:00 às 23:59</div></div>
     </div>
     <div class="controles">
-      <label class="sub" for="dia">Dia</label><select id="dia"></select>
+      <label class="per" for="de">De<input type="date" id="de"></label><label class="per" for="ate">Até<input type="date" id="ate"></label>
+      <button type="button" class="hoje" id="hoje" hidden>Hoje</button>
       <span class="relogio" id="relogio" aria-label="Horário de Fortaleza"></span>
       <button class="som" id="som" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg><span>Ativar som</span></button>
       <span class="vivo" id="vivo"><i></i><span>conectando</span></span>
@@ -300,6 +305,10 @@ const num = (v) => (v == null ? '—' : Number(v).toLocaleString('pt-BR'));
 const pc = (v) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%');
 const min = (v) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' min');
 const dataBr = (d) => d.split('-').reverse().join('/');
+const neste = () => (dados?.atual?.periodo ? 'no período' : 'neste dia');
+const doPer = () => (dados?.atual?.periodo ? 'do período' : 'do dia');
+// hora do cancelamento; num período leva a data junto
+const horaCanc = (c) => (dados?.atual?.periodo && c.dia ? `${c.dia.slice(8)}/${c.dia.slice(5, 7)} ` : '') + c.h;
 const quando = (iso) => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Fortaleza', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 // Faixas de leitura do OTD: as mesmas das orientações (abaixo de 70% aciona ajuste).
 function chipOtd(v) {
@@ -312,7 +321,8 @@ const nomeLoja = (l) => `${l.num ? esc(l.num) + ' · ' : ''}${esc(l.bairro)}<sma
 const PRIO = ['678', '7300', '933', '495', '890', '7362', '839'];
 const LISTA_PRIO = `${PRIO.slice(0, -1).join(', ')} e ${PRIO[PRIO.length - 1]}`;
 
-let escolhido = null, dados = null, busca = '', busc = null, periodoEnt = 'd30', filtroCanc = 'todas';
+// Filtro De/Até: vazio = dia mais recente, ao vivo. Período soma os dias que o painel tem gravados.
+let periodo = { de: '', ate: '' }, dados = null, busca = '', busc = null, periodoEnt = 'd30', filtroCanc = 'todas';
 
 function kpi(rot, val, extra, chip, medidor) {
   return `<div class="kpi"><span class="rot">${rot}</span><b>${val}</b><small>${extra || ''}</small>${medidor || ''}${chip || ''}</div>`;
@@ -376,20 +386,20 @@ function blocoHoras(a) {
 function linhasCancPrioridade(a) {
   const todos = [];
   for (const l of a.prioridade) if (!l.semPedidos && (filtroCanc === 'todas' || filtroCanc === l.num)) for (const c of l.cancelamentos) todos.push({ ...c, num: l.num, bairro: l.bairro });
-  todos.sort((x, y) => y.h.localeCompare(x.h));
-  if (!todos.length) return '<p class="vazio">Nenhum cancelamento neste dia.</p>';
-  return `<div class="rolagem"><table><thead><tr><th>Hora</th><th class="txt">Loja</th><th class="txt">Modalidade</th><th>Até cancelar</th><th class="txt">Fase</th><th class="txt">Motivo</th><th class="txt">Tipo</th><th>Pedido</th></tr></thead><tbody>${todos.map((c) => `<tr><td class="forte">${esc(c.h)}</td><td class="txt">${esc(c.num)} · ${esc(c.bairro)}</td><td class="txt">${esc(c.mod || '—')}</td><td>${min(c.min)}</td><td class="txt">${esc(c.fase)}</td><td class="txt">${esc(c.motivo)}</td><td class="txt">${c.op ? '<span class="tag" style="margin:0">Operacional</span>' : esc(c.grupo)}</td><td>${esc(c.id)}</td></tr>`).join('')}</tbody></table></div>`;
+  todos.sort((x, y) => ((y.dia || '') + y.h).localeCompare((x.dia || '') + x.h));
+  if (!todos.length) return `<p class="vazio">Nenhum cancelamento ${neste()}.</p>`;
+  return `<div class="rolagem"><table><thead><tr><th>Hora</th><th class="txt">Loja</th><th class="txt">Modalidade</th><th>Até cancelar</th><th class="txt">Fase</th><th class="txt">Motivo</th><th class="txt">Tipo</th><th>Pedido</th></tr></thead><tbody>${todos.map((c) => `<tr><td class="forte nw">${esc(horaCanc(c))}</td><td class="txt">${esc(c.num)} · ${esc(c.bairro)}</td><td class="txt">${esc(c.mod || '—')}</td><td>${min(c.min)}</td><td class="txt">${esc(c.fase)}</td><td class="txt">${esc(c.motivo)}</td><td class="txt">${c.op ? '<span class="tag" style="margin:0">Operacional</span>' : esc(c.grupo)}</td><td>${esc(c.id)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 function blocoCancPrioridade(a) {
   const ls = a.prioridade;
   const antes = (l) => l.cancelamentos.filter((c) => c.fase === 'Antes do aceite').length;
   const linha = (l) => (l.semPedidos
-    ? `<tr><td class="loja">${esc(l.num)}</td><td class="forte">0</td><td>—</td><td>0</td><td>0</td><td>0</td><td class="txt">Sem pedidos neste dia</td></tr>`
+    ? `<tr><td class="loja">${esc(l.num)}</td><td class="forte">0</td><td>—</td><td>0</td><td>0</td><td>0</td><td class="txt">Sem pedidos ${neste()}</td></tr>`
     : `<tr><td class="loja">${esc(l.num)} · ${esc(l.bairro)}<small>${l.band}</small></td><td class="forte">${num(l.canc)}</td><td>${pc(l.taxaCanc)}</td><td>${num(l.cOp)}</td><td>${num(l.c05)}</td><td>${num(antes(l))}</td><td class="txt">${l.motivos.length ? `${esc(l.motivos[0].motivo)} (${num(l.motivos[0].n)})` : '—'}</td></tr>`);
   const total = ls.reduce((t, l) => t + (l.canc || 0), 0);
   const opcoes = [['todas', 'Todas as lojas'], ...ls.map((l) => [l.num, 'Loja ' + l.num])].map(([v, r]) => `<option value="${v}"${v === filtroCanc ? ' selected' : ''}>${r}</option>`).join('');
   return `<section><div class="topo-sec"><h2>Cancelamentos das lojas prioritárias<span class="cont ${total ? '' : 'zero'}">${num(total)}</span></h2><select id="filtroCanc" aria-label="Filtrar cancelamentos por loja">${opcoes}</select></div>
-    <p class="nota">Resumo por loja e cada cancelamento do dia, do mais recente para o mais antigo.</p>
+    <p class="nota">Resumo por loja e cada cancelamento ${doPer()}, do mais recente para o mais antigo.</p>
     <div class="rolagem" style="margin-bottom:14px"><table><thead><tr><th>Loja</th><th>Canceladas</th><th>% da demanda</th><th>Operacional</th><th>0 a 5 min</th><th>Antes do aceite</th><th class="txt">Principal motivo</th></tr></thead><tbody>${ls.map(linha).join('')}</tbody></table></div>
     <div id="listaCanc">${linhasCancPrioridade(a)}</div></section>`;
 }
@@ -399,9 +409,9 @@ const celulasMod = (l) => (l.mods || []).filter((x) => x.prazo).map((x) => `<div
 
 function blocoPrioridade(a) {
   const cards = a.prioridade.map((l) => {
-    if (l.semPedidos) return `<div class="card"><h3>Loja ${esc(l.num)}</h3><p class="vazio">Sem pedidos neste dia.</p></div>`;
-    const motivos = l.motivos.length ? l.motivos.map((m) => `<div class="motivo${m.op ? ' op' : ''}"><div class="tt">${esc(m.motivo)}${m.op ? '<span class="tag">Operacional</span>' : ''}</div><div class="vv">${num(m.n)}${m.c05 ? ` · ${num(m.c05)} em 0 a 5 min` : ''}</div><div class="bar"><i style="width:${(100 * m.n) / l.canc}%"></i></div></div>`).join('') : '<p class="vazio">Nenhum cancelamento neste dia.</p>';
-    const lista = l.cancelamentos.length ? `<details data-chave="canc-${esc(l.num)}"><summary>${l.cancelamentos.length === 1 ? 'Ver o cancelamento' : `Ver os ${num(l.cancelamentos.length)} cancelamentos, um a um`}</summary><div class="rolagem"><table><thead><tr><th>Hora</th><th class="txt">Modalidade</th><th>Até cancelar</th><th class="txt">Fase</th><th class="txt">Motivo</th><th>Pedido</th></tr></thead><tbody>${l.cancelamentos.map((c) => `<tr><td>${esc(c.h)}</td><td class="txt">${esc(c.mod || '—')}</td><td>${min(c.min)}</td><td class="txt">${esc(c.fase)}</td><td class="txt">${esc(c.motivo)}</td><td>${esc(c.id)}</td></tr>`).join('')}</tbody></table></div></details>` : '';
+    if (l.semPedidos) return `<div class="card"><h3>Loja ${esc(l.num)}</h3><p class="vazio">Sem pedidos ${neste()}.</p></div>`;
+    const motivos = l.motivos.length ? l.motivos.map((m) => `<div class="motivo${m.op ? ' op' : ''}"><div class="tt">${esc(m.motivo)}${m.op ? '<span class="tag">Operacional</span>' : ''}</div><div class="vv">${num(m.n)}${m.c05 ? ` · ${num(m.c05)} em 0 a 5 min` : ''}</div><div class="bar"><i style="width:${(100 * m.n) / l.canc}%"></i></div></div>`).join('') : `<p class="vazio">Nenhum cancelamento ${neste()}.</p>`;
+    const lista = l.cancelamentos.length ? `<details data-chave="canc-${esc(l.num)}"><summary>${l.cancelamentos.length === 1 ? 'Ver o cancelamento' : `Ver os ${num(l.cancelamentos.length)} cancelamentos, um a um`}</summary><div class="rolagem"><table><thead><tr><th>Hora</th><th class="txt">Modalidade</th><th>Até cancelar</th><th class="txt">Fase</th><th class="txt">Motivo</th><th>Pedido</th></tr></thead><tbody>${l.cancelamentos.map((c) => `<tr><td class="nw">${esc(horaCanc(c))}</td><td class="txt">${esc(c.mod || '—')}</td><td>${min(c.min)}</td><td class="txt">${esc(c.fase)}</td><td class="txt">${esc(c.motivo)}</td><td>${esc(c.id)}</td></tr>`).join('')}</tbody></table></div></details>` : '';
     return `<div class="card"><h3>Loja ${esc(l.num)} · ${esc(l.bairro)}</h3><div class="sub">${l.band === 'EF' ? 'Extrafarma' : 'Pague Menos'}</div>
       <div class="mini">
         <div><span>Demanda</span><b>${num(l.dem)}</b></div><div><span>Finalizadas</span><b>${num(l.fin)}</b></div><div><span>Em andamento</span><b>${num(l.and)}</b></div><div><span>Canceladas</span><b>${num(l.canc)}</b></div><div><span>Operacional</span><b>${num(l.cOp)}</b></div><div><span>0 a 5 min</span><b>${num(l.c05)}</b></div>
@@ -574,7 +584,7 @@ function tabela(titulo, nota, colunas, linhas, vazio, campo) {
 function blocoRankings(a) {
   const r = a.rankings;
   return `<div class="grade2">
-    ${tabela('Maior demanda', 'Pedidos criados no dia.', [['Demanda', (l) => num(l.dem)], ['Finalizadas', (l) => num(l.fin)], ['Canceladas', (l) => num(l.canc)], ['Pico', (l) => (l.pico == null ? '—' : String(l.pico).padStart(2, '0') + 'h')]], r.demanda, 'Sem pedidos.', 'dem')}
+    ${tabela('Maior demanda', `Pedidos criados ${dados?.atual?.periodo ? 'no período' : 'no dia'}.`, [['Demanda', (l) => num(l.dem)], ['Finalizadas', (l) => num(l.fin)], ['Canceladas', (l) => num(l.canc)], ['Pico', (l) => (l.pico == null ? '—' : String(l.pico).padStart(2, '0') + 'h')]], r.demanda, 'Sem pedidos.', 'dem')}
     ${tabela('Maior dificuldade para aceitar', `Parcela de pedidos que passou de 5 min até o aceite ou não foi aceita, em lojas com ${a.minDemandaTaxa} pedidos ou mais. Não conta o que outra transportadora aceitou primeiro.`, [['Dificuldade', (l) => pc(l.dificuldade)], ['Aceite médio', (l) => min(l.aceite)], ['Acima de 5 min', (l) => num(l.acimaDe5)], ['Sem aceite', (l) => num(l.semAceite)]], r.aceite, 'Nenhuma loja com volume suficiente.', 'dificuldade')}
     ${tabela('Maior cancelamento por motivo operacional', 'Falta de entregador e atraso ou problema do entregador, o mesmo "Motivo Bee" do Power BI.', [['Operacional', (l) => num(l.cOp)], ['% da demanda', (l) => pc(l.pctOp)], ['Canceladas', (l) => num(l.canc)], ['Demanda', (l) => num(l.dem)]], r.operacional, 'Nenhum cancelamento operacional.', 'cOp')}
     ${tabela('Mais cancelam de 0 a 5 minutos', 'Cancelamentos em até 5 min depois de criar o pedido.', [['0 a 5 min', (l) => num(l.c05)], ['% dos canc.', (l) => pc(l.pctC05)], ['Canceladas', (l) => num(l.canc)], ['Demanda', (l) => num(l.dem)]], r.ate5, 'Nenhum cancelamento nessa faixa.', 'c05')}
@@ -583,8 +593,8 @@ function blocoRankings(a) {
 
 function blocoOrientacoes(a) {
   const o = a.orientacoes;
-  const corpo = o.length ? o.slice(0, 20).map((x) => `<div class="ori"><span class="chip ${x.nivel === 'alta' ? 'mau' : 'med'}">${x.nivel === 'alta' ? 'Alta' : 'Média'}</span><h3>${esc(x.loja)}${x.prio ? '<span class="star">★</span>' : ''} · ${esc(x.area)}</h3><p>${esc(x.evidencia)}</p><p><b>Ajuste:</b> ${esc(x.acao)}</p></div>`).join('') : '<p class="vazio">Nenhuma loja acionou as regras de ajuste neste dia.</p>';
-  return `<section><h2>Orientação de ajustes</h2><p class="nota">Sugestões geradas pelas regras a partir dos números do dia${o.length > 20 ? `; mostrando 20 de ${num(o.length)}` : ''}. A causa de cada caso precisa ser confirmada com a loja ou a operação.</p><div class="orient">${corpo}</div></section>`;
+  const corpo = o.length ? o.slice(0, 20).map((x) => `<div class="ori"><span class="chip ${x.nivel === 'alta' ? 'mau' : 'med'}">${x.nivel === 'alta' ? 'Alta' : 'Média'}</span><h3>${esc(x.loja)}${x.prio ? '<span class="star">★</span>' : ''} · ${esc(x.area)}</h3><p>${esc(x.evidencia)}</p><p><b>Ajuste:</b> ${esc(x.acao)}</p></div>`).join('') : `<p class="vazio">Nenhuma loja acionou as regras de ajuste ${neste()}.</p>`;
+  return `<section><h2>Orientação de ajustes</h2><p class="nota">Sugestões geradas pelas regras a partir dos números ${doPer()}${o.length > 20 ? `; mostrando 20 de ${num(o.length)}` : ''}. A causa de cada caso precisa ser confirmada com a loja ou a operação.</p><div class="orient">${corpo}</div></section>`;
 }
 
 function blocoMotivos(a) {
@@ -617,6 +627,7 @@ function blocoRequisicoes(d) {
 function regras() {
   return `<section><details><summary>Como cada número é calculado</summary><ul class="regras">
     <li><b>Dia:</b> pedidos criados das 00:00 às 23:59 em Fortaleza. O dia corrente fica parcial até virar o dia.</li>
+    <li><b>Período (De/Até):</b> soma os dias gravados no painel no intervalo; taxas e tempos médios são recalculados sobre o total, não a média dos dias. Entregas buscando e em andamento são sempre as de agora. "Hoje" volta para o dia ao vivo.</li>
     <li><b>Atualização:</b> buscando a cada minuto; indicadores a cada 5 min, só das lojas do grupo; às 04:00 uma conferência relê ontem na franquia inteira e inclui loja nova.</li>
     <li><b>Modalidade:</b> vem do prazo do pedido, como no Radar: Super Expressa 30 min, Expressa 60 min, Econômica 24 h. Sem prazo, é Agendada (com horário marcado) ou Padrão, e fica fora do OTD.</li>
     <li><b>OTD:</b> finalizada que chegou ao cliente dentro do prazo da sua modalidade, contado da criação do pedido. O OTD geral junta as modalidades, cada entrega contra o próprio prazo.</li>
@@ -639,7 +650,11 @@ function avisos(d) {
   if (d.erro) a.push(`<div class="aviso erro"><b>A última coleta falhou</b> (${esc(d.erro.erro)}). Mantendo os últimos dados válidos; nova tentativa na próxima leitura.</div>`);
   if (d.atual) {
     const x = d.atual;
-    a.push(`<div class="aviso">${x.fechado ? `<b>Dia fechado</b>, das 00:00 às 23:59.` : `<b>Ao vivo</b>, das 00:00 até a leitura de ${quando(x.lido_em)}.`} Indicadores a cada ${num(d.kpiMinutos)} min; buscando a cada minuto.</div>`);
+    if (d.periodoPedido?.vazio) a.push(`<div class="aviso erro"><b>Nenhum dia com dados nesse período.</b> O painel tem dados de ${dataBr(d.dias[d.dias.length - 1].dia)} em diante; mostrando ${dataBr(x.dia)}.</div>`);
+    const faixa = x.periodo ? `<b>Período de ${dataBr(x.de)} a ${dataBr(x.ate)}</b>` : '';
+    a.push(`<div class="aviso">${x.periodo
+      ? (x.fechado ? `${faixa}, dias fechados, das 00:00 às 23:59.` : `${faixa}, com ${dataBr(x.ate)} ao vivo até a leitura de ${quando(x.lido_em)}.`)
+      : x.fechado ? `<b>Dia fechado</b>, das 00:00 às 23:59.` : `<b>Ao vivo</b>, das 00:00 até a leitura de ${quando(x.lido_em)}.`} Entregas buscando e em andamento são sempre as de agora. Indicadores a cada ${num(d.kpiMinutos)} min; buscando a cada minuto.</div>`);
   }
   $('#avisos').innerHTML = a.join('');
 }
@@ -647,16 +662,17 @@ function avisos(d) {
 function desenhar() {
   const d = dados;
   avisos(d);
-  const sel = $('#dia');
-  sel.innerHTML = d.dias.map((x) => `<option value="${x.dia}">${dataBr(x.dia)}${x.fechado ? '' : ' (parcial)'}</option>`).join('');
-  if (d.atual) sel.value = d.atual.dia;
+  const primeiro = d.dias[d.dias.length - 1]?.dia || '', ultimo = d.dias[0]?.dia || '';
+  for (const el of [$('#de'), $('#ate')]) { el.min = primeiro; el.max = ultimo; }
+  if (d.atual && document.activeElement !== $('#de') && document.activeElement !== $('#ate')) { $('#de').value = d.atual.de; $('#ate').value = d.atual.ate; }
+  $('#hoje').hidden = !(periodo.de || periodo.ate);
   if (!d.atual) { $('#conteudo').innerHTML = '<section><p class="vazio">Ainda não há dados coletados.</p></section>' + blocoRequisicoes(d); return; }
   const a = d.atual;
   // Redesenhar a cada leitura não pode fechar o que a pessoa abriu
   const abertos = [...document.querySelectorAll('details[open][data-chave]')].map((x) => x.dataset.chave);
   $('#conteudo').innerHTML = blocoKpis(a) + blocoBuscando() + blocoAndamento() + blocoModalidades(a) + blocoPrioridade(a) + blocoCancPrioridade(a) + blocoEvolucao() + blocoEntregadores(d) + blocoOrientacoes(a) + blocoRankings(a)
     + `<div class="grade2">${blocoMotivos(a)}${blocoHoras(a)}</div>` + blocoBandeiras(a)
-    + `<section><h2>Todas as lojas</h2><p class="nota">${num(a.lojas.length)} lojas com pedido no dia, da maior para a menor demanda.</p><p><input id="busca" type="search" placeholder="Buscar loja por número ou bairro" aria-label="Buscar loja" value="${esc(busca)}"></p><div id="todas">${blocoLojas(a)}</div></section>`
+    + `<section><h2>Todas as lojas</h2><p class="nota">${num(a.lojas.length)} lojas com pedido ${dados.atual.periodo ? 'no período' : 'no dia'}, da maior para a menor demanda.</p><p><input id="busca" type="search" placeholder="Buscar loja por número ou bairro" aria-label="Buscar loja" value="${esc(busca)}"></p><div id="todas">${blocoLojas(a)}</div></section>`
     + blocoRequisicoes(d) + regras();
   $('#busca').addEventListener('input', (e) => { busca = e.target.value; $('#todas').innerHTML = blocoLojas(a); });
   $('#filtroCanc')?.addEventListener('change', (e) => { filtroCanc = e.target.value; $('#listaCanc').innerHTML = linhasCancPrioridade(a); });
@@ -665,7 +681,8 @@ function desenhar() {
 }
 
 async function carregar() {
-  const r = await fetch('/api/dados' + (escolhido ? '?dia=' + escolhido : ''), { cache: 'no-store' });
+  const qs = periodo.de || periodo.ate ? '?' + new URLSearchParams({ de: periodo.de, ate: periodo.ate }) : '';
+  const r = await fetch('/api/dados' + qs, { cache: 'no-store' });
   dados = await r.json();
   desenhar();
   setTimeout(() => document.body.classList.add('sem-entrada'), 700);
@@ -731,7 +748,19 @@ async function carregarBuscando() {
   conferirAlerta();
 }
 
-$('#dia').addEventListener('change', (e) => { escolhido = e.target.value; carregar(); });
+// De/Até: a data invertida é trocada; um só dia igual ao mais recente volta para o ao vivo.
+function mudarPeriodo() {
+  let de = $('#de').value, ate = $('#ate').value;
+  if (!de && !ate) return;
+  de ||= ate; ate ||= de;
+  if (de > ate) [de, ate] = [ate, de];
+  const ultimo = dados?.dias?.[0]?.dia;
+  periodo = de === ate && de === ultimo ? { de: '', ate: '' } : { de, ate };
+  carregar();
+}
+$('#de').addEventListener('change', mudarPeriodo);
+$('#ate').addEventListener('change', mudarPeriodo);
+$('#hoje').addEventListener('click', () => { periodo = { de: '', ate: '' }; carregar(); });
 // WhatsApp: mesma confirmação do Radar, que é quem envia. A janela fica fora do conteúdo redesenhado.
 let zapAlvo = null;
 const redesenhaProx = (id) => { const el = document.getElementById('prox-' + id); if (el) el.innerHTML = corpoProx(id); };
