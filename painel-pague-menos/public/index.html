@@ -6,7 +6,7 @@
 <title>Painel Pague Menos</title>
 <link rel="icon" href="/bee.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Open+Sans:ital,wght@0,300;1,400&display=swap">
 <style>
 :root{
   color-scheme: dark;
@@ -82,7 +82,10 @@ h2::before{content:"";position:absolute;left:0;top:.18em;bottom:.18em;width:3px;
 .ao-vivo{border-color:var(--bee-l);box-shadow:inset 0 1px 0 rgba(255,210,0,.16),0 0 34px -18px rgba(255,210,0,.55)}
 
 /* indicadores */
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:10px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px;margin-bottom:14px}
+.kpis.q4{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.kpi b{white-space:nowrap}
+.kpi{padding:16px 18px}
 .kpi{padding:14px 15px;min-width:0;transition:border-color .18s,transform .18s}
 .kpi:hover{border-color:var(--line2);transform:translateY(-1px)}
 .kpi span.rot{display:block;color:var(--ink3);font:500 10.5px/1.3 var(--mono);letter-spacing:.09em;text-transform:uppercase}
@@ -187,7 +190,7 @@ details summary:hover{color:var(--ink)}
 .modc dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:11px 0 0;padding-top:10px;border-top:1px solid var(--line)}
 .modc dt{color:var(--ink3);font:500 10px/1.3 var(--mono);letter-spacing:.05em;text-transform:uppercase}
 .modc dd{margin:0;font:600 14px/1.3 var(--display);font-variant-numeric:tabular-nums}
-td small.b{display:block;color:var(--ink3);font-size:10.5px;font-weight:400}
+td small.b{display:block;color:var(--ink2);font-size:12px;font-weight:500}
 .mod{display:inline-block;font:600 10.5px/1 var(--body);padding:4px 7px;border-radius:999px;border:1px solid var(--bee);color:var(--ink);margin-left:5px}
 .busca small.total{color:var(--ink3);font-size:11px;font-weight:400}
 .prox-btn{min-height:32px;padding:0 10px;font:500 12px var(--body);color:var(--ink);background:var(--panel3);border:1px solid var(--line2);border-radius:8px;cursor:pointer;white-space:nowrap;transition:border-color .15s}
@@ -236,7 +239,7 @@ td small.b{display:block;color:var(--ink3);font-size:10.5px;font-weight:400}
 .evo-seg button:focus-visible{outline:2px solid var(--bee);outline-offset:-2px}
 .per{display:flex;flex-direction:column;gap:3px;color:var(--ink3);font:500 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase}
 .per input{min-width:138px}
-.hoje{background:transparent;color:var(--ink2);border:1px solid var(--line2);border-radius:9px;padding:0 11px;min-height:36px;font:600 12px var(--body);cursor:pointer;align-self:flex-end}
+.hoje-x{background:transparent;color:var(--ink2);border:1px solid var(--line2);border-radius:9px;padding:0 11px;min-height:36px;font:600 12px var(--body);cursor:pointer;align-self:flex-end}
 .hoje:hover{border-color:var(--bee);color:var(--ink)}.hoje[hidden]{display:none}
 input[type=date]{background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:9px;padding:6px 9px;font:500 13px var(--body);min-height:36px;color-scheme:dark}
 .evo-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:0 0 14px}
@@ -283,9 +286,9 @@ body:not(.sem-entrada) #conteudo > *:nth-child(3){animation-delay:.1s}
 .g-linha{stroke:rgba(148,170,196,.10);stroke-width:1}
 .g-base{stroke:rgba(148,170,196,.30);stroke-width:1}
 .g-ref{stroke:rgba(242,245,249,.45);stroke-width:1}
-.g-tk{fill:var(--ink3);font:400 10.5px var(--mono)}
+.g-tk{fill:var(--ink3);font:400 11.5px var(--mono)}
 .g-tk.ref{fill:var(--ink2)}
-.g-vl{fill:var(--ink2);font:600 10.5px var(--mono)}
+.g-vl{fill:var(--ink);font:700 13px var(--display)}
 .g-alvo{fill:transparent;cursor:default}.g-alvo:hover{fill:rgba(148,170,196,.07)}
 .g-guia{stroke:rgba(242,245,249,.35);stroke-width:1;opacity:0}.g-alvo-l:hover .g-guia{opacity:1}
 .leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 10px;color:var(--ink2);font-size:12.5px}
@@ -296,37 +299,45 @@ body:not(.sem-entrada) #conteudo > *:nth-child(3){animation-delay:.1s}
 .duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:18px 26px;margin-bottom:6px}
 .duo > div{min-width:0}
 .nota.pe{margin:8px 0 0;font-size:12px}
-.hb{display:grid;gap:11px}
+.hb{display:grid;gap:16px}
 .hb.largo .hb-l{grid-template-columns:minmax(140px,300px) minmax(0,1fr) auto}
 .hb-l{display:grid;grid-template-columns:minmax(96px,150px) minmax(0,1fr) auto;gap:4px 12px;align-items:center}
-.hb-r{color:var(--ink);font-size:13px;min-width:0;line-height:1.25}
+.hb-r{color:var(--ink);font-size:14px;font-weight:500;min-width:0;line-height:1.25}
 .hb-r small{display:block;color:var(--ink3);font:500 10.5px var(--mono)}
-.hb-t{position:relative;height:12px;border-radius:0 4px 4px 0;background:rgba(148,170,196,.08)}
-.hb-t > i{display:block;height:100%;border-radius:0 4px 4px 0;min-width:2px;transition:width .5s ease}
+.hb-t{position:relative;height:22px;border-radius:0 5px 5px 0;background:rgba(148,170,196,.08)}
+.hb-t > i{display:block;height:100%;border-radius:0 5px 5px 0;min-width:2px;transition:width .5s ease}
 .hb-t.pilha{display:flex;gap:2px;background:transparent}
 .hb-t.pilha > i{border-radius:0;min-width:0}
 .hb-t.pilha > i:last-of-type{border-radius:0 4px 4px 0}
-.hb-ref{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:rgba(242,245,249,.6);border-radius:1px}
-.hb-v{color:var(--ink);font:600 13px var(--body);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;min-width:62px}
-.hb-v small{display:block;color:var(--ink3);font:400 11px var(--body)}
+.hb-ref{position:absolute;top:-5px;bottom:-5px;width:2px;margin-left:-1px;background:rgba(242,245,249,.6);border-radius:1px}
+.hb-v{color:var(--ink);font:700 21px/1.1 var(--display);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;min-width:62px}
+.hb-v small{display:block;color:var(--ink2);font:400 12px var(--body);margin-top:2px}
 @media (max-width:560px){.hb-l{grid-template-columns:minmax(0,1fr) auto}.hb-t{grid-column:1/-1;grid-row:2}}
-.seg{display:flex;gap:2px;height:28px;margin:2px 0 8px}
-.seg > i{display:flex;align-items:center;padding:0 8px;min-width:3px;border-radius:4px;color:#fff;font:600 11.5px var(--body);font-style:normal;white-space:nowrap;overflow:hidden}
+.seg{display:flex;gap:2px;height:28px;margin:2px 0 10px}
+.seg > i{display:flex;align-items:center;padding:0 8px;min-width:3px;border-radius:4px;color:#fff;font:700 14px var(--display);font-style:normal;white-space:nowrap;overflow:hidden}
+.seg > i.estreita{padding:0 5px;justify-content:center;font-size:12.5px}
 .seg.fino{height:6px;margin:10px 0 0}.seg.fino > i{padding:0;border-radius:3px}
 .kpi-a{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 13px;align-items:center}
-.kpi-a b{font-size:27px;margin:4px 0 2px}
-.anel .trilho{fill:none;stroke:rgba(148,170,196,.14);stroke-width:5}
-.anel .arco{fill:none;stroke:var(--ink2);stroke-width:5;stroke-linecap:round;transition:stroke-dasharray .6s ease}
+.kpi-a{gap:4px 15px}.kpi-a b{font-size:29px;margin:4px 0 2px}
+.anel .trilho{fill:none;stroke:rgba(148,170,196,.14);stroke-width:8}
+.anel .arco{fill:none;stroke:var(--ink2);stroke-width:8;stroke-linecap:round;transition:stroke-dasharray .6s ease}
 .anel.ok .arco{stroke:var(--ok)}.anel.med .arco{stroke:var(--warn)}.anel.mau .arco{stroke:var(--bad)}
 .anel.neutro .arco{stroke:#3987e5}
-.anel text{fill:var(--ink);font:700 11px var(--body)}
+.anel text{fill:var(--ink);font:700 21px var(--display)}
+.anel.fin .arco{stroke:var(--ok);filter:drop-shadow(0 0 6px rgba(52,224,161,.55))}
+.anel.canc .arco{stroke:var(--bad);filter:drop-shadow(0 0 6px rgba(255,95,109,.55))}
+.kpi .pct{display:flex;align-items:baseline;gap:7px;margin:2px 0 4px;font:700 19px/1.1 var(--display);color:var(--ink)}
+.kpi .pct em{font:500 12.5px var(--body);font-style:normal;color:var(--ink2)}
+.kpi .pct.ok{color:var(--ok)}.kpi .pct.mau{color:var(--bad)}.kpi .pct.azul{color:#5598e7}
+.anel.ok .arco,.anel.med .arco,.anel.mau .arco{filter:drop-shadow(0 0 6px currentColor)}
+.anel.ok{color:rgba(52,224,161,.55)}.anel.med{color:rgba(255,154,60,.55)}.anel.mau{color:rgba(255,95,109,.55)}
 .kpi .mini{display:block;width:100%;height:30px;margin-top:8px}
 .kpi b.duplo{font-size:21px;white-space:nowrap}.kpi b.duplo span{color:var(--ink3);font-weight:400;margin:0 6px}
 .kpi small .ch{width:8px;height:8px;margin-right:4px}
 .numeros{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));gap:8px;margin:12px 0 16px}
 .numeros > div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:rgba(17,26,41,.6);min-width:0}
 .numeros > div > span{display:block;color:var(--ink3);font:500 10px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
-.numeros b{display:block;font:700 20px/1.2 var(--display);font-variant-numeric:tabular-nums}
+.numeros b{display:block;font:700 27px/1.2 var(--display);font-variant-numeric:tabular-nums}
 .numeros small{display:block;color:var(--ink3);font-size:11.5px;margin-top:2px}
 .numeros .ch{width:8px;height:8px}
 details > summary{cursor:pointer;color:var(--ink2);font-size:13px;margin:10px 0 6px}
@@ -339,11 +350,110 @@ details > summary:hover{color:var(--ink)}
 .km td:first-child,.km th:first-child{position:sticky;left:0;background:var(--panel);z-index:1}
 .ic{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;font:700 10px/1 var(--body);margin-right:6px;vertical-align:-3px}
 .ic.ok{background:var(--ok-d);color:var(--ok)}.ic.med{background:var(--warn-d);color:var(--warn)}.ic.mau{background:var(--bad-d);color:var(--bad)}
+/* pedidos do dia (formato do Radar) */
+section.hud{position:relative;overflow:visible}
+section.hud::before,section.hud::after{content:"";position:absolute;width:16px;height:16px;border:2px solid var(--bee);opacity:.85;filter:drop-shadow(0 0 5px rgba(255,210,0,.32))}
+section.hud::before{top:-1px;left:-1px;border-right:0;border-bottom:0;border-top-left-radius:14px}
+section.hud::after{bottom:-1px;right:-1px;border-left:0;border-top:0;border-bottom-right-radius:14px}
+.rk{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0 4px}
+@media (max-width:980px){.rk{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:340px){.rk{grid-template-columns:1fr}}
+@media (max-width:640px){.rk{gap:8px}.rk-t{padding:12px 12px 11px}.rk-t .v{font-size:26px}.rk-t .l{font-size:9.5px;letter-spacing:.08em}}
+.rk-t{position:relative;overflow:hidden;display:grid;gap:5px;align-content:start;padding:15px 17px 14px;border:1px solid rgba(255,255,255,.075);border-radius:12px;
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.012)),var(--panel)}
+.rk-t::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,transparent,var(--k,var(--ink3)),transparent);opacity:.9}
+.rk-t .l{font:500 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
+.rk-t .v{font:700 clamp(28px,3.1vw,40px)/1.05 var(--mono);font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
+.rk-t .f{font:400 11.5px var(--mono);color:var(--ink3)}
+.rk-t .f .chip{vertical-align:-1px}
+.rk-t.total{--k:rgba(17,16,8,.5);background:var(--bee);background-image:var(--honey),linear-gradient(160deg,#FFE45C,#FFD200 55%,#F2C200);border-color:rgba(255,210,0,.7);box-shadow:0 0 34px -12px rgba(255,210,0,.7)}
+.rk-t.total .l{color:rgba(17,16,8,.68);font-weight:600}.rk-t.total .v{color:var(--bee-ink)}.rk-t.total .f{color:rgba(17,16,8,.6)}
+.rk-t.fin{--k:var(--ok)}.rk-t.fin .v{color:var(--ok);text-shadow:0 0 22px rgba(52,224,161,.35)}
+.rk-t.canc{--k:var(--bad)}.rk-t.canc .v{color:var(--bad);text-shadow:0 0 22px rgba(255,95,109,.35)}
+.rk-t.and{--k:#3987e5}
+.rk-t.otd.ok{--k:var(--ok)}.rk-t.otd.ok .v{color:var(--ok);text-shadow:0 0 22px rgba(52,224,161,.35)}
+.rk-t.otd.med{--k:var(--warn)}.rk-t.otd.med .v{color:var(--warn)}
+.rk-t.otd.mau{--k:var(--bad)}.rk-t.otd.mau .v{color:var(--bad)}
+.rk.rk3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:760px){.rk.rk3{grid-template-columns:1fr}}
+.rk-t.mod::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--m)}
+.rk-t.ac{--k:#3987e5}.rk-t.p1{--k:#9085e9}.rk-t.p2{--k:#d55181}
+/* seções ao vivo que abrem e fecham */
+.recolher{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0 11px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink2);font:500 12px var(--mono);cursor:pointer}
+.recolher:hover{color:var(--ink);border-color:rgba(148,170,196,.45)}
+.recolher svg{transition:transform .2s}
+section.fechada .recolher svg{transform:rotate(-90deg)}
+section.fechada > :not(.topo-sec){display:none}
+section.fechada .topo-sec{margin-bottom:0}
+.topo-sec .lado{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
 /* abas e análise de lojas */
-.abas{display:flex;gap:4px;margin:0 0 14px;border-bottom:1px solid var(--line2);overflow-x:auto}
-.abas button{background:transparent;border:0;border-bottom:2px solid transparent;color:var(--ink2);font:600 14px var(--display);padding:10px 14px 9px;cursor:pointer;white-space:nowrap;margin-bottom:-1px}
-.abas button:hover{color:var(--ink)}
-.abas button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--bee)}
+.abas{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line2);border-radius:13px;background:rgba(12,19,32,.85);max-width:100%;overflow-x:auto;scrollbar-width:none}
+.abas button{display:inline-flex;align-items:center;gap:8px;background:transparent;border:0;border-radius:9px;color:var(--ink2);font:600 13.5px var(--display);letter-spacing:.02em;padding:9px 16px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s}
+.abas button svg{opacity:.75}
+.abas button:hover{color:var(--ink);background:rgba(148,170,196,.07)}
+.abas button[aria-selected="true"]{color:var(--ink);background:linear-gradient(180deg,rgba(255,210,0,.20),rgba(255,210,0,.07));box-shadow:inset 0 0 0 1px var(--bee-l)}
+.abas button[aria-selected="true"] svg{opacity:1;color:var(--bee)}
+.abas .ponto{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(52,224,161,.55);animation:pulso 2s ease-out infinite}
+/* cabeçalho: o banner amarelo do Radar (favo de mel + brilho que atravessa) */
+:root{--bee-ink:#111008;--honey:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 0v34' fill='none' stroke='rgba(0,0,0,.09)' stroke-width='1.5'/%3E%3C/svg%3E")}
+header.topo.banner{position:relative;overflow:hidden;display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:14px 26px;align-items:center;margin:14px 0 14px;padding:16px 24px;border:0;border-radius:14px;
+  background:var(--bee);background-image:var(--honey);color:var(--bee-ink);backdrop-filter:none;-webkit-backdrop-filter:none;
+  box-shadow:0 0 0 1px rgba(255,210,0,.55),0 18px 60px -22px rgba(255,210,0,.6)}
+header.topo.banner::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.38) 50%,transparent 62%);transform:translateX(-120%);animation:brilho 9s ease-in-out infinite}
+@keyframes brilho{0%,72%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+@media (prefers-reduced-motion:reduce){header.topo.banner::after{animation:none}}
+.banner .logo{display:block;width:124px;height:auto}
+.banner .logo text{fill:var(--bee-ink)}
+.banner .ttl{border-left:2px solid rgba(17,16,8,.18);padding-left:24px;display:grid;gap:2px;min-width:0}
+.banner .eyebrow{font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(17,16,8,.62)}
+.banner h1{font:700 clamp(24px,3vw,34px)/1.05 var(--display);color:var(--bee-ink);margin:0;white-space:nowrap}
+.banner .clientes{justify-self:start;box-shadow:0 6px 18px -10px rgba(0,0,0,.55),0 0 0 2px rgba(17,16,8,.12)}
+header.topo.banner .controles{grid-column:auto;grid-row:auto;justify-self:end;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-items:center;position:relative;z-index:1}
+.banner .chip,.banner .som,.banner .vivo{background:var(--bee-ink);color:var(--bee);border:0;border-radius:999px;box-shadow:0 2px 10px -4px rgba(0,0,0,.6)}
+.banner .chip.relogio{display:inline-flex;flex-direction:row;align-items:center;gap:8px;padding:7px 12px;font:600 12.5px var(--mono);font-variant-numeric:tabular-nums}
+.banner .chip.relogio small{font:500 9.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:rgba(255,210,0,.6)}
+.banner .som{color:var(--bee)}
+.banner .som.pede{background:#fff;color:var(--bee-ink);box-shadow:inset 0 0 0 2px var(--bee-ink)}
+.banner .som.on{background:var(--bee-ink);color:var(--bee)}
+.banner .vivo{color:var(--bee)}
+.banner .vivo i{background:rgba(255,210,0,.45)}
+.banner .vivo.on i{background:var(--ok)}
+@media (max-width:1100px){header.topo.banner{grid-template-columns:auto minmax(0,1fr)}header.topo.banner .clientes{grid-column:1;grid-row:2}header.topo.banner .controles{grid-column:2;grid-row:2;justify-self:end}}
+@media (max-width:700px){header.topo.banner .clientes,header.topo.banner .controles{grid-column:1/-1;grid-row:auto;justify-self:start;justify-content:flex-start}}
+@media (max-width:640px){header.topo.banner{padding:14px 16px;gap:12px 16px}.banner .logo{width:96px}.banner .ttl{padding-left:16px}.banner h1{font-size:22px;white-space:normal}.banner .chip.relogio{display:none}}
+.pagina > .abas{margin:0 0 14px}
+/* cabeçalho antigo: marca | abas | relógio e estado */
+header.topo{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 22px;align-items:center}
+header.topo .marca{grid-column:1;grid-row:1}
+header.topo .controles{grid-column:2;grid-row:1;justify-self:end}
+header.topo .abas{grid-column:1/-1;grid-row:2;justify-self:start}
+/* marca: Bee | título | clientes, tudo na mesma linha e na mesma altura */
+header.topo .marca{display:flex;align-items:center;gap:14px;flex-wrap:nowrap;min-width:0}
+.marca .bee{flex:none;width:52px;height:52px;border-radius:13px;display:block;box-shadow:0 0 0 1px rgba(255,210,0,.45),0 10px 26px -12px rgba(255,210,0,.6)}
+.titulo{min-width:0;padding-left:14px;border-left:1px solid var(--line2)}
+.titulo .olho{margin-bottom:3px}
+.titulo h1{font-size:21px;white-space:nowrap}
+.clientes{flex:none;display:flex;align-items:center;gap:11px;height:42px;padding:0 13px;border-radius:11px;background:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 10px 24px -14px rgba(0,0,0,.9)}
+.clientes img{display:block;width:auto;height:26px}
+.clientes img.ef{height:23px}
+.clientes i{width:1px;height:24px;background:#d8dde4}
+.controles .relogio{display:flex;flex-direction:column;align-items:flex-end;gap:2px;line-height:1.1}
+.controles .relogio small{font:500 9.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+@media (max-width:900px){header.topo{grid-template-columns:minmax(0,1fr)}header.topo .controles{grid-column:1;grid-row:2;justify-self:start}header.topo .abas{grid-row:3;justify-self:stretch}.abas button{flex:1 1 auto;justify-content:center}}
+@media (max-width:760px){header.topo{position:static}}
+@media (max-width:640px){header.topo .marca{flex-wrap:wrap;gap:10px 12px}.marca .bee{width:44px;height:44px}.titulo h1{font-size:19px}.clientes{height:36px;padding:0 10px}.clientes img{height:21px}.clientes img.ef{height:19px}.abas .lg{display:none}.abas button{padding:9px 10px;text-transform:capitalize}.abas button svg{display:none}.controles .relogio{display:none}}
+/* barra de período (Dados gerais e Análise de lojas) */
+.filtro-periodo{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-end;padding:12px 14px;margin:0 0 14px;border:1px solid var(--line);border-radius:var(--raio);background:linear-gradient(180deg,rgba(22,32,50,.72),rgba(12,19,32,.92))}
+.filtro-periodo[hidden]{display:none}
+.fp-rot{display:block;color:var(--ink3);font:500 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.fp-presets{display:flex;flex-wrap:wrap;gap:6px}
+.fp-presets button{min-height:34px;padding:0 13px;border-radius:999px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink2);font:500 12.5px var(--body);cursor:pointer;transition:border-color .15s,color .15s,background .15s}
+.fp-presets button:hover{color:var(--ink);border-color:rgba(148,170,196,.45)}
+.fp-presets button[aria-pressed="true"]{color:#10130A;background:var(--bee);border-color:var(--bee);font-weight:600}
+.fp-datas{display:flex;gap:10px;flex-wrap:wrap}
+.fp-resumo{margin-left:auto;text-align:right;color:var(--ink3);font-size:12.5px;line-height:1.4}
+.fp-resumo b{display:block;color:var(--ink);font:600 15px var(--display)}
+@media (max-width:760px){.fp-resumo{margin-left:0;text-align:left}}
 .filtro-lojas .per{margin-top:10px;max-width:520px}
 .filtro-lojas select{width:100%;text-transform:none;letter-spacing:0;font:500 14px var(--body);color:var(--ink)}
 .pontas{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:8px;margin-top:2px}
@@ -362,22 +472,32 @@ td.quente{color:var(--warn);font-weight:600}
 </head>
 <body>
 <div class="pagina">
-  <header>
-    <div class="marca">
-      <img src="/logo-pm.webp" alt="Pague Menos"><img src="/logo-ef.webp" alt="Extrafarma">
-      <div><span class="olho">Bee · Torre operacional</span><h1>Demanda Operacional</h1><div class="sub">Pague Menos + Extrafarma · Fortaleza · das 00:00 às 23:59</div></div>
+  <header class="topo banner">
+    <svg class="logo" viewBox="0 0 200 118" role="img" aria-label="bee Delivery">
+      <text x="100" y="74" text-anchor="middle" style="font:italic 400 92px 'Open Sans','Segoe UI',sans-serif;letter-spacing:-2px">bee</text>
+      <text x="101" y="106" text-anchor="middle" style="font:300 19px 'Open Sans','Segoe UI',sans-serif;letter-spacing:5.5px">DELIVERY</text>
+    </svg>
+    <div class="ttl">
+      <div class="eyebrow">Pague Menos + Extrafarma · Fortaleza</div>
+      <h1>Demanda Operacional</h1>
     </div>
+    <div class="clientes" role="img" aria-label="Pague Menos e Extrafarma"><img src="/logo-pm.webp" alt="" class="pm"><i aria-hidden="true"></i><img src="/logo-ef.webp" alt="" class="ef"></div>
     <div class="controles">
-      <label class="per" for="de">De<input type="date" id="de"></label><label class="per" for="ate">Até<input type="date" id="ate"></label>
-      <button type="button" class="hoje" id="hoje" hidden>Hoje</button>
-      <span class="relogio" id="relogio" aria-label="Horário de Fortaleza"></span>
+      <span class="chip relogio" aria-label="Horário de Fortaleza"><small>Fortaleza</small><span id="relogio"></span></span>
       <button class="som" id="som" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg><span>Ativar som</span></button>
       <span class="vivo" id="vivo"><i></i><span>conectando</span></span>
     </div>
   </header>
-  <nav class="abas" role="tablist" aria-label="Visões do painel"><button type="button" role="tab" data-aba="operacao" aria-selected="true">Operação ao vivo</button><button type="button" role="tab" data-aba="lojas" aria-selected="false">Análise de lojas</button></nav>
+  <nav class="abas" role="tablist" aria-label="Visões do painel"><button type="button" role="tab" data-aba="vivo" aria-selected="true"><span class="ponto" aria-hidden="true"></span><span class="rot-aba"><span class="lg">Operação </span>ao vivo</span></button><button type="button" role="tab" data-aba="gerais" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="rot-aba"><span class="lg">Dados </span>gerais</span></button><button type="button" role="tab" data-aba="lojas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11h18V9M9 20v-6h6v6"/></svg><span class="rot-aba"><span class="lg">Análise de </span>lojas</span></button></nav>
+  <div class="filtro-periodo" id="filtroPeriodo" hidden>
+    <div><span class="fp-rot">Período</span><div class="fp-presets" role="group" aria-label="Período rápido">
+      <button type="button" data-p="hoje">Hoje</button><button type="button" data-p="ontem">Ontem</button><button type="button" data-p="7">7 dias</button><button type="button" data-p="30">30 dias</button><button type="button" data-p="mes">Este mês</button><button type="button" data-p="mesAnt">Mês anterior</button></div></div>
+    <div class="fp-datas"><label class="per" for="de">De<input type="date" id="de"></label><label class="per" for="ate">Até<input type="date" id="ate"></label></div>
+    <div class="fp-resumo" id="fpResumo"></div>
+  </div>
   <div id="avisos"></div>
   <div id="conteudo"></div>
+  <div id="gerais" hidden></div>
   <div id="analise" hidden></div>
 </div>
 <div id="dica"></div>
@@ -389,10 +509,12 @@ const num = (v) => (v == null ? '—' : Number(v).toLocaleString('pt-BR'));
 const pc = (v) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%');
 const min = (v) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' min');
 const dataBr = (d) => d.split('-').reverse().join('/');
-const neste = () => (dados?.atual?.periodo ? 'no período' : 'neste dia');
-const doPer = () => (dados?.atual?.periodo ? 'do período' : 'do dia');
+// texto e hora dos blocos seguem o que está sendo desenhado: o dia ao vivo ou o período dos Dados gerais
+let ctxA = null;
+const neste = () => (ctxA?.periodo ? 'no período' : 'neste dia');
+const doPer = () => (ctxA?.periodo ? 'do período' : 'do dia');
 // hora do cancelamento; num período leva a data junto
-const horaCanc = (c) => (dados?.atual?.periodo && c.dia ? `${c.dia.slice(8)}/${c.dia.slice(5, 7)} ` : '') + c.h;
+const horaCanc = (c) => (ctxA?.periodo && c.dia ? `${c.dia.slice(8)}/${c.dia.slice(5, 7)} ` : '') + c.h;
 const quando = (iso) => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Fortaleza', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 // Faixas de leitura do OTD: as mesmas das orientações (abaixo de 70% aciona ajuste).
 function chipOtd(v) {
@@ -406,7 +528,7 @@ const PRIO = ['678', '7300', '933', '495', '890', '7362', '839', '7356'];
 const LISTA_PRIO = `${PRIO.slice(0, -1).join(', ')} e ${PRIO[PRIO.length - 1]}`;
 
 // Filtro De/Até: vazio = dia mais recente, ao vivo. Período soma os dias que o painel tem gravados.
-let periodo = { de: '', ate: '' }, dados = null, busca = '', busc = null, periodoEnt = 'd30', filtroCanc = 'todas';
+let periodo = { de: '', ate: '' }, presetAtivo = 'mes', dadosP = null, dados = null, busca = '', busc = null, periodoEnt = 'd30', filtroCanc = 'todas';
 
 function kpi(rot, val, extra, chip, medidor) {
   return `<div class="kpi"><span class="rot">${rot}</span><b>${val}</b><small>${extra || ''}</small>${medidor || ''}${chip || ''}</div>`;
@@ -434,7 +556,7 @@ let grafSeq = 0;
 function graf(spec) {
   const id = 'g' + ++grafSeq;
   GRAF.set(id, spec);
-  return `<div class="graf" data-graf="${id}" style="height:${spec.altura || 210}px" role="img" aria-label="${esc(spec.titulo || '')}"></div>`;
+  return `<div class="graf" data-graf="${id}" style="height:${spec.altura || 290}px" role="img" aria-label="${esc(spec.titulo || '')}"></div>`;
 }
 function montarGraficos() {
   const vivos = new Set();
@@ -480,13 +602,13 @@ function grade(s, W, esq, dir, y, e) {
 function svgColunas(s, W, H) {
   const n = s.cats.length;
   if (!n || W < 60) return '';
-  const esq = 40, dir = 6, topo = s.rotulos ? 18 : 10, base = 22;
+  const esq = 46, dir = 6, topo = s.rotulos ? 24 : 12, base = 26;
   const pw = W - esq - dir, ph = H - topo - base;
   const tot = s.cats.map((_, i) => (s.empilhado ? s.series.reduce((t, x) => t + (x.vals[i] || 0), 0) : Math.max(0, ...s.series.map((x) => x.vals[i] || 0))));
   const e = s.pct ? { max: 100, passo: 25 } : escalaEixo(Math.max(...tot, s.ref || 0));
   const y = (v) => topo + ph - (Math.min(v, e.max) / e.max) * ph;
   const banda = pw / n, ns = s.empilhado ? 1 : s.series.length;
-  const bw = Math.max(3, Math.min(24, (banda * 0.7 - 2 * (ns - 1)) / ns));
+  const bw = Math.max(3, Math.min(24, (banda * 0.72 - 2 * (ns - 1)) / ns));
   const cada = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(pw / 38))));
   const fmt = s.fmt || num;
   let marcas = '', alvos = '';
@@ -508,10 +630,10 @@ function svgColunas(s, W, H) {
         if (v == null || v <= 0) return;
         const y1 = y(v);
         marcas += `<path d="${colPath(x0 + j * (bw + 2), y1, bw, topo + ph - y1, 4)}" fill="${x.cor}"/>`;
-        if (s.rotulos && ns === 1 && banda >= 26) marcas += `<text x="${(x0 + bw / 2).toFixed(1)}" y="${(y1 - 5).toFixed(1)}" class="g-vl" text-anchor="middle">${fmt(v)}</text>`;
+        if (s.rotulos && ns === 1 && banda >= 26) marcas += `<text x="${(x0 + bw / 2).toFixed(1)}" y="${(y1 - 7).toFixed(1)}" class="g-vl" text-anchor="middle">${fmt(v)}</text>`;
       });
     }
-    if (i % cada === 0) marcas += `<text x="${(esq + banda * i + banda / 2).toFixed(1)}" y="${H - 6}" class="g-tk" text-anchor="middle">${esc(c)}</text>`;
+    if (i % cada === 0) marcas += `<text x="${(esq + banda * i + banda / 2).toFixed(1)}" y="${H - 8}" class="g-tk" text-anchor="middle">${esc(c)}</text>`;
     alvos += `<rect x="${(esq + banda * i).toFixed(1)}" y="${topo}" width="${banda.toFixed(1)}" height="${ph}" class="g-alvo" data-tip="${esc(s.tip ? s.tip(i) : `<b>${esc(c)}</b><br>${fmt(tot[i])}`)}"/>`;
   });
   return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${grade(s, W, esq, dir, y, e)}${marcas}${alvos}</svg>`;
@@ -522,7 +644,7 @@ function svgColunas(s, W, H) {
 function svgLinhas(s, W, H) {
   const n = s.cats.length;
   if (!n || W < 60) return '';
-  const esq = 40, dir = 8, topo = 12, base = 22;
+  const esq = 46, dir = 8, topo = 14, base = 26;
   const pw = W - esq - dir, ph = H - topo - base;
   const e = s.pct ? { max: 100, passo: 25 } : escalaEixo(Math.max(0, ...s.series.flatMap((x) => x.vals.filter((v) => v != null))));
   const y = (v) => topo + ph - (Math.min(v, e.max) / e.max) * ph;
@@ -535,12 +657,12 @@ function svgLinhas(s, W, H) {
       if (v == null) { aberto = false; return; }
       d += `${aberto ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`;
       aberto = true;
-      pontos += `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4" fill="${sr.cor}" stroke="${COR.fundo}" stroke-width="2"/>`;
+      pontos += `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="5" fill="${sr.cor}" stroke="${COR.fundo}" stroke-width="2"/>`;
     });
-    linhas += `<path d="${d}" fill="none" stroke="${sr.cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    linhas += `<path d="${d}" fill="none" stroke="${sr.cor}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
   }
   s.cats.forEach((c, i) => {
-    if (i % cada === 0) eixo += `<text x="${x(i).toFixed(1)}" y="${H - 6}" class="g-tk" text-anchor="middle">${esc(c)}</text>`;
+    if (i % cada === 0) eixo += `<text x="${x(i).toFixed(1)}" y="${H - 8}" class="g-tk" text-anchor="middle">${esc(c)}</text>`;
     const dica = s.tip ? s.tip(i) : `<b>${esc(c)}</b>` + s.series.map((sr) => `<br><i class="ch" style="background:${sr.cor}"></i>${esc(sr.nome)}: ${sr.vals[i] == null ? '—' : (s.fmt || pc)(sr.vals[i])}`).join('');
     alvos += `<g class="g-alvo-l"><line x1="${x(i).toFixed(1)}" x2="${x(i).toFixed(1)}" y1="${topo}" y2="${topo + ph}" class="g-guia"/><rect x="${(esq + banda * i).toFixed(1)}" y="${topo}" width="${banda.toFixed(1)}" height="${ph}" fill="transparent" data-tip="${esc(dica)}"/></g>`;
   });
@@ -582,19 +704,20 @@ function segmentos(partes, { fmt = num } = {}) {
   if (!tot) return '<p class="vazio">Sem dados.</p>';
   const blocos = partes.filter((p) => p.val > 0).map((p) => {
     const f = (100 * p.val) / tot;
-    return `<i style="flex:${p.val} 1 0;background:${p.cor}${p.claro ? ';color:#0b0b0b' : ''}" data-tip="${esc(`<b>${esc(p.nome)}</b><br>${fmt(p.val)} · ${pc(Math.round(f * 10) / 10)}`)}">${f >= 12 ? pc(Math.round(f)) : ''}</i>`;
+    return `<i${f < 12 ? ' class="estreita"' : ''} style="flex:${p.val} 1 0;background:${p.cor}${p.claro ? ';color:#0b0b0b' : ''}" data-tip="${esc(`<b>${esc(p.nome)}</b><br>${fmt(p.val)} · ${pc(Math.round(f * 10) / 10)}`)}">${f >= 6 ? pc(Math.round(f)) : ''}</i>`;
   }).join('');
   return `<div class="seg" role="img" aria-label="${esc(partes.map((p) => `${p.nome} ${fmt(p.val)}`).join(', '))}">${blocos}</div>${legenda(partes.filter((p) => p.val > 0))}`;
 }
 
 // Anel de 0 a 100% para os indicadores; a cor de status só onde existe faixa definida (OTD).
 function anel(v, classe = '') {
-  const r = 21, c = 2 * Math.PI * r, p = v == null ? 0 : Math.max(0, Math.min(100, v));
-  return `<svg class="anel ${classe}" viewBox="0 0 52 52" width="52" height="52" aria-hidden="true"><circle cx="26" cy="26" r="${r}" class="trilho"/><circle cx="26" cy="26" r="${r}" class="arco" stroke-dasharray="${((c * p) / 100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 26 26)"/><text x="26" y="30" text-anchor="middle">${v == null ? '—' : Math.round(v) + '%'}</text></svg>`;
+  const r = 40, c = 2 * Math.PI * r, p = v == null ? 0 : Math.max(0, Math.min(100, v));
+  return `<svg class="anel ${classe}" viewBox="0 0 96 96" width="96" height="96" aria-hidden="true"><circle cx="48" cy="48" r="${r}" class="trilho"/><circle cx="48" cy="48" r="${r}" class="arco" stroke-dasharray="${((c * p) / 100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 48 48)"/><text x="48" y="55" text-anchor="middle">${v == null ? '—' : Math.round(v) + '%'}</text></svg>`;
 }
 // Indicador com anel à esquerda
-function kpiA(rot, val, extra, v, classe, chip) {
-  return `<div class="kpi kpi-a">${anel(v, classe)}<div><span class="rot">${rot}</span><b>${val}</b><small>${extra || ''}</small>${chip || ''}</div></div>`;
+function kpiA(rot, val, extra, v, classe, chip, destaque) {
+  const d = destaque ? `<span class="pct ${destaque.cor || ''}">${destaque.v}<em>${destaque.rot}</em></span>` : '';
+  return `<div class="kpi kpi-a">${anel(v, classe)}<div><span class="rot">${rot}</span><b>${val}</b>${d}<small>${extra || ''}</small>${chip || ''}</div></div>`;
 }
 // Linha de tendência curta, sem eixo, para o indicador de demanda (pedidos por hora).
 function minilinha(vals) {
@@ -608,9 +731,9 @@ function blocoKpis(a) {
   const pontas = k.p1Med != null && k.p2Med != null ? `<div class="seg fino" aria-hidden="true"><i style="flex:${k.p1Med} 1 0;background:${COR.p1}"></i><i style="flex:${k.p2Med} 1 0;background:${COR.p2}"></i></div>` : '';
   return `<div class="kpis">
     <div class="kpi"><span class="rot">Demanda</span><b>${num(k.dem)}</b><small>${num(k.lojas)} lojas com pedido · por hora</small>${minilinha(a.horas.map((h) => h[0]))}</div>
-    ${kpiA('Finalizadas', num(k.fin), k.and ? `${num(k.and)} ainda em outros status` : 'dos pedidos do período', taxaFin, 'neutro')}
-    ${kpiA('Cancelamentos', num(k.canc), `${pc(k.taxaCanc)} da demanda · ${num(k.cOp)} operacionais`, k.taxaCanc, 'neutro')}
-    ${kpiA('Aceite médio', min(k.aceite), `${pc(k.pctAte5)} em até 5 min${k.direto ? ` · ${num(k.direto)} sem busca` : ''}`, k.pctAte5, 'neutro')}
+    ${kpiA('Finalizadas', num(k.fin), k.and ? `${num(k.and)} ainda em outros status` : '', taxaFin, 'fin', '', { v: pc(taxaFin), rot: 'dos pedidos', cor: 'ok' })}
+    ${kpiA('Cancelamentos', num(k.canc), `${num(k.cOp)} operacionais`, k.taxaCanc, 'canc', '', { v: pc(k.taxaCanc), rot: 'da demanda', cor: 'mau' })}
+    ${kpiA('Aceite médio', min(k.aceite), k.direto ? `${num(k.direto)} sem busca` : '', k.pctAte5, 'neutro', '', { v: pc(k.pctAte5), rot: 'em até 5 min', cor: 'azul' })}
     ${kpiA('OTD no prazo da modalidade', pc(k.otd), k.otdN ? `${num(k.otdN)} entregas, cada uma no próprio prazo` : 'sem entregas finalizadas', k.otd, classeOtd(k.otd), chipOtd(k.otd))}
     <div class="kpi"><span class="rot">Tempo das pontas</span><b class="duplo">${min(k.p1Med)}<span>+</span>${min(k.p2Med)}</b><small><i class="ch" style="background:${COR.p1}"></i>até a loja · <i class="ch" style="background:${COR.p2}"></i>loja ao cliente</small>${pontas}</div>
   </div>`;
@@ -693,7 +816,7 @@ function blocoBandeiras(a) {
 function blocoHoras(a) {
   const pico = a.horas.reduce((b, h, i) => (h[0] > a.horas[b][0] ? i : b), 0);
   const cats = a.horas.map((_, i) => String(i).padStart(2, '0') + 'h');
-  const g = graf({ tipo: 'colunas', titulo: 'Pedidos criados por hora', altura: 200, cats, series: [{ nome: 'Pedidos', cor: COR.volume, vals: a.horas.map((h) => h[0]) }],
+  const g = graf({ tipo: 'colunas', titulo: 'Pedidos criados por hora', altura: 260, cats, series: [{ nome: 'Pedidos', cor: COR.volume, vals: a.horas.map((h) => h[0]) }],
     tip: (i) => { const h = a.horas[i]; return `<b>${cats[i]}</b> · ${num(h[0])} pedidos<br>${num(h[1])} finalizados · ${num(h[2])} cancelados${h[0] ? ` (${pc(Math.round((1000 * h[2]) / h[0]) / 10)})` : ''}`; } });
   return `<section><h2>Demanda por hora</h2><p class="nota">Pico às ${String(pico).padStart(2, '0')}h, com ${num(a.horas[pico][0])} pedidos criados. Passe o mouse para ver finalizados e cancelados.</p>${g}</section>`;
 }
@@ -843,6 +966,21 @@ async function carregarEvolucao() {
   } catch {}
 }
 
+// Seções ao vivo que a pessoa fechou: continuam lidas a cada minuto (e com alerta sonoro), só ficam recolhidas.
+const recolhidas = new Set();
+try { for (const x of JSON.parse(localStorage.getItem('pm-recolhidas') || '[]')) recolhidas.add(x); } catch {}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-recolher]');
+  if (!b) return;
+  const id = b.dataset.recolher;
+  if (recolhidas.has(id)) recolhidas.delete(id); else recolhidas.add(id);
+  try { localStorage.setItem('pm-recolhidas', JSON.stringify([...recolhidas])); } catch {}
+  const sec = document.getElementById(id);
+  sec?.classList.toggle('fechada', recolhidas.has(id));
+  b.setAttribute('aria-expanded', String(!recolhidas.has(id)));
+  b.lastChild.textContent = recolhidas.has(id) ? 'Abrir' : 'Fechar';
+});
+
 function blocoAndamento() {
   const b = busc || { andamento: [] };
   const lista = b.andamento || [];
@@ -854,7 +992,7 @@ function blocoAndamento() {
     <td class="txt"><ol class="rota">${p.rota.map((r, i) => `<li><i>${i + 1}</i><span>${esc(r)}</span></li>`).join('')}</ol></td>
     <td class="nw forte">${p.minEtapa == null ? '—' : num(p.minEtapa) + ' min'}<br><small class="total">${p.minTotal == null ? '' : 'total ' + num(p.minTotal) + ' min'}</small></td>
     <td class="nw"><span class="st">${esc(String(p.status).toUpperCase())}</span>${p.modalidade ? `<span class="mod">${esc(p.modalidade)}</span>` : ''}</td>${celProx(p.id)}</tr>${linhaProx(p.id)}`).join('');
-  return `<section id="andamento"><div class="topo-sec"><h2>Entregas em andamento nas lojas prioritárias<span class="cont ${lista.length ? '' : 'zero'}">${num(lista.length)}</span></h2><span class="sub">Leitura a cada minuto · última às ${hora}</span></div>
+  return `<section id="andamento" class="${recolhidas.has('andamento') ? 'fechada' : ''}"><div class="topo-sec"><h2>Entregas em andamento nas lojas prioritárias<span class="cont ${lista.length ? '' : 'zero'}">${num(lista.length)}</span></h2><div class="lado"><span class="sub">Leitura a cada minuto · última às ${hora}</span><button type="button" class="recolher" data-recolher="andamento" aria-expanded="${!recolhidas.has('andamento')}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>${recolhidas.has('andamento') ? 'Abrir' : 'Fechar'}</button></div></div>
     <p class="nota">Lojas ${LISTA_PRIO}, da entrega aberta há mais tempo para a mais recente. Tempo é o da etapa atual; total conta desde a criação.${b.destinoCompleto ? '' : ' Destino só com bairro e cidade enquanto o painel estiver sem login.'}</p>
     ${linhas ? `<div class="rolagem"><table class="busca"><thead><tr><th>ID</th><th class="txt">Loja</th><th class="txt">Entregador</th><th class="txt">Rota</th><th>Tempo</th><th class="txt">Status</th><th class="txt">Entregadores</th></tr></thead><tbody>${linhas}</tbody></table></div>` : '<p class="vazio">Nenhuma entrega em andamento nessas lojas agora.</p>'}</section>`;
 }
@@ -870,7 +1008,7 @@ function blocoBuscando() {
     <td class="txt"><ol class="rota">${p.rota.map((r, i) => `<li><i>${i + 1}</i><span>${esc(r)}</span></li>`).join('')}</ol></td>
     <td class="nw forte">${p.min == null ? '—' : num(p.min) + ' min'}</td>
     <td class="nw"><span class="st">BUSCANDO</span>${p.modalidade ? `<span class="mod">${esc(p.modalidade)}</span>` : ''}${p.min >= 5 ? ' <span class="chip mau">5 min ou mais</span>' : ''}</td>${celProx(p.id, p)}</tr>${linhaProx(p.id)}`).join('');
-  return `<section id="buscando" class="${b.lista.length ? 'ao-vivo' : ''}"><div class="topo-sec"><h2>Entregas buscando nas lojas prioritárias<span class="cont ${b.lista.length ? '' : 'zero'}">${num(b.lista.length)}</span></h2><span class="sub">Leitura a cada minuto · última às ${hora}</span></div>
+  return `<section id="buscando" class="${b.lista.length ? 'ao-vivo' : ''}${recolhidas.has('buscando') ? ' fechada' : ''}"><div class="topo-sec"><h2>Entregas buscando nas lojas prioritárias<span class="cont ${b.lista.length ? '' : 'zero'}">${num(b.lista.length)}</span></h2><div class="lado"><span class="sub">Leitura a cada minuto · última às ${hora}</span><button type="button" class="recolher" data-recolher="buscando" aria-expanded="${!recolhidas.has('buscando')}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>${recolhidas.has('buscando') ? 'Abrir' : 'Fechar'}</button></div></div>
     <p class="nota">Lojas ${LISTA_PRIO}.${b.destinoCompleto ? '' : ' Destino só com bairro e cidade enquanto o painel estiver sem login.'}</p>${erro}
     ${linhas ? `<div class="rolagem"><table class="busca"><thead><tr><th>ID</th><th class="txt">Loja</th><th class="txt">Entregador</th><th class="txt">Rota</th><th>Tempo</th><th class="txt">Status</th><th class="txt">Entregadores</th></tr></thead><tbody>${linhas}</tbody></table></div>` : '<p class="vazio">Nenhuma entrega buscando nessas lojas agora.</p>'}</section>`;
 }
@@ -900,7 +1038,7 @@ function tabela(titulo, nota, colunas, linhas, vazio, campo) {
 function blocoRankings(a) {
   const r = a.rankings;
   return `<div class="grade2">
-    ${tabela('Maior demanda', `Pedidos criados ${dados?.atual?.periodo ? 'no período' : 'no dia'}.`, [['Demanda', (l) => num(l.dem)], ['Finalizadas', (l) => num(l.fin)], ['Canceladas', (l) => num(l.canc)], ['Pico', (l) => (l.pico == null ? '—' : String(l.pico).padStart(2, '0') + 'h')]], r.demanda, 'Sem pedidos.', 'dem')}
+    ${tabela('Maior demanda', `Pedidos criados ${ctxA?.periodo ? 'no período' : 'no dia'}.`, [['Demanda', (l) => num(l.dem)], ['Finalizadas', (l) => num(l.fin)], ['Canceladas', (l) => num(l.canc)], ['Pico', (l) => (l.pico == null ? '—' : String(l.pico).padStart(2, '0') + 'h')]], r.demanda, 'Sem pedidos.', 'dem')}
     ${tabela('Maior dificuldade para aceitar', `Parcela de pedidos que passou de 5 min até o aceite ou não foi aceita, em lojas com ${a.minDemandaTaxa} pedidos ou mais. Não conta o que outra transportadora aceitou primeiro.`, [['Dificuldade', (l) => pc(l.dificuldade)], ['Aceite médio', (l) => min(l.aceite)], ['Acima de 5 min', (l) => num(l.acimaDe5)], ['Sem aceite', (l) => num(l.semAceite)]], r.aceite, 'Nenhuma loja com volume suficiente.', 'dificuldade')}
     ${tabela('Maior cancelamento por motivo operacional', 'Falta de entregador e atraso ou problema do entregador, o mesmo "Motivo Bee" do Power BI.', [['Operacional', (l) => num(l.cOp)], ['% da demanda', (l) => pc(l.pctOp)], ['Canceladas', (l) => num(l.canc)], ['Demanda', (l) => num(l.dem)]], r.operacional, 'Nenhum cancelamento operacional.', 'cOp')}
     ${tabela('Mais cancelam de 0 a 5 minutos', 'Cancelamentos em até 5 min depois de criar o pedido.', [['0 a 5 min', (l) => num(l.c05)], ['% dos canc.', (l) => pc(l.pctC05)], ['Canceladas', (l) => num(l.canc)], ['Demanda', (l) => num(l.dem)]], r.ate5, 'Nenhum cancelamento nessa faixa.', 'c05')}
@@ -959,51 +1097,103 @@ function regras() {
   </ul></details></section>`;
 }
 
-function avisos(d) {
-  const a = [];
-  if (d.semAcesso) a.push('<div class="aviso"><b>Aguardando o acesso à API.</b> O painel começa a coletar assim que a senha for configurada.</div>');
-  if (d.coletando && !d.atual) a.push('<div class="aviso"><b>Primeira leitura em andamento.</b> A página atualiza sozinha quando terminar.</div>');
-  if (d.erro) a.push(`<div class="aviso erro"><b>A última coleta falhou</b> (${esc(d.erro.erro)}). Mantendo os últimos dados válidos; nova tentativa na próxima leitura.</div>`);
-  if (d.atual) {
+function avisos() {
+  const a = [], d = aba === 'gerais' ? dadosP : dados;
+  if (dados?.semAcesso) a.push('<div class="aviso"><b>Aguardando o acesso à API.</b> O painel começa a coletar assim que a senha for configurada.</div>');
+  if (dados?.erro) a.push(`<div class="aviso erro"><b>A última coleta falhou</b> (${esc(dados.erro.erro)}). Mantendo os últimos dados válidos; nova tentativa na próxima leitura.</div>`);
+  if (aba === 'vivo' && dados) {
+    if (dados.coletando && !dados.atual) a.push('<div class="aviso"><b>Primeira leitura em andamento.</b> A página atualiza sozinha quando terminar.</div>');
+    if (dados.atual) a.push(`<div class="aviso"><b>Ao vivo, hoje ${dataBr(dados.atual.dia)}</b>, das 00:00 até a leitura de ${quando(dados.atual.lido_em)}. Indicadores a cada ${num(dados.kpiMinutos)} min; entregas buscando e em andamento a cada minuto. O acumulado fica em <b>Dados gerais</b>.</div>`);
+  }
+  if (aba === 'gerais' && d?.atual) {
     const x = d.atual;
-    if (d.periodoPedido?.vazio) a.push(`<div class="aviso erro"><b>Nenhum dia com dados nesse período.</b> O painel tem dados de ${dataBr(d.dias[d.dias.length - 1].dia)} em diante; mostrando ${dataBr(x.dia)}.</div>`);
-    const faixa = x.periodo ? `<b>Período de ${dataBr(x.de)} a ${dataBr(x.ate)}</b>` : '';
-    a.push(`<div class="aviso">${x.periodo
-      ? (x.fechado ? `${faixa}, dias fechados, das 00:00 às 23:59.` : `${faixa}, com ${dataBr(x.ate)} ao vivo até a leitura de ${quando(x.lido_em)}.`)
-      : x.fechado ? `<b>Dia fechado</b>, das 00:00 às 23:59.` : `<b>Ao vivo</b>, das 00:00 até a leitura de ${quando(x.lido_em)}.`} Entregas buscando e em andamento são sempre as de agora. Indicadores a cada ${num(d.kpiMinutos)} min; buscando a cada minuto.</div>`);
+    if (d.periodoPedido?.vazio) a.push(`<div class="aviso erro"><b>Nenhum dia com dados nesse período.</b> Mostrando ${dataBr(x.dia)}.</div>`);
+    const pedidoDe = periodo.de, faltaAntes = pedidoDe && x.de > pedidoDe;
+    if (faltaAntes) a.push(`<div class="aviso"><b>O painel tem dados a partir de ${dataBr(d.dias[d.dias.length - 1].dia)}.</b> O período mostrado começa em ${dataBr(x.de)}; dias anteriores ainda estão sendo carregados ou não existem.</div>`);
   }
   $('#avisos').innerHTML = a.join('');
 }
 
+// Operação ao vivo: só o dia de hoje. Dados gerais: o período do filtro. Os dois se atualizam a cada leitura.
 function desenhar() {
+  avisos();
+  desenharFiltro();
+  desenharVivo();
+  if (aba === 'gerais') desenharGerais();
+}
+// Pedidos do dia e qualidade do atendimento no formato do Radar: total em amarelo, finalizadas em verde,
+// canceladas em vermelho; a linha fina no topo de cada bloco repete a cor do número.
+function blocoPedidosDia(a) {
+  const k = a.kpis, pctDe = (n) => (k.dem ? pc(Math.round((1000 * n) / k.dem) / 10) : '—');
+  const corOtd = k.otd == null ? '' : k.otd >= 85 ? 'ok' : k.otd >= 70 ? 'med' : 'mau';
+  return `<section class="hud"><div class="topo-sec"><h2>Pedidos do dia</h2><span class="sub">total = finalizadas + canceladas + em andamento · lojas Pague Menos e Extrafarma</span></div>
+    <div class="rk">
+      <div class="rk-t total"><span class="l">Total de pedidos</span><span class="v">${num(k.dem)}</span><span class="f">${num(k.fin)} + ${num(k.canc)} + ${num(k.and)} · ${num(k.lojas)} lojas</span></div>
+      <div class="rk-t fin"><span class="l">Finalizadas</span><span class="v">${num(k.fin)}</span><span class="f">${pctDe(k.fin)} do total</span></div>
+      <div class="rk-t canc"><span class="l">Canceladas</span><span class="v">${num(k.canc)}</span><span class="f">${pc(k.taxaCanc)} de cancelamento · ${num(k.cOp)} operacionais</span></div>
+      <div class="rk-t and"><span class="l">Em andamento</span><span class="v">${num(k.and)}</span><span class="f">ainda não fechadas</span></div>
+    </div>
+    <h3 class="sub-h">Qualidade do atendimento hoje</h3>
+    <div class="rk">
+      <div class="rk-t otd ${corOtd}"><span class="l">OTD geral · no prazo da modalidade</span><span class="v">${pc(k.otd)}</span><span class="f">${k.otdN ? `${num(k.otdN)} entregas · ` : ''}${corOtd ? chipOtd(k.otd) : 'sem entregas'}</span></div>
+      <div class="rk-t ac"><span class="l">Aceite médio</span><span class="v">${min(k.aceite)}</span><span class="f">${pc(k.pctAte5)} em até 5 min${k.direto ? ` · ${num(k.direto)} sem busca` : ''}</span></div>
+      <div class="rk-t p1"><span class="l">Ponta 1 · até a loja</span><span class="v">${min(k.p1Med)}</span><span class="f">da criação à chegada na loja</span></div>
+      <div class="rk-t p2"><span class="l">Ponta 2 · loja ao cliente</span><span class="v">${min(k.p2Med)}</span><span class="f">da saída à chegada no cliente</span></div>
+    </div>
+    <h3 class="sub-h">OTD por modalidade hoje</h3>
+    <div class="rk rk3">${ORDEM_MODS.map((m) => {
+      const x = achaMod(k, m), v = x?.otdN ? x.otd : null;
+      const st = v == null ? '' : v >= 85 ? 'ok' : v >= 70 ? 'med' : 'mau';
+      return `<div class="rk-t otd mod ${st}" style="--m:${COR[m]}"><span class="l"><i class="ch" style="background:${COR[m]}"></i>${esc(m)} · ${prazoTxt(m)}</span><span class="v">${pc(v)}</span><span class="f">${x?.otdN ? `${num(x.noPrazo)} de ${num(x.otdN)} no prazo · ${num(x.dem)} pedidos` : 'nenhuma entrega finalizada'}${st ? ' · ' + chipOtd(v) : ''}</span></div>`;
+    }).join('')}</div></section>`;
+}
+
+function desenharVivo() {
   const d = dados;
-  avisos(d);
-  const primeiro = d.dias[d.dias.length - 1]?.dia || '', ultimo = d.dias[0]?.dia || '';
-  for (const el of [$('#de'), $('#ate')]) { el.min = primeiro; el.max = ultimo; }
-  if (d.atual && document.activeElement !== $('#de') && document.activeElement !== $('#ate')) { $('#de').value = d.atual.de; $('#ate').value = d.atual.ate; }
-  $('#hoje').hidden = !(periodo.de || periodo.ate);
+  if (!d) return;
   if (!d.atual) { $('#conteudo').innerHTML = '<section><p class="vazio">Ainda não há dados coletados.</p></section>' + blocoRequisicoes(d); return; }
   const a = d.atual;
-  // Redesenhar a cada leitura não pode fechar o que a pessoa abriu
-  const abertos = [...document.querySelectorAll('details[open][data-chave]')].map((x) => x.dataset.chave);
-  $('#conteudo').innerHTML = blocoKpis(a) + blocoBuscando() + blocoAndamento() + blocoModalidades(a) + blocoKm(a) + blocoPrioridade(a) + blocoCancPrioridade(a) + blocoEvolucao() + blocoEntregadores(d) + blocoOrientacoes(a) + blocoRankings(a)
+  ctxA = a;
+  const abertos = [...document.querySelectorAll('#conteudo details[open][data-chave]')].map((x) => x.dataset.chave);
+  $('#conteudo').innerHTML = blocoPedidosDia(a) + blocoBuscando() + blocoAndamento() + blocoPrioridade(a) + blocoCancPrioridade(a) + blocoOrientacoes(a)
+    + `<div class="grade2">${blocoHoras(a)}${blocoMotivos(a)}</div>` + blocoRequisicoes(d);
+  $('#filtroCanc')?.addEventListener('change', (e) => { ctxA = a; filtroCanc = e.target.value; $('#listaCanc').innerHTML = linhasCancPrioridade(a); });
+  for (const c of abertos) document.querySelector(`#conteudo details[data-chave="${c}"]`)?.setAttribute('open', '');
+  montarGraficos();
+}
+function desenharGerais() {
+  const d = dadosP;
+  if (!d) { $('#gerais').innerHTML = '<section><p class="vazio">Carregando o período…</p></section>'; return; }
+  if (!d.atual) { $('#gerais').innerHTML = '<section><p class="vazio">Ainda não há dados coletados.</p></section>'; return; }
+  const a = d.atual;
+  ctxA = a;
+  const abertos = [...document.querySelectorAll('#gerais details[open][data-chave]')].map((x) => x.dataset.chave);
+  $('#gerais').innerHTML = blocoKpis(a) + blocoModalidades(a) + blocoKm(a) + blocoEvolucao() + blocoEntregadores(d) + blocoRankings(a)
     + `<div class="grade2">${blocoMotivos(a)}${blocoHoras(a)}</div>` + blocoBandeiras(a)
-    + `<section><h2>Todas as lojas</h2><p class="nota">${num(a.lojas.length)} lojas com pedido ${dados.atual.periodo ? 'no período' : 'no dia'}, da maior para a menor demanda.</p><p><input id="busca" type="search" placeholder="Buscar loja por número ou bairro" aria-label="Buscar loja" value="${esc(busca)}"></p><div id="todas">${blocoLojas(a)}</div></section>`
-    + blocoRequisicoes(d) + regras();
+    + `<section><h2>Todas as lojas</h2><p class="nota">${num(a.lojas.length)} lojas com pedido ${a.periodo ? 'no período' : 'no dia'}, da maior para a menor demanda.</p><p><input id="busca" type="search" placeholder="Buscar loja por número ou bairro" aria-label="Buscar loja" value="${esc(busca)}"></p><div id="todas">${blocoLojas(a)}</div></section>`
+    + regras();
   $('#busca').addEventListener('input', (e) => { busca = e.target.value; $('#todas').innerHTML = blocoLojas(a); });
-  $('#filtroCanc')?.addEventListener('change', (e) => { filtroCanc = e.target.value; $('#listaCanc').innerHTML = linhasCancPrioridade(a); });
   $('#periodoEnt')?.addEventListener('change', (e) => { periodoEnt = e.target.value; $('#corpoEnt').innerHTML = corpoEntregadores(d.entregadores); });
-  for (const c of abertos) document.querySelector(`details[data-chave="${c}"]`)?.setAttribute('open', '');
+  for (const c of abertos) document.querySelector(`#gerais details[data-chave="${c}"]`)?.setAttribute('open', '');
   montarGraficos();
 }
 
 async function carregar() {
-  const qs = periodo.de || periodo.ate ? '?' + new URLSearchParams({ de: periodo.de, ate: periodo.ate }) : '';
-  const r = await fetch('/api/dados' + qs, { cache: 'no-store' });
-  dados = await r.json();
+  dados = await (await fetch('/api/dados', { cache: 'no-store' })).json();
+  if (!periodo.de && dados.atual) aplicarPreset(presetAtivo || 'mes', false);
   desenhar();
+  if (aba === 'gerais') carregarPeriodo();
   if (aba === 'lojas') carregarLojas();
   setTimeout(() => document.body.classList.add('sem-entrada'), 700);
+}
+let periodoEmVoo = false;
+async function carregarPeriodo() {
+  if (periodoEmVoo) return;
+  periodoEmVoo = true;
+  try {
+    dadosP = await (await fetch('/api/dados?' + new URLSearchParams({ de: periodo.de, ate: periodo.ate }), { cache: 'no-store' })).json();
+    avisos(); desenharFiltro(); desenharGerais();
+  } finally { periodoEmVoo = false; }
 }
 
 // Alerta sonoro. O navegador só libera áudio depois de um clique na página; até lá o botão pede ativação.
@@ -1067,18 +1257,50 @@ async function carregarBuscando() {
 }
 
 // De/Até: a data invertida é trocada; um só dia igual ao mais recente volta para o ao vivo.
+// Período dos Dados gerais e da Análise de lojas: atalhos ou De/Até. Começa em "Este mês".
+const hojeFort = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Fortaleza' });
+const somaDia = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 86400e3).toISOString().slice(0, 10);
+function aplicarPreset(p, recarregar = true) {
+  const t = hojeFort();
+  const fimMes = (d) => somaDia(somaDia(d.slice(0, 8) + '01', 32).slice(0, 8) + '01', -1);
+  const faixas = { hoje: [t, t], ontem: [somaDia(t, -1), somaDia(t, -1)], 7: [somaDia(t, -6), t], 30: [somaDia(t, -29), t], mes: [t.slice(0, 8) + '01', t] };
+  const iniAnt = somaDia(t.slice(0, 8) + '01', -1).slice(0, 8) + '01';
+  faixas.mesAnt = [iniAnt, fimMes(iniAnt)];
+  if (!faixas[p]) return;
+  presetAtivo = p;
+  periodo = { de: faixas[p][0], ate: faixas[p][1] };
+  if (recarregar) recarregarPeriodo();
+}
+function recarregarPeriodo() {
+  desenharFiltro();
+  if (aba === 'gerais') carregarPeriodo();
+  if (aba === 'lojas') carregarLojas();
+}
 function mudarPeriodo() {
   let de = $('#de').value, ate = $('#ate').value;
   if (!de && !ate) return;
   de ||= ate; ate ||= de;
   if (de > ate) [de, ate] = [ate, de];
-  const ultimo = dados?.dias?.[0]?.dia;
-  periodo = de === ate && de === ultimo ? { de: '', ate: '' } : { de, ate };
-  carregar();
+  presetAtivo = '';
+  periodo = { de, ate };
+  recarregarPeriodo();
+}
+function desenharFiltro() {
+  const f = $('#filtroPeriodo');
+  f.hidden = aba === 'vivo';
+  if (f.hidden) return;
+  const dias = dados?.dias || [];
+  const primeiro = dias[dias.length - 1]?.dia || '', ultimo = dias[0]?.dia || '';
+  for (const el of [$('#de'), $('#ate')]) { el.min = primeiro; el.max = ultimo; }
+  if (document.activeElement !== $('#de') && document.activeElement !== $('#ate')) { $('#de').value = periodo.de; $('#ate').value = periodo.ate; }
+  for (const b of f.querySelectorAll('[data-p]')) b.setAttribute('aria-pressed', String(b.dataset.p === presetAtivo));
+  const n = dias.filter((x) => x.dia >= periodo.de && x.dia <= periodo.ate).length;
+  const total = periodo.de && periodo.ate ? Math.round((Date.parse(periodo.ate) - Date.parse(periodo.de)) / 86400e3) + 1 : 0;
+  $('#fpResumo').innerHTML = periodo.de ? `<b>${periodo.de === periodo.ate ? dataBr(periodo.de) : `${dataBr(periodo.de)} a ${dataBr(periodo.ate)}`}</b>${num(n)} de ${num(total)} ${total === 1 ? 'dia' : 'dias'} com dados${periodo.ate >= hojeFort() ? ' · hoje ao vivo' : ''} · histórico desde ${primeiro ? dataBr(primeiro) : '—'}` : '';
 }
 $('#de').addEventListener('change', mudarPeriodo);
 $('#ate').addEventListener('change', mudarPeriodo);
-$('#hoje').addEventListener('click', () => { periodo = { de: '', ate: '' }; carregar(); });
+for (const b of document.querySelectorAll('#filtroPeriodo [data-p]')) b.addEventListener('click', () => aplicarPreset(b.dataset.p));
 // WhatsApp: mesma confirmação do Radar, que é quem envia. A janela fica fora do conteúdo redesenhado.
 let zapAlvo = null;
 const redesenhaProx = (id) => { const el = document.getElementById('prox-' + id); if (el) el.innerHTML = corpoProx(id); };
@@ -1163,16 +1385,21 @@ addEventListener('scroll', () => { dica.style.display = 'none'; }, { passive: tr
 
 // ------------------------------------------------------------ aba Análise de lojas
 // Tudo vem de /api/lojas, calculado pedido a pedido só com a loja escolhida (ou o grupo inteiro) no período De/Até.
-let aba = location.hash === '#lojas' ? 'lojas' : 'operacao', lojaSel = '', lojasDados = null, lojasEmVoo = false;
+let aba = { '#lojas': 'lojas', '#gerais': 'gerais' }[location.hash] || 'vivo', lojaSel = '', lojasDados = null, lojasEmVoo = false;
 try { lojaSel = localStorage.getItem('pm-loja') || ''; } catch {}
 const base = (n, txt = 'entregas') => (n ? `${num(n)} ${n === 1 ? txt.replace(/s$/, '') : txt}` : 'sem base');
 const prazoMod = (m, prazos) => (prazos[m] ? (prazos[m] >= 120 ? prazos[m] / 60 + ' h' : prazos[m] + ' min') : 'sem prazo');
 
 function mostrarAba() {
   for (const b of document.querySelectorAll('.abas button')) b.setAttribute('aria-selected', String(b.dataset.aba === aba));
-  $('#conteudo').hidden = aba !== 'operacao';
+  $('#conteudo').hidden = aba !== 'vivo';
+  $('#gerais').hidden = aba !== 'gerais';
   $('#analise').hidden = aba !== 'lojas';
-  if (aba === 'lojas') carregarLojas(); else montarGraficos();
+  avisos();
+  desenharFiltro();
+  if (aba === 'gerais') { if (dadosP) desenharGerais(); if (dados) carregarPeriodo(); }
+  else if (aba === 'lojas') { if (dados) carregarLojas(); }
+  else montarGraficos();
 }
 
 async function carregarLojas() {
@@ -1205,7 +1432,7 @@ function desenharLojas() {
   if (a.semRegistro.length) avisos.push(`<div class="aviso erro"><b>Dias ainda sem pedidos um a um:</b> ${a.semRegistro.map(dataBr).join(', ')}. Eles estão sendo relidos e entram nos próximos minutos.</div>`);
   if (lojaSel && !a.loja) avisos.push('<div class="aviso">A loja escolhida não teve pedido nesse período; mostrando o grupo inteiro.</div>');
 
-  const filtro = `<section class="filtro-lojas"><div class="topo-sec"><h2>Análise de lojas</h2><span class="sub">${faixaTxt}${a.fechado ? '' : ' · inclui hoje, ao vivo'} · período em De/Até no topo</span></div>
+  const filtro = `<section class="filtro-lojas"><div class="topo-sec"><h2>Análise de lojas</h2><span class="sub">${faixaTxt}${a.fechado ? '' : ' · inclui hoje, ao vivo'} · período na barra acima</span></div>
     <label class="per" for="selLoja">Loja<select id="selLoja"><option value="">Análise geral · todas as lojas (${num(a.lojas.length)})</option><optgroup label="Lojas prioritárias">${grupoOpcoes(true)}</optgroup><optgroup label="Demais lojas, da maior demanda para a menor">${grupoOpcoes(false)}</optgroup></select></label></section>`;
 
   const kpis = `<section><h2>${titulo}</h2><p class="nota">Todos os números abaixo são só ${a.loja ? 'desta loja' : 'do grupo'} em ${faixaTxt}, contados pedido a pedido.</p>
@@ -1243,8 +1470,8 @@ function desenharLojas() {
     const ls = fs.filter((f) => f.faixa !== 'Sem distância').slice(0, 10);
     const cats = ls.map((f) => f.faixa.replace(' km', ''));
     const dicaF = (i) => { const f = ls[i]; return `<b>${esc(f.faixa)}</b><br>${num(f.dem)} pedidos · ${num(f.fin)} finalizadas · ${num(f.canc)} canceladas<br>OTD ${f.otdN ? `${pc(f.otd)} (${num(f.noPrazo)} de ${num(f.otdN)})` : '—'}<br>Tempo total ${min(f.total)} · loja ao cliente ${min(f.p2)}`; };
-    return `<div class="duo"><div><h3 class="sub-h">Pedidos por faixa (km)</h3>${graf({ tipo: 'colunas', titulo: titulo + ': pedidos por faixa', altura: 190, cats, rotulos: true, series: [{ nome: 'Pedidos', cor: COR.volume, vals: ls.map((f) => f.dem) }], tip: dicaF })}</div>
-      <div><h3 class="sub-h">OTD por faixa (km) · faixas com ${BASE_MIN_PCT}+ entregas</h3>${graf({ tipo: 'colunas', titulo: titulo + ': OTD por faixa', altura: 190, cats, pct: true, ref: 85, refRot: '85%', rotulos: true, fmt: (v) => num(Math.round(v)) + '%', series: [{ nome: 'OTD', cor, vals: ls.map((f) => (f.otdN >= BASE_MIN_PCT ? f.otd : null)) }], tip: dicaF })}</div></div>`;
+    return `<div class="duo"><div><h3 class="sub-h">Pedidos por faixa (km)</h3>${graf({ tipo: 'colunas', titulo: titulo + ': pedidos por faixa', altura: 260, cats, rotulos: true, series: [{ nome: 'Pedidos', cor: COR.volume, vals: ls.map((f) => f.dem) }], tip: dicaF })}</div>
+      <div><h3 class="sub-h">OTD por faixa (km) · faixas com ${BASE_MIN_PCT}+ entregas</h3>${graf({ tipo: 'colunas', titulo: titulo + ': OTD por faixa', altura: 260, cats, pct: true, ref: 85, refRot: '85%', rotulos: true, fmt: (v) => num(Math.round(v)) + '%', series: [{ nome: 'OTD', cor, vals: ls.map((f) => (f.otdN >= BASE_MIN_PCT ? f.otd : null)) }], tip: dicaF })}</div></div>`;
   };
   const blocos = comPrazo.map((m) => `<section class="modsec"><div class="topo-sec"><h2><i class="ch" style="background:${COR[m.mod]}"></i>${esc(m.mod)} <small class="selo">prazo de ${prazoMod(m.mod, pz)}</small></h2>${chipOtd(m.otd)}</div>
     <div class="numeros">
@@ -1268,7 +1495,7 @@ function desenharLojas() {
   const topMotivos = hbarras(c.motivos.slice(0, 10).map((m) => ({ rot: m.motivo, sub: m.op ? 'operacional' : m.grupo, val: m.n, cor: m.op ? COR.op : COR.naoOp, extra: ` <small>${pc(m.pct)}</small>`, tip: `<b>${esc(m.motivo)}</b><br>${m.op ? 'Operacional' : esc(m.grupo)}<br>${num(m.n)} cancelamentos · ${pc(m.pct)}<br>${num(m.c5)} com menos de ${num(a.minBusca)} min de busca` })), { max: maxMot, fmt: num, largo: true });
   const porMod = hpilhas(c.porModalidade.filter((m) => m.canc).map((m) => ({ rot: m.mod, sub: `${pc(m.taxa)} dos pedidos`, partes: [{ nome: 'Operacional', val: m.op, cor: COR.op }, { nome: 'Não operacional', val: m.naoOp, cor: COR.naoOp }], valor: `${num(m.canc)}<small>${num(m.c5)} &lt;${num(a.minBusca)} min</small>`, tip: `<b>${esc(m.mod)}</b><br>${num(m.canc)} canceladas · ${pc(m.taxa)} dos pedidos<br>Operacional ${num(m.op)} · não operacional ${num(m.naoOp)}<br>${num(m.c5)} com menos de ${num(a.minBusca)} min de busca` })), { fmt: num });
   const cancelamentos = `<section><h2>Cancelamentos</h2><p class="nota">Operacional: falta de entregador ou atraso/problema do entregador. "Menos de ${num(a.minBusca)} min de busca": cancelado antes de completar ${num(a.minBusca)} min desde o início da busca (sem busca, conta da criação).${c.pendentes ? ` ${num(c.pendentes)} ainda sem leitura de motivo.` : ''}</p>
-    <div class="kpis">
+    <div class="kpis q4">
       ${kpiA('Cancelados', num(c.total), `${pc(c.taxa)} dos pedidos`, c.taxa, 'neutro')}
       ${kpiA('Operacionais', num(c.op), 'falta ou problema do entregador', c.pctOp, 'neutro')}
       ${kpiA('Não operacionais', num(c.naoOp), 'loja, cliente, outra transportadora', c.total ? Math.round(1000 - 10 * c.pctOp) / 10 : null, 'neutro')}
@@ -1309,7 +1536,7 @@ function desenharLojas() {
 
 for (const b of document.querySelectorAll('.abas button')) b.addEventListener('click', () => {
   aba = b.dataset.aba;
-  history.replaceState(null, '', aba === 'lojas' ? '#lojas' : location.pathname);
+  history.replaceState(null, '', aba === 'vivo' ? location.pathname : '#' + aba);
   mostrarAba();
 });
 

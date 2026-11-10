@@ -214,6 +214,28 @@ async function atualizarVersao() {
   }
 }
 
+// Histórico desde HISTORICO_DESDE (padrão 01/10/2026): dia fechado que ainda não existe aqui é lido, um por vez,
+// do mais recente ao mais antigo, só nas lojas do grupo. Motivo já em cache não é pedido de novo.
+const HISTORICO_DESDE = /^\d{4}-\d{2}-\d{2}$/.test(cfg('HISTORICO_DESDE', '')) ? cfg('HISTORICO_DESDE') : '2026-10-01';
+async function completarHistorico() {
+  const ontem = somaDias(hoje(), -1), faltam = [];
+  for (let d = ontem; d >= HISTORICO_DESDE; d = somaDias(d, -1)) if (!historico[d]) faltam.push(d);
+  if (faltam.length) log(`histórico: ${faltam.length} dia(s) para ler desde ${HISTORICO_DESDE}`);
+  for (const dia of faltam) {
+    while (lendo) await new Promise((s) => setTimeout(s, 5000));
+    lendo = true;
+    try {
+      const r = await coletar([{ dia, fechado: true }], gravarDia, idsDoGrupo());
+      log(`histórico: ${dia} lido · ${r.pedidos} pedidos · ${r.reqs.total} requisições (motivos ${r.reqs.motivos})`);
+    } catch (e) {
+      log(`histórico: ${dia} falhou:`, String(e?.message || e).slice(0, 160));
+    } finally {
+      lendo = false;
+      emitir();
+    }
+  }
+}
+
 function agendarConferencia() {
   setTimeout(() => conferir(), Math.max(1000, proximaConferencia() - Date.now()));
 }
@@ -403,6 +425,7 @@ http.createServer((req, res) => {
   await lerIndicadores();
   setInterval(lerIndicadores, KPI_MS);
   await atualizarVersao();
+  await completarHistorico();
   await completarEntregadores();
   setInterval(completarEntregadores, 6 * 3600e3).unref();
 });
