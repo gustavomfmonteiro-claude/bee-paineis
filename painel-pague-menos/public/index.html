@@ -339,7 +339,7 @@ function chipOtd(v) {
   return '<span class="chip mau">Crítico</span>';
 }
 const nomeLoja = (l) => `${l.num ? esc(l.num) + ' · ' : ''}${esc(l.bairro)}<small>${l.band}</small>${PRIO.includes(l.num) ? '<span class="star" title="Loja prioritária">★</span>' : ''}`;
-const PRIO = ['678', '7300', '933', '495', '890', '7362', '839'];
+const PRIO = ['678', '7300', '933', '495', '890', '7362', '839', '7356'];
 const LISTA_PRIO = `${PRIO.slice(0, -1).join(', ')} e ${PRIO[PRIO.length - 1]}`;
 
 // Filtro De/Até: vazio = dia mais recente, ao vivo. Período soma os dias que o painel tem gravados.
