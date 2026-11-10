@@ -11,7 +11,7 @@
 :root{
   color-scheme: dark;
   /* sala de controle: fundo frio para o amarelo Bee ser o único acento forte */
-  --ground:#05070B; --panel:#0D1219; --panel2:#131A23; --panel3:#19212C;
+  --ground:#050911; --panel:#0C1320; --panel2:#111A29; --panel3:#1A2436;
   --line:rgba(148,170,196,.12); --line2:rgba(148,170,196,.22);
   --ink:#F2F5F9; --ink2:#AEB9C7; --ink3:#7F8C9C;
   --bee:#FFD200; --bee-d:rgba(255,210,0,.12); --bee-l:rgba(255,210,0,.38);
@@ -69,9 +69,10 @@ input[type=search]{font-weight:400;width:100%;max-width:340px}
 .aviso.erro{border-left-color:var(--bad)}
 
 /* superfícies */
-section,.kpi{background:linear-gradient(180deg,rgba(25,33,44,.62),rgba(13,18,25,.86));border:1px solid var(--line);border-radius:var(--raio);box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 12px 34px -22px rgba(0,0,0,.85)}
+section,.kpi{background:linear-gradient(180deg,rgba(22,32,50,.72),rgba(12,19,32,.92));border:1px solid var(--line);border-radius:var(--raio);box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 12px 34px -22px rgba(0,0,0,.85)}
 section{padding:18px;margin-bottom:14px;min-width:0}
-h2{position:relative;font:600 16.5px/1.25 var(--display);margin:0 0 3px;padding-left:12px;letter-spacing:.15px}
+h2{position:relative;font:700 14px/1.3 var(--display);margin:0 0 3px;padding-left:12px;letter-spacing:.07em;text-transform:uppercase}
+h2 small.selo{text-transform:none}
 h2::before{content:"";position:absolute;left:0;top:.18em;bottom:.18em;width:3px;border-radius:2px;background:var(--bee)}
 .nota{color:var(--ink3);font-size:12.5px;margin:0 0 14px}
 .topo-sec{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:space-between;margin-bottom:3px}
@@ -276,6 +277,60 @@ body:not(.sem-entrada) #conteudo > *:nth-child(3){animation-delay:.1s}
   .relogio{display:none}
 }
 @media (forced-colors:active){.medidor i,.barra i,.hora i,.motivo .bar i{background:CanvasText}}
+/* gráficos */
+.graf{position:relative;width:100%;min-width:0}
+.graf svg{display:block;overflow:visible}
+.g-linha{stroke:rgba(148,170,196,.10);stroke-width:1}
+.g-base{stroke:rgba(148,170,196,.30);stroke-width:1}
+.g-ref{stroke:rgba(242,245,249,.45);stroke-width:1}
+.g-tk{fill:var(--ink3);font:400 10.5px var(--mono)}
+.g-tk.ref{fill:var(--ink2)}
+.g-vl{fill:var(--ink2);font:600 10.5px var(--mono)}
+.g-alvo{fill:transparent;cursor:default}.g-alvo:hover{fill:rgba(148,170,196,.07)}
+.g-guia{stroke:rgba(242,245,249,.35);stroke-width:1;opacity:0}.g-alvo-l:hover .g-guia{opacity:1}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 10px;color:var(--ink2);font-size:12.5px}
+.leg span{display:inline-flex;align-items:center;gap:7px}
+.leg i,.ch{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none}
+.ch{margin-right:6px;vertical-align:-1px}
+#dica .ch{width:8px;height:8px;margin-right:5px}
+.duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:18px 26px;margin-bottom:6px}
+.duo > div{min-width:0}
+.nota.pe{margin:8px 0 0;font-size:12px}
+.hb{display:grid;gap:11px}
+.hb.largo .hb-l{grid-template-columns:minmax(140px,300px) minmax(0,1fr) auto}
+.hb-l{display:grid;grid-template-columns:minmax(96px,150px) minmax(0,1fr) auto;gap:4px 12px;align-items:center}
+.hb-r{color:var(--ink);font-size:13px;min-width:0;line-height:1.25}
+.hb-r small{display:block;color:var(--ink3);font:500 10.5px var(--mono)}
+.hb-t{position:relative;height:12px;border-radius:0 4px 4px 0;background:rgba(148,170,196,.08)}
+.hb-t > i{display:block;height:100%;border-radius:0 4px 4px 0;min-width:2px;transition:width .5s ease}
+.hb-t.pilha{display:flex;gap:2px;background:transparent}
+.hb-t.pilha > i{border-radius:0;min-width:0}
+.hb-t.pilha > i:last-of-type{border-radius:0 4px 4px 0}
+.hb-ref{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:rgba(242,245,249,.6);border-radius:1px}
+.hb-v{color:var(--ink);font:600 13px var(--body);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;min-width:62px}
+.hb-v small{display:block;color:var(--ink3);font:400 11px var(--body)}
+@media (max-width:560px){.hb-l{grid-template-columns:minmax(0,1fr) auto}.hb-t{grid-column:1/-1;grid-row:2}}
+.seg{display:flex;gap:2px;height:28px;margin:2px 0 8px}
+.seg > i{display:flex;align-items:center;padding:0 8px;min-width:3px;border-radius:4px;color:#fff;font:600 11.5px var(--body);font-style:normal;white-space:nowrap;overflow:hidden}
+.seg.fino{height:6px;margin:10px 0 0}.seg.fino > i{padding:0;border-radius:3px}
+.kpi-a{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 13px;align-items:center}
+.kpi-a b{font-size:27px;margin:4px 0 2px}
+.anel .trilho{fill:none;stroke:rgba(148,170,196,.14);stroke-width:5}
+.anel .arco{fill:none;stroke:var(--ink2);stroke-width:5;stroke-linecap:round;transition:stroke-dasharray .6s ease}
+.anel.ok .arco{stroke:var(--ok)}.anel.med .arco{stroke:var(--warn)}.anel.mau .arco{stroke:var(--bad)}
+.anel.neutro .arco{stroke:#3987e5}
+.anel text{fill:var(--ink);font:700 11px var(--body)}
+.kpi .mini{display:block;width:100%;height:30px;margin-top:8px}
+.kpi b.duplo{font-size:21px;white-space:nowrap}.kpi b.duplo span{color:var(--ink3);font-weight:400;margin:0 6px}
+.kpi small .ch{width:8px;height:8px;margin-right:4px}
+.numeros{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));gap:8px;margin:12px 0 16px}
+.numeros > div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:rgba(17,26,41,.6);min-width:0}
+.numeros > div > span{display:block;color:var(--ink3);font:500 10px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.numeros b{display:block;font:700 20px/1.2 var(--display);font-variant-numeric:tabular-nums}
+.numeros small{display:block;color:var(--ink3);font-size:11.5px;margin-top:2px}
+.numeros .ch{width:8px;height:8px}
+details > summary{cursor:pointer;color:var(--ink2);font-size:13px;margin:10px 0 6px}
+details > summary:hover{color:var(--ink)}
 /* quadro por KM */
 .km th.grp{text-align:center;color:var(--ink2);border-bottom:1px solid var(--line2)}
 .km th.sep,.km td.sep{border-left:1px solid var(--line2)}
@@ -360,15 +415,204 @@ function kpi(rot, val, extra, chip, medidor) {
 const classeOtd = (v) => (v >= 85 ? 'ok' : v >= 70 ? 'med' : 'mau');
 const medidor = (v, classe = '') => (v == null ? '' : `<div class="medidor" aria-hidden="true"><i class="${classe}" style="width:${Math.min(100, v)}%"></i></div>`);
 
+// ------------------------------------------------------------------ gráficos
+// Gráficos em SVG desenhados na largura real do bloco (texto nítido em qualquer tela), redesenhados
+// quando a janela muda. Uma escala por gráfico, nunca eixo duplo. Cada coluna ou ponto tem dica ao passar o mouse.
+// Cores validadas no fundo escuro do painel (contraste e daltonismo): modalidade, pontas, bandeira e fase.
+const COR = {
+  volume: '#FFD200',                                         // volume (pedidos, entregas): o amarelo Bee, série única
+  'Super Expressa': '#3987e5', Expressa: '#d95926', 'Econômica': '#199e70', Agendada: '#73808F', 'Padrão': '#56606D',
+  p1: '#9085e9', espera: '#73808F', p2: '#d55181', geral: '#E6EBF2', // ponta 1 / loja, espera, ponta 2 / cliente
+  PM: '#E0505C', EF: '#7E63D6',
+  op: '#FFD200', naoOp: '#73808F',
+  fase: ['#86b6ef', '#3987e5', '#1c5cab'],
+  fundo: '#0F1726',
+};
+const GRAF = new Map();
+let grafSeq = 0;
+// Marca o lugar do gráfico; o desenho sai em montarGraficos(), depois que o bloco está na página e tem largura.
+function graf(spec) {
+  const id = 'g' + ++grafSeq;
+  GRAF.set(id, spec);
+  return `<div class="graf" data-graf="${id}" style="height:${spec.altura || 210}px" role="img" aria-label="${esc(spec.titulo || '')}"></div>`;
+}
+function montarGraficos() {
+  const vivos = new Set();
+  for (const el of document.querySelectorAll('.graf[data-graf]')) {
+    const s = GRAF.get(el.dataset.graf);
+    if (!s) continue;
+    vivos.add(el.dataset.graf);
+    if (el.offsetParent === null) continue; // aba escondida: desenha quando aparecer
+    el.innerHTML = (s.tipo === 'linhas' ? svgLinhas : svgColunas)(s, el.clientWidth, el.clientHeight);
+  }
+  for (const k of GRAF.keys()) if (!vivos.has(k)) GRAF.delete(k);
+}
+let redesenhoJanela = null;
+addEventListener('resize', () => { clearTimeout(redesenhoJanela); redesenhoJanela = setTimeout(montarGraficos, 150); });
+
+function escalaEixo(max, n = 4) {
+  if (!(max > 0)) return { max: 1, passo: 1 };
+  const bruto = max / n, p = 10 ** Math.floor(Math.log10(bruto));
+  const passo = [1, 2, 2.5, 5, 10].find((m) => m * p >= bruto) * p;
+  return { max: Math.ceil(max / passo - 1e-9) * passo, passo };
+}
+const eixoNum = (v) => (v >= 10000 ? num(Math.round(v / 100) / 10) + ' mil' : num(Math.round(v * 10) / 10));
+// coluna com a ponta arredondada (4px) e a base reta
+function colPath(x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h));
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+function grade(s, W, esq, dir, y, e) {
+  let g = '';
+  for (let v = 0; v <= e.max + 1e-9; v += e.passo) {
+    g += `<line x1="${esq}" x2="${W - dir}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="${v === 0 ? 'g-base' : 'g-linha'}"/>`
+      + `<text x="${esq - 6}" y="${(y(v) + 3.5).toFixed(1)}" class="g-tk" text-anchor="end">${s.pct ? num(v) + '%' : eixoNum(v)}</text>`;
+  }
+  if (s.ref != null) {
+    const yy = y(s.ref).toFixed(1);
+    g += `<line x1="${esq}" x2="${W - dir}" y1="${yy}" y2="${yy}" class="g-ref"/><text x="${W - dir}" y="${yy - 4}" class="g-tk ref" text-anchor="end">${esc(s.refRot || '')}</text>`;
+  }
+  return g;
+}
+
+// Colunas: uma série, várias lado a lado ou empilhadas (2px de fundo entre os segmentos).
+// spec: { cats, series: [{ nome, cor, vals }], empilhado, pct, ref, refRot, rotulos, fmt, tip(i) }
+function svgColunas(s, W, H) {
+  const n = s.cats.length;
+  if (!n || W < 60) return '';
+  const esq = 40, dir = 6, topo = s.rotulos ? 18 : 10, base = 22;
+  const pw = W - esq - dir, ph = H - topo - base;
+  const tot = s.cats.map((_, i) => (s.empilhado ? s.series.reduce((t, x) => t + (x.vals[i] || 0), 0) : Math.max(0, ...s.series.map((x) => x.vals[i] || 0))));
+  const e = s.pct ? { max: 100, passo: 25 } : escalaEixo(Math.max(...tot, s.ref || 0));
+  const y = (v) => topo + ph - (Math.min(v, e.max) / e.max) * ph;
+  const banda = pw / n, ns = s.empilhado ? 1 : s.series.length;
+  const bw = Math.max(3, Math.min(24, (banda * 0.7 - 2 * (ns - 1)) / ns));
+  const cada = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(pw / 38))));
+  const fmt = s.fmt || num;
+  let marcas = '', alvos = '';
+  s.cats.forEach((c, i) => {
+    const x0 = esq + banda * i + (banda - (bw * ns + 2 * (ns - 1))) / 2;
+    if (s.empilhado) {
+      const vs = s.series.map((x) => x.vals[i] || 0);
+      const ultimo = vs.reduce((k, v, j) => (v > 0 ? j : k), -1);
+      let acc = 0;
+      vs.forEach((v, j) => {
+        if (!v) return;
+        const y1 = y(acc + v), h = y(acc) - y1 - (acc > 0 ? 2 : 0);
+        acc += v;
+        if (h > 0.5) marcas += `<path d="${colPath(x0, y1, bw, h, j === ultimo ? 4 : 0)}" fill="${s.series[j].cor}"/>`;
+      });
+    } else {
+      s.series.forEach((x, j) => {
+        const v = x.vals[i];
+        if (v == null || v <= 0) return;
+        const y1 = y(v);
+        marcas += `<path d="${colPath(x0 + j * (bw + 2), y1, bw, topo + ph - y1, 4)}" fill="${x.cor}"/>`;
+        if (s.rotulos && ns === 1 && banda >= 26) marcas += `<text x="${(x0 + bw / 2).toFixed(1)}" y="${(y1 - 5).toFixed(1)}" class="g-vl" text-anchor="middle">${fmt(v)}</text>`;
+      });
+    }
+    if (i % cada === 0) marcas += `<text x="${(esq + banda * i + banda / 2).toFixed(1)}" y="${H - 6}" class="g-tk" text-anchor="middle">${esc(c)}</text>`;
+    alvos += `<rect x="${(esq + banda * i).toFixed(1)}" y="${topo}" width="${banda.toFixed(1)}" height="${ph}" class="g-alvo" data-tip="${esc(s.tip ? s.tip(i) : `<b>${esc(c)}</b><br>${fmt(tot[i])}`)}"/>`;
+  });
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${grade(s, W, esq, dir, y, e)}${marcas}${alvos}</svg>`;
+}
+
+// Linhas de 0 a 100%: 2px, pontos de 8px com anel do fundo; sem valor (null) quebra a linha.
+// Passar o mouse numa coluna mostra a linha-guia e a dica com todas as séries.
+function svgLinhas(s, W, H) {
+  const n = s.cats.length;
+  if (!n || W < 60) return '';
+  const esq = 40, dir = 8, topo = 12, base = 22;
+  const pw = W - esq - dir, ph = H - topo - base;
+  const e = s.pct ? { max: 100, passo: 25 } : escalaEixo(Math.max(0, ...s.series.flatMap((x) => x.vals.filter((v) => v != null))));
+  const y = (v) => topo + ph - (Math.min(v, e.max) / e.max) * ph;
+  const banda = pw / n, x = (i) => esq + banda * i + banda / 2;
+  const cada = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(pw / 38))));
+  let linhas = '', pontos = '', eixo = '', alvos = '';
+  for (const sr of s.series) {
+    let d = '', aberto = false;
+    sr.vals.forEach((v, i) => {
+      if (v == null) { aberto = false; return; }
+      d += `${aberto ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`;
+      aberto = true;
+      pontos += `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4" fill="${sr.cor}" stroke="${COR.fundo}" stroke-width="2"/>`;
+    });
+    linhas += `<path d="${d}" fill="none" stroke="${sr.cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  s.cats.forEach((c, i) => {
+    if (i % cada === 0) eixo += `<text x="${x(i).toFixed(1)}" y="${H - 6}" class="g-tk" text-anchor="middle">${esc(c)}</text>`;
+    const dica = s.tip ? s.tip(i) : `<b>${esc(c)}</b>` + s.series.map((sr) => `<br><i class="ch" style="background:${sr.cor}"></i>${esc(sr.nome)}: ${sr.vals[i] == null ? '—' : (s.fmt || pc)(sr.vals[i])}`).join('');
+    alvos += `<g class="g-alvo-l"><line x1="${x(i).toFixed(1)}" x2="${x(i).toFixed(1)}" y1="${topo}" y2="${topo + ph}" class="g-guia"/><rect x="${(esq + banda * i).toFixed(1)}" y="${topo}" width="${banda.toFixed(1)}" height="${ph}" fill="transparent" data-tip="${esc(dica)}"/></g>`;
+  });
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${grade(s, W, esq, dir, y, e)}${alvos}${linhas}${pontos}</svg>`;
+}
+
+const BASE_MIN_PCT = 10; // entregas mínimas para um percentual entrar no gráfico
+
+// Legenda: sempre que houver duas séries ou mais.
+const legenda = (itens) => `<div class="leg">${itens.map((x) => `<span><i style="background:${x.cor}"></i>${esc(x.nome)}</span>`).join('')}</div>`;
+
+// Barras horizontais em HTML (rótulo, trilho, valor na ponta); `ref` desenha a marca de referência.
+function hbarras(itens, { max = 100, ref = null, fmt = pc, largo = false } = {}) {
+  if (!itens.length) return '<p class="vazio">Sem dados.</p>';
+  return `<div class="hb${largo ? ' largo' : ''}">${itens.map((it) => {
+    const w = max ? Math.max(0, Math.min(100, (100 * (it.val || 0)) / max)) : 0;
+    return `<div class="hb-l"${it.tip ? ` data-tip="${esc(it.tip)}"` : ''}><div class="hb-r">${esc(it.rot)}${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</div>
+      <div class="hb-t"><i style="width:${w}%;background:${it.cor || COR.volume}"></i>${ref != null ? `<b class="hb-ref" style="left:${(100 * ref) / max}%"></b>` : ''}</div>
+      <div class="hb-v">${it.val == null ? '—' : fmt(it.val)}${it.extra || ''}</div></div>`;
+  }).join('')}</div>`;
+}
+
+// Barras horizontais empilhadas (partes de um tempo ou de um total), com marca opcional por linha.
+function hpilhas(linhas, { max, fmt = min, marca = null } = {}) {
+  const m = max || Math.max(1, ...linhas.map((l) => Math.max(l.partes.reduce((t, p) => t + (p.val || 0), 0), marca ? marca(l) || 0 : 0)));
+  return `<div class="hb">${linhas.map((l) => {
+    const total = l.partes.reduce((t, p) => t + (p.val || 0), 0);
+    const mk = marca ? marca(l) : null;
+    const partes = l.partes.filter((p) => p.val > 0).map((p) => `<i style="width:${(100 * p.val) / m}%;background:${p.cor}" data-tip="${esc(`<b>${esc(l.rot)}</b><br><i class="ch" style="background:${p.cor}"></i>${esc(p.nome)}: ${fmt(p.val)}`)}"></i>`).join('');
+    return `<div class="hb-l"${l.tip ? ` data-tip="${esc(l.tip)}"` : ''}><div class="hb-r">${esc(l.rot)}${l.sub ? `<small>${esc(l.sub)}</small>` : ''}</div>
+      <div class="hb-t pilha">${partes}${mk != null ? `<b class="hb-ref" style="left:${Math.min(100, (100 * mk) / m)}%"></b>` : ''}</div>
+      <div class="hb-v">${l.valor ?? fmt(total)}</div></div>`;
+  }).join('')}</div>`;
+}
+
+// Barra segmentada (um todo dividido em partes): bloco de 28px, a parte mostra a fatia quando cabe.
+function segmentos(partes, { fmt = num } = {}) {
+  const tot = partes.reduce((t, p) => t + (p.val || 0), 0);
+  if (!tot) return '<p class="vazio">Sem dados.</p>';
+  const blocos = partes.filter((p) => p.val > 0).map((p) => {
+    const f = (100 * p.val) / tot;
+    return `<i style="flex:${p.val} 1 0;background:${p.cor}${p.claro ? ';color:#0b0b0b' : ''}" data-tip="${esc(`<b>${esc(p.nome)}</b><br>${fmt(p.val)} · ${pc(Math.round(f * 10) / 10)}`)}">${f >= 12 ? pc(Math.round(f)) : ''}</i>`;
+  }).join('');
+  return `<div class="seg" role="img" aria-label="${esc(partes.map((p) => `${p.nome} ${fmt(p.val)}`).join(', '))}">${blocos}</div>${legenda(partes.filter((p) => p.val > 0))}`;
+}
+
+// Anel de 0 a 100% para os indicadores; a cor de status só onde existe faixa definida (OTD).
+function anel(v, classe = '') {
+  const r = 21, c = 2 * Math.PI * r, p = v == null ? 0 : Math.max(0, Math.min(100, v));
+  return `<svg class="anel ${classe}" viewBox="0 0 52 52" width="52" height="52" aria-hidden="true"><circle cx="26" cy="26" r="${r}" class="trilho"/><circle cx="26" cy="26" r="${r}" class="arco" stroke-dasharray="${((c * p) / 100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 26 26)"/><text x="26" y="30" text-anchor="middle">${v == null ? '—' : Math.round(v) + '%'}</text></svg>`;
+}
+// Indicador com anel à esquerda
+function kpiA(rot, val, extra, v, classe, chip) {
+  return `<div class="kpi kpi-a">${anel(v, classe)}<div><span class="rot">${rot}</span><b>${val}</b><small>${extra || ''}</small>${chip || ''}</div></div>`;
+}
+// Linha de tendência curta, sem eixo, para o indicador de demanda (pedidos por hora).
+function minilinha(vals) {
+  const mx = Math.max(1, ...vals), n = vals.length;
+  const pts = vals.map((v, i) => `${((100 * i) / Math.max(1, n - 1)).toFixed(2)},${(28 - (26 * v) / mx).toFixed(2)}`).join(' ');
+  return `<svg class="mini" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,30 ${pts} 100,30" fill="rgba(255,210,0,.10)"/><polyline points="${pts}" fill="none" stroke="${COR.volume}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
+}
+
 function blocoKpis(a) {
-  const k = a.kpis;
+  const k = a.kpis, taxaFin = k.dem ? Math.round((1000 * k.fin) / k.dem) / 10 : null;
+  const pontas = k.p1Med != null && k.p2Med != null ? `<div class="seg fino" aria-hidden="true"><i style="flex:${k.p1Med} 1 0;background:${COR.p1}"></i><i style="flex:${k.p2Med} 1 0;background:${COR.p2}"></i></div>` : '';
   return `<div class="kpis">
-    ${kpi('Demanda', num(k.dem), `${num(k.lojas)} lojas com pedido`)}
-    ${kpi('Finalizadas', num(k.fin), k.and ? `${num(k.and)} em outros status` : '', '', medidor(k.dem ? (100 * k.fin) / k.dem : null))}
-    ${kpi('Cancelamentos', num(k.canc), `${pc(k.taxaCanc)} da demanda · ${num(k.cOp)} operacionais`, '', medidor(k.taxaCanc))}
-    ${kpi('Tempo médio de aceite', min(k.aceite), `${pc(k.pctAte5)} em até 5 min${k.direto ? ` · ${num(k.direto)} sem busca` : ''}`, '', medidor(k.pctAte5))}
-    ${kpi('OTD no prazo da modalidade', pc(k.otd), k.otdN ? `${num(k.otdN)} entregas, cada uma no próprio prazo` : 'sem entregas finalizadas', chipOtd(k.otd), medidor(k.otd, classeOtd(k.otd)))}
-    ${kpi('Tempo das pontas', `${min(k.p1Med)} · ${min(k.p2Med)}`, 'chegada à loja · saída até o cliente')}
+    <div class="kpi"><span class="rot">Demanda</span><b>${num(k.dem)}</b><small>${num(k.lojas)} lojas com pedido · por hora</small>${minilinha(a.horas.map((h) => h[0]))}</div>
+    ${kpiA('Finalizadas', num(k.fin), k.and ? `${num(k.and)} ainda em outros status` : 'dos pedidos do período', taxaFin, 'neutro')}
+    ${kpiA('Cancelamentos', num(k.canc), `${pc(k.taxaCanc)} da demanda · ${num(k.cOp)} operacionais`, k.taxaCanc, 'neutro')}
+    ${kpiA('Aceite médio', min(k.aceite), `${pc(k.pctAte5)} em até 5 min${k.direto ? ` · ${num(k.direto)} sem busca` : ''}`, k.pctAte5, 'neutro')}
+    ${kpiA('OTD no prazo da modalidade', pc(k.otd), k.otdN ? `${num(k.otdN)} entregas, cada uma no próprio prazo` : 'sem entregas finalizadas', k.otd, classeOtd(k.otd), chipOtd(k.otd))}
+    <div class="kpi"><span class="rot">Tempo das pontas</span><b class="duplo">${min(k.p1Med)}<span>+</span>${min(k.p2Med)}</b><small><i class="ch" style="background:${COR.p1}"></i>até a loja · <i class="ch" style="background:${COR.p2}"></i>loja ao cliente</small>${pontas}</div>
   </div>`;
 }
 
@@ -387,47 +631,71 @@ const celPc = (v, sep) => `<td class="pc${sep ? ' sep' : ''}">${icone(v)}${pc(v)
 function blocoKm(a) {
   const q = a.porKm;
   if (!q) return `<section><h2>Entregas por KM</h2><p class="vazio">Este período tem dias gravados antes dos pedidos um a um; eles estão sendo relidos.</p></section>`;
+  const porI = new Map(q.linhas.filter((x) => x.faixa !== 'Sem distância').map((x) => [parseInt(x.faixa, 10), x]));
+  const ultimo = Math.min(14, Math.max(-1, ...porI.keys()));
+  const idx = Array.from({ length: ultimo + 1 }, (_, i) => i);
+  const cats = idx.map((i) => `${i}–${i + 1}`);
+  const linha = (i) => porI.get(i);
+  const dicaKm = (i) => { const x = linha(i); return x ? `<b>${esc(x.faixa)}</b><br>${num(x.fin)} finalizadas · base ${num(x.base)}<br><i class="ch" style="background:${COR.geral}"></i>Geral ${pc(x.geral)}<br><i class="ch" style="background:${COR.p1}"></i>Loja ${pc(x.loja)}<br><i class="ch" style="background:${COR.p2}"></i>Cliente ${pc(x.cliente)}<br>Espera na loja ${min(x.espera)}` : `<b>${i}–${i + 1} km</b><br>Nenhuma entrega`; };
+  const grafVol = graf({ tipo: 'colunas', titulo: 'Entregas finalizadas por faixa de 1 km', cats, series: [{ nome: 'Finalizadas', cor: COR.volume, vals: idx.map((i) => linha(i)?.fin || 0) }], rotulos: true, tip: dicaKm });
+  const serie = (nome, cor, campo) => ({ nome, cor, vals: idx.map((i) => (linha(i)?.base >= BASE_MIN_PCT ? linha(i)[campo] : null)) });
+  const grafOtd = graf({ tipo: 'linhas', titulo: 'Percentual on time por faixa de 1 km', cats, pct: true, ref: 85, refRot: '85%: bom', series: [serie('Geral · até 30 min', COR.geral, 'geral'), serie('Loja · ponta 1 até 15 min', COR.p1, 'loja'), serie('Cliente · ponta 2 até 15 min', COR.p2, 'cliente')], tip: dicaKm });
+  const t = q.total;
   const lin = (x, tag = 'td') => `<tr><${tag} class="loja">${esc(x.faixa)}</${tag}><td class="forte">${num(x.fin)}</td><td>${num(x.base)}</td>
     <td class="sep">${num(x.geralOn)}</td><td>${num(x.geralOff)}</td>${celPc(x.geral)}
     <td class="sep">${num(x.lojaOn)}</td><td>${num(x.lojaOff)}</td>${celPc(x.loja)}
     <td class="sep">${num(x.clienteOn)}</td><td>${num(x.clienteOff)}</td>${celPc(x.cliente)}
     <td class="sep">${min(x.espera)}</td>${celPc(x.modalidade, false)}</tr>`;
-  return `<section><h2>Entregas por KM</h2><p class="nota">Finalizadas por faixa de 1 km da distância do pedido. On time geral: ponta 1 + ponta 2 em até 30 min. Loja: da criação à chegada na loja em até 15 min. Cliente: da saída da loja à chegada no cliente em até 15 min. Base: finalizadas com os dois tempos. A última coluna é o OTD no prazo da modalidade (30 min, 60 min, 2 h), a regra do resto do painel.</p>
-  <div class="rolagem"><table class="km"><thead>
+  return `<section><div class="topo-sec"><h2>Entregas por KM</h2><span class="sub">${num(t.fin)} finalizadas · base ${num(t.base)} com os dois tempos</span></div>
+  <p class="nota">On time geral: ponta 1 + ponta 2 em até 30 min. Loja: da criação à chegada na loja em até 15 min. Cliente: da saída da loja à chegada no cliente em até 15 min.</p>
+  <div class="numeros">
+    <div><span>Geral</span><b>${icone(t.geral)}${pc(t.geral)}</b><small>${num(t.geralOn)} on time · ${num(t.geralOff)} off</small></div>
+    <div><span><i class="ch" style="background:${COR.p1}"></i>Loja</span><b>${icone(t.loja)}${pc(t.loja)}</b><small>${num(t.lojaOn)} on time · ${num(t.lojaOff)} off</small></div>
+    <div><span><i class="ch" style="background:${COR.p2}"></i>Cliente</span><b>${icone(t.cliente)}${pc(t.cliente)}</b><small>${num(t.clienteOn)} on time · ${num(t.clienteOff)} off</small></div>
+    <div><span>Espera na loja</span><b>${min(t.espera)}</b><small>média das finalizadas</small></div>
+    <div><span>OTD da modalidade</span><b>${icone(t.modalidade)}${pc(t.modalidade)}</b><small>30 min · 60 min · 2 h</small></div>
+  </div>
+  <div class="duo"><div><h3 class="sub-h">Entregas finalizadas por faixa (km)</h3>${grafVol}</div>
+    <div><h3 class="sub-h">On time por faixa (km) · faixas com ${BASE_MIN_PCT}+ entregas</h3>${legenda([{ nome: 'Geral', cor: COR.geral }, { nome: 'Loja', cor: COR.p1 }, { nome: 'Cliente', cor: COR.p2 }])}${grafOtd}</div></div>
+  ${ultimo < Math.max(...porI.keys(), 0) ? '<p class="nota pe">Gráficos até 15 km; as faixas acima disso estão na tabela.</p>' : ''}
+  <details data-chave="tabela-km"><summary>Ver a tabela por faixa de 1 km</summary><div class="rolagem"><table class="km"><thead>
     <tr><th rowspan="2">KM</th><th rowspan="2">Finalizadas</th><th rowspan="2">Com os dois tempos</th><th colspan="3" class="grp sep">Geral · até 30 min</th><th colspan="3" class="grp sep">Loja · ponta 1 até 15 min</th><th colspan="3" class="grp sep">Cliente · ponta 2 até 15 min</th><th rowspan="2" class="sep">Espera na loja</th><th rowspan="2">OTD da modalidade</th></tr>
     <tr><th class="sep">On time</th><th>Off time</th><th>%</th><th class="sep">On time</th><th>Off time</th><th>%</th><th class="sep">On time</th><th>Off time</th><th>%</th></tr>
   </thead><tbody>${q.linhas.map((x) => lin(x)).join('') || '<tr><td colspan="14" class="vazio">Nenhuma entrega finalizada.</td></tr>'}</tbody>
-  <tfoot>${lin(q.total)}</tfoot></table></div></section>`;
+  <tfoot>${lin(t)}</tfoot></table></div></details></section>`;
 }
 
 function blocoModalidades(a) {
   const k = a.kpis;
   if (!k.mods?.length) return `<section><h2>OTD por modalidade</h2><p class="vazio">Este dia foi gravado antes da separação por modalidade e ainda não foi relido.</p></section>`;
-  const cards = k.mods.map((x) => {
-    const pm = achaMod(a.bandeiras.PM, x.mod), ef = achaMod(a.bandeiras.EF, x.mod);
-    return `<div class="modc"><h3>${esc(x.mod)}</h3><div class="pz">${x.prazo ? 'Prazo de ' + prazoTxt(x.mod) : 'Sem prazo'}</div>
-      <div class="big"><b>${x.prazo ? pc(x.otd) : '—'}</b><small>${x.prazo ? (x.otdN ? `${num(x.noPrazo)} de ${num(x.otdN)} no prazo` : 'nenhuma finalizada') : 'fora do OTD'}</small>${x.prazo ? chipOtd(x.otd) : ''}</div>
-      ${x.prazo ? medidor(x.otd, classeOtd(x.otd)) : ''}
-      <dl><div><dt>Demanda</dt><dd>${num(x.dem)}</dd></div><div><dt>Canceladas</dt><dd>${num(x.canc)} <small>${pc(x.taxaCanc)}</small></dd></div><div><dt>Até o cliente</dt><dd>${min(x.tempo)}</dd></div>
-      <div><dt>Pague Menos</dt><dd>${pm?.otdN ? pc(pm.otd) : '—'}</dd></div><div><dt>Extrafarma</dt><dd>${ef?.otdN ? pc(ef.otd) : '—'}</dd></div><div><dt>Finalizadas</dt><dd>${num(x.fin)}</dd></div></dl></div>`;
-  }).join('');
-  return `<section><h2>OTD por modalidade</h2><p class="nota">Finalizada que chegou ao cliente dentro do prazo da modalidade, contado da criação do pedido. A modalidade vem do prazo do pedido, como no Radar.</p><div class="mods">${cards}</div></section>`;
+  const band = (b, m) => { const x = achaMod(a.bandeiras[b], m); return x?.otdN ? pc(x.otd) : '—'; };
+  const comPrazo = k.mods.filter((x) => x.prazo);
+  const barras = hbarras(comPrazo.map((x) => ({
+    rot: x.mod, sub: prazoTxt(x.mod), val: x.otdN ? x.otd : null, cor: COR[x.mod],
+    extra: ` <small>${num(x.noPrazo)} de ${num(x.otdN)}</small>`,
+    tip: `<b>${esc(x.mod)}</b> · prazo de ${prazoTxt(x.mod)}<br>${num(x.noPrazo)} de ${num(x.otdN)} no prazo<br>Pague Menos ${band('PM', x.mod)} · Extrafarma ${band('EF', x.mod)}<br>Tempo médio até o cliente ${min(x.tempo)}`,
+  })), { ref: 85 });
+  const seg = segmentos(k.mods.map((x) => ({ nome: x.mod, val: x.dem, cor: COR[x.mod] || COR.Agendada })));
+  const tabela = `<div class="rolagem"><table><thead><tr><th>Modalidade</th><th>Pedidos</th><th>Finalizadas</th><th>Canceladas</th><th>Até o cliente</th></tr></thead><tbody>${k.mods.map((x) => `<tr><td class="loja"><i class="ch" style="background:${COR[x.mod] || COR.Agendada}"></i>${esc(x.mod)}</td><td class="forte">${num(x.dem)}</td><td>${num(x.fin)}</td><td>${num(x.canc)}<small class="b">${pc(x.taxaCanc)}</small></td><td>${min(x.tempo)}</td></tr>`).join('')}</tbody></table></div>`;
+  return `<section><h2>OTD por modalidade</h2><p class="nota">Finalizada que chegou ao cliente dentro do prazo da modalidade, contado da criação do pedido. Passe o mouse na barra para ver Pague Menos e Extrafarma.</p>
+    <div class="duo"><div><h3 class="sub-h">No prazo da modalidade</h3>${barras}<p class="nota pe">A marca em 85% é o início da faixa Bom.</p></div>
+    <div><h3 class="sub-h">Pedidos por modalidade</h3>${seg}${tabela}</div></div></section>`;
 }
 
 function blocoBandeiras(a) {
-  const lin = (rot, k) => `<tr><td class="loja">${rot}</td><td class="forte">${num(k.dem)}</td><td>${num(k.fin)}</td><td>${num(k.canc)}</td><td>${pc(k.taxaCanc)}</td><td>${num(k.cOp)}</td><td>${num(k.c05)}</td><td>${min(k.aceite)}</td>${ORDEM_MODS.map((m) => celMod(k, m)).join('')}<td>${pc(k.otd)}</td></tr>`;
-  return `<section><h2>Por bandeira</h2><p class="nota">OTD de cada modalidade no próprio prazo; o geral junta as três, cada entrega contra o seu prazo. Embaixo do percentual: entregas no prazo e finalizadas da modalidade.</p>
+  const lin = (rot, k) => `<tr><td class="loja"><i class="ch" style="background:${rot === 'Pague Menos' ? COR.PM : COR.EF}"></i>${rot}</td><td class="forte">${num(k.dem)}</td><td>${num(k.fin)}</td><td>${num(k.canc)}</td><td>${pc(k.taxaCanc)}</td><td>${num(k.cOp)}</td><td>${num(k.c05)}</td><td>${min(k.aceite)}</td>${ORDEM_MODS.map((m) => celMod(k, m)).join('')}<td>${pc(k.otd)}</td></tr>`;
+  return `<section><h2>Por bandeira</h2><p class="nota">Participação na demanda e indicadores de cada bandeira. OTD de cada modalidade no próprio prazo; embaixo do percentual, as entregas no prazo e as finalizadas.</p>
+  ${segmentos([{ nome: 'Pague Menos', val: a.bandeiras.PM.dem, cor: COR.PM }, { nome: 'Extrafarma', val: a.bandeiras.EF.dem, cor: COR.EF }], { fmt: (v) => num(v) + ' pedidos' })}
   <div class="rolagem"><table><thead><tr><th>Bandeira</th><th>Demanda</th><th>Finalizadas</th><th>Canceladas</th><th>% canc.</th><th>Operacional</th><th>0 a 5 min</th><th>Aceite</th>${thMods}<th>OTD geral</th></tr></thead>
   <tbody>${lin('Pague Menos', a.bandeiras.PM)}${lin('Extrafarma', a.bandeiras.EF)}</tbody></table></div></section>`;
 }
 
 function blocoHoras(a) {
-  const max = Math.max(1, ...a.horas.map((h) => h[0]));
-  const cols = a.horas.map((h, i) => `<div class="hora" data-h="${i}" data-d="${h[0]}" data-f="${h[1]}" data-c="${h[2]}"><i style="height:${(100 * h[0]) / max}%"></i></div>`).join('');
-  const eixo = a.horas.map((_, i) => `<span>${i % 3 === 0 ? String(i).padStart(2, '0') : ''}</span>`).join('');
   const pico = a.horas.reduce((b, h, i) => (h[0] > a.horas[b][0] ? i : b), 0);
-  return `<section><h2>Demanda por hora</h2><p class="nota">Pico às ${String(pico).padStart(2, '0')}h, com ${num(a.horas[pico][0])} pedidos criados.</p>
-  <div class="horas" role="img" aria-label="Pedidos criados por hora">${cols}</div><div class="eixo">${eixo}</div></section>`;
+  const cats = a.horas.map((_, i) => String(i).padStart(2, '0') + 'h');
+  const g = graf({ tipo: 'colunas', titulo: 'Pedidos criados por hora', altura: 200, cats, series: [{ nome: 'Pedidos', cor: COR.volume, vals: a.horas.map((h) => h[0]) }],
+    tip: (i) => { const h = a.horas[i]; return `<b>${cats[i]}</b> · ${num(h[0])} pedidos<br>${num(h[1])} finalizados · ${num(h[2])} cancelados${h[0] ? ` (${pc(Math.round((1000 * h[2]) / h[0]) / 10)})` : ''}`; } });
+  return `<section><h2>Demanda por hora</h2><p class="nota">Pico às ${String(pico).padStart(2, '0')}h, com ${num(a.horas[pico][0])} pedidos criados. Passe o mouse para ver finalizados e cancelados.</p>${g}</section>`;
 }
 
 // Cancelamentos das lojas prioritárias: resumo por loja e lista, do mais recente para o mais antigo.
@@ -726,6 +994,7 @@ function desenhar() {
   $('#filtroCanc')?.addEventListener('change', (e) => { filtroCanc = e.target.value; $('#listaCanc').innerHTML = linhasCancPrioridade(a); });
   $('#periodoEnt')?.addEventListener('change', (e) => { periodoEnt = e.target.value; $('#corpoEnt').innerHTML = corpoEntregadores(d.entregadores); });
   for (const c of abertos) document.querySelector(`details[data-chave="${c}"]`)?.setAttribute('open', '');
+  montarGraficos();
 }
 
 async function carregar() {
@@ -869,9 +1138,17 @@ setInterval(marcarHora, 1000);
 
 // Dica da barra por hora
 const dica = $('#dica');
-document.addEventListener('mousemove', (e) => {
+function mostrarDica(e) {
+  const t = e.target.closest?.('[data-tip]');
   const h = e.target.closest?.('.hora'), ev = e.target.closest?.('.evo-col');
-  if (!h && !ev) { dica.style.display = 'none'; return; }
+  if (!t && !h && !ev) { dica.style.display = 'none'; return; }
+  if (t) {
+    dica.innerHTML = t.dataset.tip;
+    dica.style.display = 'block';
+    dica.style.left = Math.max(8, Math.min(e.clientX + 12, innerWidth - dica.offsetWidth - 8)) + 'px';
+    dica.style.top = Math.max(8, e.clientY - dica.offsetHeight - 12) + 'px';
+    return;
+  }
   if (ev) {
     const pm = Number(ev.dataset.pm), ef = Number(ev.dataset.ef);
     dica.innerHTML = `<b>${ev.dataset.de === ev.dataset.ate ? dataBr(ev.dataset.de) : dataBr(ev.dataset.de) + ' a ' + dataBr(ev.dataset.ate)}</b>${ev.dataset.parcial ? ' · parcial' : ''}<br>${num(pm + ef)} pedidos<br>Pague Menos ${num(pm)} · Extrafarma ${num(ef)}`;
@@ -879,7 +1156,10 @@ document.addEventListener('mousemove', (e) => {
   dica.style.display = 'block';
   dica.style.left = Math.min(e.clientX + 12, innerWidth - dica.offsetWidth - 8) + 'px';
   dica.style.top = e.clientY - dica.offsetHeight - 10 + 'px';
-});
+}
+document.addEventListener('mousemove', mostrarDica);
+document.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') mostrarDica(e); });
+addEventListener('scroll', () => { dica.style.display = 'none'; }, { passive: true });
 
 // ------------------------------------------------------------ aba Análise de lojas
 // Tudo vem de /api/lojas, calculado pedido a pedido só com a loja escolhida (ou o grupo inteiro) no período De/Até.
@@ -892,7 +1172,7 @@ function mostrarAba() {
   for (const b of document.querySelectorAll('.abas button')) b.setAttribute('aria-selected', String(b.dataset.aba === aba));
   $('#conteudo').hidden = aba !== 'operacao';
   $('#analise').hidden = aba !== 'lojas';
-  if (aba === 'lojas') carregarLojas();
+  if (aba === 'lojas') carregarLojas(); else montarGraficos();
 }
 
 async function carregarLojas() {
@@ -916,6 +1196,7 @@ function desenharLojas() {
   const j = lojasDados, a = j?.analise;
   if (!a) { $('#analise').innerHTML = '<section><p class="vazio">Ainda não há dados coletados.</p></section>'; return; }
   const g = a.geral, c = a.cancelamentos, pz = a.prazos;
+  const kmTxt = (v) => (v == null ? '—' : num(Math.round(v * 10) / 10) + ' km');
   const titulo = a.loja ? `Loja ${esc(a.loja.num)} · ${esc(a.loja.bairro)} <small class="selo">${a.loja.band === 'EF' ? 'Extrafarma' : 'Pague Menos'}</small>` : 'Grupo inteiro · Pague Menos + Extrafarma';
   const faixaTxt = a.de === a.ate ? dataBr(a.de) : `${dataBr(a.de)} a ${dataBr(a.ate)}`;
   const grupoOpcoes = (prio) => a.lojas.filter((l) => l.prio === prio).map((l) => `<option value="${l.id}"${l.id === lojaSel ? ' selected' : ''}>${esc(l.num || '—')} · ${esc(l.bairro)} (${l.band}) · ${num(l.dem)} ped.</option>`).join('');
@@ -924,57 +1205,83 @@ function desenharLojas() {
   if (a.semRegistro.length) avisos.push(`<div class="aviso erro"><b>Dias ainda sem pedidos um a um:</b> ${a.semRegistro.map(dataBr).join(', ')}. Eles estão sendo relidos e entram nos próximos minutos.</div>`);
   if (lojaSel && !a.loja) avisos.push('<div class="aviso">A loja escolhida não teve pedido nesse período; mostrando o grupo inteiro.</div>');
 
-  const filtro = `<section class="filtro-lojas"><div class="topo-sec"><h2>Análise de lojas</h2><span class="sub">${faixaTxt}${a.fechado ? '' : ' · inclui hoje, ao vivo'} · troque o período em De/Até no topo</span></div>
+  const filtro = `<section class="filtro-lojas"><div class="topo-sec"><h2>Análise de lojas</h2><span class="sub">${faixaTxt}${a.fechado ? '' : ' · inclui hoje, ao vivo'} · período em De/Até no topo</span></div>
     <label class="per" for="selLoja">Loja<select id="selLoja"><option value="">Análise geral · todas as lojas (${num(a.lojas.length)})</option><optgroup label="Lojas prioritárias">${grupoOpcoes(true)}</optgroup><optgroup label="Demais lojas, da maior demanda para a menor">${grupoOpcoes(false)}</optgroup></select></label></section>`;
 
   const kpis = `<section><h2>${titulo}</h2><p class="nota">Todos os números abaixo são só ${a.loja ? 'desta loja' : 'do grupo'} em ${faixaTxt}, contados pedido a pedido.</p>
     <div class="kpis">
-      ${kpi('Pedidos', num(g.dem), g.and ? `${num(g.and)} ainda em andamento` : `${num(a.loja ? 1 : a.lojas.length)} ${a.loja ? 'loja' : 'lojas'}`)}
-      ${kpi('Finalizadas', num(g.fin), `${pc(g.taxaFin)} dos pedidos`, '', medidor(g.taxaFin))}
-      ${kpi('Canceladas', num(g.canc), `${pc(g.taxaCanc)} dos pedidos · ${num(c.op)} operacionais`, '', medidor(g.taxaCanc))}
-      ${kpi('OTD geral', pc(g.otd), g.otdN ? `${num(g.noPrazo)} de ${num(g.otdN)} no prazo da modalidade` : 'sem entrega com prazo', chipOtd(g.otd), medidor(g.otd, classeOtd(g.otd)))}
-      ${kpi('Tempo médio de aceite', min(g.aceite), `${base(g.aceiteN, 'pedidos com busca')}${g.semBusca ? ` · ${num(g.semBusca)} sem busca` : ''}`, '', medidor(g.ate5))}
-      ${kpi('Tempo médio de entrega', min(g.total), `da criação ao cliente · ${base(g.totalN)}`)}
-    </div>
-    <div class="pontas">
-      <div><span>Ponta 1 · até a loja</span><b>${min(g.p1)}</b><small>criação até a chegada na loja</small></div>
-      <div><span>Espera na loja</span><b>${min(g.espera)}</b><small>chegada até a saída</small></div>
-      <div><span>Ponta 2 · loja ao cliente</span><b>${min(g.p2)}</b><small>saída até a chegada no cliente</small></div>
-      <div><span>Distância média</span><b>${g.km == null ? '—' : num(Math.round(g.km * 10) / 10) + ' km'}</b><small>da loja ao cliente</small></div>
+      <div class="kpi"><span class="rot">Pedidos</span><b>${num(g.dem)}</b><small>${g.and ? `${num(g.and)} ainda em andamento` : `${num(a.loja ? 1 : a.lojas.length)} ${a.loja ? 'loja' : 'lojas'}`} · distância média ${kmTxt(g.km)}</small></div>
+      ${kpiA('Finalizadas', num(g.fin), 'dos pedidos', g.taxaFin, 'neutro')}
+      ${kpiA('Canceladas', num(g.canc), `${pc(g.taxaCanc)} dos pedidos · ${num(c.op)} operacionais`, g.taxaCanc, 'neutro')}
+      ${kpiA('OTD geral', pc(g.otd), g.otdN ? `${num(g.noPrazo)} de ${num(g.otdN)} no prazo da modalidade` : 'sem entrega com prazo', g.otd, classeOtd(g.otd), chipOtd(g.otd))}
+      ${kpiA('Aceite médio', min(g.aceite), `${pc(g.ate5)} em até 5 min${g.semBusca ? ` · ${num(g.semBusca)} sem busca` : ''}`, g.ate5, 'neutro')}
+      <div class="kpi"><span class="rot">Tempo médio de entrega</span><b>${min(g.total)}</b><small>da criação ao cliente · ${base(g.totalN)}</small></div>
     </div></section>`;
 
-  const linhasMod = a.modalidades.map((m) => `<tr><td class="loja">${esc(m.mod)}<small>${prazoMod(m.mod, pz)}</small></td><td class="forte">${num(m.dem)}</td><td>${num(m.fin)}</td><td>${num(m.canc)}<small class="b">${pc(m.taxaCanc)}</small></td><td>${m.prazo ? (m.otdN ? `${pc(m.otd)}<small class="b">${num(m.noPrazo)} de ${num(m.otdN)}</small>` : '—') : 'fora do OTD'}</td><td>${min(m.aceite)}<small class="b">${base(m.aceiteN, 'com busca')}</small></td><td>${min(m.p1)}</td><td>${min(m.espera)}</td><td>${min(m.p2)}</td><td>${min(m.total)}</td><td>${m.km == null ? '—' : num(Math.round(m.km * 10) / 10) + ' km'}</td></tr>`).join('');
-  const comparacao = `<section><h2>Comparação entre modalidades</h2><p class="nota">OTD: finalizada que chegou ao cliente dentro do prazo da modalidade, contado da criação. Tempos são médias das finalizadas; aceite, dos pedidos que passaram por busca.</p>
-    <div class="rolagem"><table><thead><tr><th>Modalidade</th><th>Pedidos</th><th>Finalizadas</th><th>Canceladas</th><th>OTD</th><th>Aceite</th><th>Até a loja</th><th>Espera</th><th>Loja ao cliente</th><th>Total</th><th>Km médio</th></tr></thead><tbody>${linhasMod || '<tr><td colspan="11" class="vazio">Sem pedidos.</td></tr>'}</tbody></table></div></section>`;
+  // Tempo de atendimento por ponta: uma barra por modalidade, partes em escala comum; a marca é o prazo.
+  const linhaPontas = (rot, sub, x, prazo) => ({
+    rot, sub, prazo,
+    partes: [{ nome: 'Ponta 1 · até a loja', val: x.p1, cor: COR.p1 }, { nome: 'Espera na loja', val: x.espera, cor: COR.espera }, { nome: 'Ponta 2 · loja ao cliente', val: x.p2, cor: COR.p2 }],
+    valor: `${min(x.total)}<small>total</small>`,
+    tip: `<b>${esc(rot)}</b>${prazo ? ` · prazo de ${prazoMod(rot, pz)}` : ''}<br><i class="ch" style="background:${COR.p1}"></i>Até a loja ${min(x.p1)}<br><i class="ch" style="background:${COR.espera}"></i>Espera na loja ${min(x.espera)}<br><i class="ch" style="background:${COR.p2}"></i>Loja ao cliente ${min(x.p2)}<br>Total ${min(x.total)} · ${base(x.totalN)}`,
+  });
+  const linhasP = [linhaPontas('Todas as modalidades', '', g, null), ...a.modalidades.filter((m) => m.prazo && m.fin).map((m) => linhaPontas(m.mod, prazoMod(m.mod, pz), m, m.prazo))];
+  const pontas = `<section><h2>Tempo de atendimento por ponta</h2><p class="nota">Médias das finalizadas, na mesma escala para todas as linhas. A marca vertical é o prazo da modalidade.</p>
+    ${legenda([{ nome: 'Ponta 1 · até a loja', cor: COR.p1 }, { nome: 'Espera na loja', cor: COR.espera }, { nome: 'Ponta 2 · loja ao cliente', cor: COR.p2 }])}
+    ${hpilhas(linhasP, { marca: (l) => l.prazo })}</section>`;
 
-  const blocos = a.modalidades.filter((m) => m.prazo).map((m) => `<section class="modsec"><div class="topo-sec"><h2>${esc(m.mod)} <small class="selo">prazo de ${prazoMod(m.mod, pz)}</small></h2>${chipOtd(m.otd)}</div>
-    <div class="kpis">
-      ${kpi('OTD', pc(m.otd), m.otdN ? `${num(m.noPrazo)} de ${num(m.otdN)} no prazo` : 'nenhuma finalizada', '', medidor(m.otd, classeOtd(m.otd)))}
-      ${kpi('Pedidos', num(m.dem), `${num(m.fin)} finalizadas · ${num(m.canc)} canceladas (${pc(m.taxaCanc)})`)}
-      ${kpi('Aceite médio', min(m.aceite), `${pc(m.ate5)} em até 5 min · ${base(m.aceiteN, 'com busca')}`)}
-      ${kpi('Tempo total', min(m.total), `da criação ao cliente · ${base(m.totalN)}`)}
+  const comPrazo = a.modalidades.filter((m) => m.prazo);
+  const barrasOtd = hbarras(comPrazo.map((m) => ({ rot: m.mod, sub: prazoMod(m.mod, pz), val: m.otdN ? m.otd : null, cor: COR[m.mod], extra: ` <small>${num(m.noPrazo)} de ${num(m.otdN)}</small>`, tip: `<b>${esc(m.mod)}</b><br>${num(m.noPrazo)} de ${num(m.otdN)} no prazo<br>${num(m.dem)} pedidos · ${num(m.canc)} canceladas (${pc(m.taxaCanc)})` })), { ref: 85 });
+  const barrasAceite = hbarras(a.modalidades.filter((m) => m.aceiteN).map((m) => ({ rot: m.mod, val: m.aceite, cor: COR[m.mod] || COR.Agendada, extra: ` <small>${pc(m.ate5)} até 5 min</small>`, tip: `<b>${esc(m.mod)}</b><br>Aceite médio ${min(m.aceite)}<br>${base(m.aceiteN, 'pedidos com busca')}${m.semBusca ? ` · ${num(m.semBusca)} sem busca` : ''}` })), { max: Math.max(1, ...a.modalidades.map((m) => m.aceite || 0)), fmt: min });
+  const linhasMod = a.modalidades.map((m) => `<tr><td class="loja"><i class="ch" style="background:${COR[m.mod] || COR.Agendada}"></i>${esc(m.mod)}<small>${prazoMod(m.mod, pz)}</small></td><td class="forte">${num(m.dem)}</td><td>${num(m.fin)}</td><td>${num(m.canc)}<small class="b">${pc(m.taxaCanc)}</small></td><td>${m.prazo ? (m.otdN ? `${pc(m.otd)}<small class="b">${num(m.noPrazo)} de ${num(m.otdN)}</small>` : '—') : 'fora do OTD'}</td><td>${min(m.aceite)}</td><td>${min(m.p1)}</td><td>${min(m.espera)}</td><td>${min(m.p2)}</td><td>${min(m.total)}</td><td>${kmTxt(m.km)}</td></tr>`).join('');
+  const comparacao = `<section><h2>Comparação entre modalidades</h2><p class="nota">OTD: finalizada que chegou ao cliente dentro do prazo da modalidade, contado da criação. Aceite: dos pedidos que passaram por busca.</p>
+    <div class="duo"><div><h3 class="sub-h">OTD no prazo da modalidade</h3>${barrasOtd}<p class="nota pe">A marca em 85% é o início da faixa Bom.</p></div><div><h3 class="sub-h">Tempo médio de aceite</h3>${barrasAceite}</div></div>
+    <details data-chave="tabela-mod"><summary>Ver a tabela das modalidades</summary><div class="rolagem"><table><thead><tr><th>Modalidade</th><th>Pedidos</th><th>Finalizadas</th><th>Canceladas</th><th>OTD</th><th>Aceite</th><th>Até a loja</th><th>Espera</th><th>Loja ao cliente</th><th>Total</th><th>Km médio</th></tr></thead><tbody>${linhasMod || '<tr><td colspan="11" class="vazio">Sem pedidos.</td></tr>'}</tbody></table></div></details></section>`;
+
+  // Faixas de 2 km: pedidos (volume) e OTD em dois gráficos, nunca no mesmo eixo.
+  const grafFaixas = (fs, cor, titulo) => {
+    const ls = fs.filter((f) => f.faixa !== 'Sem distância').slice(0, 10);
+    const cats = ls.map((f) => f.faixa.replace(' km', ''));
+    const dicaF = (i) => { const f = ls[i]; return `<b>${esc(f.faixa)}</b><br>${num(f.dem)} pedidos · ${num(f.fin)} finalizadas · ${num(f.canc)} canceladas<br>OTD ${f.otdN ? `${pc(f.otd)} (${num(f.noPrazo)} de ${num(f.otdN)})` : '—'}<br>Tempo total ${min(f.total)} · loja ao cliente ${min(f.p2)}`; };
+    return `<div class="duo"><div><h3 class="sub-h">Pedidos por faixa (km)</h3>${graf({ tipo: 'colunas', titulo: titulo + ': pedidos por faixa', altura: 190, cats, rotulos: true, series: [{ nome: 'Pedidos', cor: COR.volume, vals: ls.map((f) => f.dem) }], tip: dicaF })}</div>
+      <div><h3 class="sub-h">OTD por faixa (km) · faixas com ${BASE_MIN_PCT}+ entregas</h3>${graf({ tipo: 'colunas', titulo: titulo + ': OTD por faixa', altura: 190, cats, pct: true, ref: 85, refRot: '85%', rotulos: true, fmt: (v) => num(Math.round(v)) + '%', series: [{ nome: 'OTD', cor, vals: ls.map((f) => (f.otdN >= BASE_MIN_PCT ? f.otd : null)) }], tip: dicaF })}</div></div>`;
+  };
+  const blocos = comPrazo.map((m) => `<section class="modsec"><div class="topo-sec"><h2><i class="ch" style="background:${COR[m.mod]}"></i>${esc(m.mod)} <small class="selo">prazo de ${prazoMod(m.mod, pz)}</small></h2>${chipOtd(m.otd)}</div>
+    <div class="numeros">
+      <div><span>OTD</span><b>${pc(m.otd)}</b><small>${m.otdN ? `${num(m.noPrazo)} de ${num(m.otdN)}` : 'nenhuma finalizada'}</small></div>
+      <div><span>Pedidos</span><b>${num(m.dem)}</b><small>${num(m.fin)} fin. · ${num(m.canc)} canc.</small></div>
+      <div><span>Aceite</span><b>${min(m.aceite)}</b><small>${pc(m.ate5)} até 5 min</small></div>
+      <div><span>Total</span><b>${min(m.total)}</b><small>${min(m.p1)} + ${min(m.espera)} + ${min(m.p2)}</small></div>
     </div>
-    <div class="pontas">
-      <div><span>Ponta 1 · até a loja</span><b>${min(m.p1)}</b></div><div><span>Espera na loja</span><b>${min(m.espera)}</b></div><div><span>Ponta 2 · loja ao cliente</span><b>${min(m.p2)}</b></div><div><span>Distância média</span><b>${m.km == null ? '—' : num(Math.round(m.km * 10) / 10) + ' km'}</b></div>
-    </div>
-    <h3 class="sub-h">Entregas por distância · faixas de ${num(a.faixaKm)} km</h3>${tabelaFaixas(m.faixas, true)}</section>`).join('');
+    ${grafFaixas(m.faixas, COR[m.mod], m.mod)}
+    <details data-chave="faixas-${esc(m.mod)}"><summary>Ver a tabela de faixas</summary>${tabelaFaixas(m.faixas, true)}</details></section>`).join('');
   const semPrazo = a.modalidades.filter((m) => !m.prazo);
-  const notaSemPrazo = semPrazo.length ? `<p class="nota">${semPrazo.map((m) => `${esc(m.mod)}: ${num(m.dem)} pedidos`).join(' · ')}. Sem prazo de modalidade, ficam fora do OTD.</p>` : '';
+  const notaSemPrazo = semPrazo.length ? ` ${semPrazo.map((m) => `${esc(m.mod)}: ${num(m.dem)} pedidos`).join(' · ')}, sem prazo, fora do OTD.` : '';
+  const faixasGeral = `<section><h2>Entregas por distância · todas as modalidades</h2><p class="nota">Faixas de ${num(a.faixaKm)} km pela distância do pedido (0 a 2 km; 3 a 4 km = acima de 2 até 4 km). OTD de cada entrega contra o prazo da sua modalidade. Gráficos até 20 km; a tabela tem todas as faixas.${notaSemPrazo}</p>
+    ${grafFaixas(g.faixas, COR.geral, 'Todas as modalidades')}
+    <details data-chave="faixas-geral"><summary>Ver a tabela de faixas</summary>${tabelaFaixas(g.faixas, false)}</details></section>`;
 
-  const faixasGeral = `<section><h2>Entregas por distância · todas as modalidades</h2><p class="nota">Faixas de ${num(a.faixaKm)} km pela distância do pedido (0 a 2 km; 3 a 4 km = acima de 2 até 4 km; e assim por diante). OTD de cada entrega contra o prazo da sua modalidade.</p>${notaSemPrazo}${tabelaFaixas(g.faixas, false)}</section>`;
-
-  const barras = (lista) => lista.length ? lista.map((x) => `<div class="motivo${x.op ? ' op' : ''}"><div class="tt">${esc(x.grupo)}${x.op ? '<span class="tag">Operacional</span>' : ''}</div><div class="vv">${num(x.n)} · ${pc(x.pct)}${x.c5 ? ` · ${num(x.c5)} com menos de ${num(a.minBusca)} min de busca` : ''}</div><div class="bar"><i style="width:${x.pct}%"></i></div></div>`).join('') : '<p class="vazio">Nenhum cancelamento.</p>';
+  const fases = c.fases.map((f, i) => ({ nome: f.fase, val: f.n, cor: COR.fase[Math.min(i, 2)], claro: i === 0 }));
+  const ordemFase = ['Antes do aceite', 'Entregador a caminho ou na loja', 'Já em rota'];
+  fases.sort((x, y) => ordemFase.indexOf(x.nome) - ordemFase.indexOf(y.nome)).forEach((f, i) => { f.cor = COR.fase[i] || COR.fase[2]; f.claro = i === 0; });
+  const maxMot = Math.max(1, ...c.motivos.map((m) => m.n));
+  const topMotivos = hbarras(c.motivos.slice(0, 10).map((m) => ({ rot: m.motivo, sub: m.op ? 'operacional' : m.grupo, val: m.n, cor: m.op ? COR.op : COR.naoOp, extra: ` <small>${pc(m.pct)}</small>`, tip: `<b>${esc(m.motivo)}</b><br>${m.op ? 'Operacional' : esc(m.grupo)}<br>${num(m.n)} cancelamentos · ${pc(m.pct)}<br>${num(m.c5)} com menos de ${num(a.minBusca)} min de busca` })), { max: maxMot, fmt: num, largo: true });
+  const porMod = hpilhas(c.porModalidade.filter((m) => m.canc).map((m) => ({ rot: m.mod, sub: `${pc(m.taxa)} dos pedidos`, partes: [{ nome: 'Operacional', val: m.op, cor: COR.op }, { nome: 'Não operacional', val: m.naoOp, cor: COR.naoOp }], valor: `${num(m.canc)}<small>${num(m.c5)} &lt;${num(a.minBusca)} min</small>`, tip: `<b>${esc(m.mod)}</b><br>${num(m.canc)} canceladas · ${pc(m.taxa)} dos pedidos<br>Operacional ${num(m.op)} · não operacional ${num(m.naoOp)}<br>${num(m.c5)} com menos de ${num(a.minBusca)} min de busca` })), { fmt: num });
   const cancelamentos = `<section><h2>Cancelamentos</h2><p class="nota">Operacional: falta de entregador ou atraso/problema do entregador. "Menos de ${num(a.minBusca)} min de busca": cancelado antes de completar ${num(a.minBusca)} min desde o início da busca (sem busca, conta da criação).${c.pendentes ? ` ${num(c.pendentes)} ainda sem leitura de motivo.` : ''}</p>
     <div class="kpis">
-      ${kpi('Cancelados', num(c.total), `${pc(c.taxa)} dos pedidos`, '', medidor(c.taxa))}
-      ${kpi('Operacionais', num(c.op), `${pc(c.pctOp)} dos cancelamentos`, '', medidor(c.pctOp))}
-      ${kpi('Não operacionais', num(c.naoOp), `${pc(c.total ? 100 - c.pctOp : null)} dos cancelamentos`)}
-      ${kpi(`Menos de ${num(a.minBusca)} min de busca`, num(c.c5), `${pc(c.pctC5)} dos cancelamentos`, '', medidor(c.pctC5))}
+      ${kpiA('Cancelados', num(c.total), `${pc(c.taxa)} dos pedidos`, c.taxa, 'neutro')}
+      ${kpiA('Operacionais', num(c.op), 'falta ou problema do entregador', c.pctOp, 'neutro')}
+      ${kpiA('Não operacionais', num(c.naoOp), 'loja, cliente, outra transportadora', c.total ? Math.round(1000 - 10 * c.pctOp) / 10 : null, 'neutro')}
+      ${kpiA(`Menos de ${num(a.minBusca)} min de busca`, num(c.c5), 'dos cancelamentos', c.pctC5, 'neutro')}
     </div>
-    <div class="grade2 dentro"><div><h3 class="sub-h">Por tipo de motivo</h3>${barras(c.grupos)}</div>
-      <div><h3 class="sub-h">Em que fase cancelou</h3>${c.fases.length ? `<div class="rolagem"><table><thead><tr><th>Fase</th><th>Qtde</th><th>%</th></tr></thead><tbody>${c.fases.map((f) => `<tr><td class="loja">${esc(f.fase)}</td><td class="forte">${num(f.n)}</td><td>${pc(f.pct)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="vazio">Nenhum cancelamento.</p>'}
-      <h3 class="sub-h">Por modalidade</h3><div class="rolagem"><table><thead><tr><th>Modalidade</th><th>Canceladas</th><th>% dos pedidos</th><th>Operacional</th><th>Não operacional</th><th>Menos de ${num(a.minBusca)} min</th></tr></thead><tbody>${c.porModalidade.map((m) => `<tr><td class="loja">${esc(m.mod)}</td><td class="forte">${num(m.canc)}</td><td>${pc(m.taxa)}</td><td>${num(m.op)}</td><td>${num(m.naoOp)}</td><td>${num(m.c5)}</td></tr>`).join('')}</tbody></table></div></div></div>
-    <h3 class="sub-h">Motivos como foram registrados</h3>${c.motivos.length ? `<div class="rolagem"><table><thead><tr><th class="txt">Motivo</th><th class="txt">Tipo</th><th>Qtde</th><th>%</th><th>Menos de ${num(a.minBusca)} min de busca</th></tr></thead><tbody>${c.motivos.map((m) => `<tr><td class="txt">${esc(m.motivo)}</td><td class="txt">${m.op ? '<span class="tag" style="margin:0">Operacional</span>' : esc(m.grupo)}</td><td class="forte">${num(m.n)}</td><td>${pc(m.pct)}</td><td>${num(m.c5)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="vazio">Nenhum cancelamento.</p>'}
+    <div class="duo">
+      <div><h3 class="sub-h">Operacional × não operacional</h3>${segmentos([{ nome: 'Operacional', val: c.op, cor: COR.op, claro: true }, { nome: 'Não operacional', val: c.naoOp, cor: COR.naoOp }])}
+        <h3 class="sub-h">Tempo de busca até cancelar</h3>${segmentos([{ nome: `Menos de ${num(a.minBusca)} min`, val: c.c5, cor: COR.p2 }, { nome: `${num(a.minBusca)} min ou mais`, val: c.total - c.c5 - c.semMinBusca, cor: COR.naoOp }, ...(c.semMinBusca ? [{ nome: 'Sem horário', val: c.semMinBusca, cor: '#3A4350' }] : [])])}
+        <h3 class="sub-h">Em que fase cancelou</h3>${segmentos(fases)}</div>
+      <div><h3 class="sub-h">Por modalidade</h3>${legenda([{ nome: 'Operacional', cor: COR.op }, { nome: 'Não operacional', cor: COR.naoOp }])}${porMod || '<p class="vazio">Nenhum cancelamento.</p>'}</div>
+    </div>
+    <h3 class="sub-h">Principais motivos, como foram registrados</h3>${c.motivos.length ? legenda([{ nome: 'Operacional', cor: COR.op }, { nome: 'Não operacional', cor: COR.naoOp }]) + topMotivos : '<p class="vazio">Nenhum cancelamento.</p>'}
+    ${c.motivos.length > 10 ? `<details data-chave="motivos-todos"><summary>Ver os ${num(c.motivos.length)} motivos</summary><div class="rolagem"><table><thead><tr><th class="txt">Motivo</th><th class="txt">Tipo</th><th>Qtde</th><th>%</th><th>Menos de ${num(a.minBusca)} min de busca</th></tr></thead><tbody>${c.motivos.map((m) => `<tr><td class="txt">${esc(m.motivo)}</td><td class="txt">${m.op ? '<span class="tag" style="margin:0">Operacional</span>' : esc(m.grupo)}</td><td class="forte">${num(m.n)}</td><td>${pc(m.pct)}</td><td>${num(m.c5)}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
     ${c.lista.length ? `<details data-chave="lista-canc-lojas"${a.loja ? ' open' : ''}><summary>${c.listaCortada ? `Ver os ${num(c.lista.length)} mais recentes de ${num(c.total)} cancelamentos` : `Ver os ${num(c.lista.length)} cancelamentos, um a um`}</summary><div class="rolagem"><table><thead><tr><th>Data</th><th>Hora</th>${a.loja ? '' : '<th class="txt">Loja</th>'}<th class="txt">Modalidade</th><th>Min de busca</th><th>Min desde a criação</th><th class="txt">Fase</th><th class="txt">Motivo</th><th class="txt">Tipo</th><th>Pedido</th></tr></thead><tbody>${c.lista.map((x) => `<tr><td>${dataBr(x.dia).slice(0, 5)}</td><td class="forte">${esc(x.h)}</td>${a.loja ? '' : `<td class="txt">${esc(x.loja)} · ${esc(x.bairro)}</td>`}<td class="txt">${esc(x.mod || '—')}</td><td${x.minBusca != null && x.minBusca < a.minBusca ? ' class="quente"' : ''}>${min(x.minBusca)}</td><td>${min(x.minCriacao)}</td><td class="txt">${esc(x.fase)}</td><td class="txt">${esc(x.motivo)}</td><td class="txt">${x.op ? '<span class="tag" style="margin:0">Operacional</span>' : 'Não operacional'}</td><td>${esc(x.id)}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
   </section>`;
 
@@ -986,11 +1293,13 @@ function desenharLojas() {
     <li><b>Aceite:</b> do início da busca ao aceite. Pedido de integração que já nasce com entregador não passa por busca e fica de fora ("sem busca").</li>
     <li><b>Distância:</b> a do pedido (campo distance da API), em faixas de 2 km: 0 a 2, 3 a 4 (acima de 2 até 4), 5 a 6 e assim por diante.</li>
     <li><b>Cancelamento com menos de 5 min de busca:</b> do início da busca (ou da criação, sem busca) até o cancelamento.</li>
+    <li><b>Gráficos:</b> passe o mouse (ou toque) numa barra, coluna ou ponto para ver os números; a marca de 85% é o início da faixa Bom do OTD.</li>
   </ul></details></section>`;
 
   const abertos = [...document.querySelectorAll('#analise details[open][data-chave]')].map((x) => x.dataset.chave);
-  $('#analise').innerHTML = avisos.join('') + filtro + kpis + comparacao + `<div class="modgrid">${blocos}</div>` + faixasGeral + cancelamentos + regrasLojas;
+  $('#analise').innerHTML = avisos.join('') + filtro + kpis + pontas + comparacao + `<div class="modgrid">${blocos}</div>` + faixasGeral + cancelamentos + regrasLojas;
   for (const k of abertos) document.querySelector(`#analise details[data-chave="${k}"]`)?.setAttribute('open', '');
+  montarGraficos();
   $('#selLoja').addEventListener('change', (e) => {
     lojaSel = e.target.value;
     try { localStorage.setItem('pm-loja', lojaSel); } catch {}
