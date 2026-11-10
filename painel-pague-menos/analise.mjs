@@ -4,6 +4,9 @@ import { LOJAS_ENTREGADORES, PRAZO_MOD, ORDEM_MOD, P } from './coletor.mjs';
 export const PRIORITARIAS = ['678', '7300', '933', '495', '890', '7362', '839', '7356'];
 const MIN_DEMANDA_TAXA = 10;   // volume mínimo para taxa e tempo médio entrarem em ranking ou orientação
 const TOP = 10;
+// Folga das comparações com prazo: os tempos de cada pedido são gravados com 3 casas (0,06 s), então
+// a folga cobre o arredondamento de até dois tempos somados (0,0005 cada), menos de 0,07 s.
+const EPS = 0.0011;
 const MIN_OTD_MOD = 5;         // entregas mínimas de uma modalidade na loja para virar orientação
 
 const pct = (n, d) => (d ? Math.round((1000 * n) / d) / 10 : null);
@@ -285,8 +288,47 @@ export function somarDias(dias) {
   return {
     dia: dias[dias.length - 1].dia, de: dias[0].dia, ate: dias[dias.length - 1].dia,
     fechado: dias.every((d) => d.fechado), lido_em: dias.map((d) => d.lido_em).sort().pop(),
-    lojas, horas, cancs,
+    lojas, horas, cancs, pedidos: dias.flatMap((d) => d.pedidos || []),
   };
+}
+
+// Quadro por KM (o mesmo do Power BI): faixas de 1 km pela distância do pedido, só finalizadas.
+// On time geral = ponta 1 + ponta 2 até 30 min; loja = ponta 1 (criação -> chegada na loja) até 15 min;
+// cliente = ponta 2 (saída da loja -> chegada no cliente) até 15 min. Base: finalizadas com os dois tempos.
+// Também traz a espera média na loja e o OTD no prazo da modalidade, que é a regra do resto do painel.
+function quadroKm(regs) {
+  if (!regs) return null;
+  const faixas = new Map();
+  const novo = () => ({ fin: 0, base: 0, geral: 0, loja: 0, cliente: 0, esp: 0, espN: 0, modN: 0, modOn: 0 });
+  const tot = novo();
+  for (const r of regs) {
+    if (r[P.st] !== 'F') continue;
+    const i = r[P.km] == null ? -1 : Math.floor(r[P.km]);
+    if (!faixas.has(i)) faixas.set(i, novo());
+    for (const x of [faixas.get(i), tot]) {
+      x.fin++;
+      const a = r[P.p1], b = r[P.p2];
+      if (a != null && b != null) {
+        x.base++;
+        if (a + b <= 30 + EPS) x.geral++;
+        if (a <= 15 + EPS) x.loja++;
+        if (b <= 15 + EPS) x.cliente++;
+      }
+      if (r[P.espera] != null) { x.esp += r[P.espera]; x.espN++; }
+      const prazo = PRAZO_MOD[r[P.mod]];
+      if (prazo && r[P.total] != null) { x.modN++; if (r[P.total] <= prazo + EPS) x.modOn++; }
+    }
+  }
+  const linha = (rotulo, x) => ({
+    faixa: rotulo, fin: x.fin, base: x.base,
+    geralOn: x.geral, geralOff: x.base - x.geral, geral: pct(x.geral, x.base),
+    lojaOn: x.loja, lojaOff: x.base - x.loja, loja: pct(x.loja, x.base),
+    clienteOn: x.cliente, clienteOff: x.base - x.cliente, cliente: pct(x.cliente, x.base),
+    espera: media(x.esp, x.espN), modalidade: pct(x.modOn, x.modN), modalidadeN: x.modN,
+  });
+  const linhas = [...faixas.entries()].sort((a, b) => (a[0] === -1) - (b[0] === -1) || a[0] - b[0])
+    .map(([i, x]) => linha(i === -1 ? 'Sem distância' : `${i} km - ${i + 1} km`, x));
+  return { linhas, total: linha('Total', tot) };
 }
 
 export function analisarDia(d) {
@@ -324,6 +366,7 @@ export function analisarDia(d) {
     prioridade,
     lojas: [...linhas].sort((a, b) => b.dem - a.dem),
     minDemandaTaxa: MIN_DEMANDA_TAXA,
+    porKm: quadroKm(d.pedidos),
   };
 }
 
@@ -338,13 +381,13 @@ const novoAcc = () => ({ dem: 0, fin: 0, canc: 0, and: 0, n: 0, on: 0, tot: 0, t
   ac: 0, acN: 0, ac5: 0, semBusca: 0, km: 0, kmN: 0, cOp: 0, c5: 0 });
 function acumular(a, r, prazo) {
   a.dem++;
-  if (r[P.aceite] != null) { a.ac += r[P.aceite]; a.acN++; if (r[P.aceite] <= 5) a.ac5++; }
+  if (r[P.aceite] != null) { a.ac += r[P.aceite]; a.acN++; if (r[P.aceite] <= 5 + EPS) a.ac5++; }
   if (r[P.semBusca]) a.semBusca++;
   if (r[P.km] != null) { a.km += r[P.km]; a.kmN++; }
   if (r[P.st] === 'F') {
     a.fin++;
     const t = r[P.total];
-    if (t != null) { a.tot += t; a.totN++; if (prazo) { a.n++; if (t <= prazo) a.on++; } }
+    if (t != null) { a.tot += t; a.totN++; if (prazo) { a.n++; if (t <= prazo + EPS) a.on++; } }
     if (r[P.p1] != null) { a.p1 += r[P.p1]; a.p1N++; }
     if (r[P.espera] != null) { a.esp += r[P.espera]; a.espN++; }
     if (r[P.p2] != null) { a.p2 += r[P.p2]; a.p2N++; }

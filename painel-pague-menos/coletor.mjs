@@ -21,13 +21,13 @@ export const MODALIDADES = { 30: 'Super Expressa', 60: 'Expressa', 1440: 'Econô
 export const PRAZO_MOD = { 'Super Expressa': 30, Expressa: 60, 'Econômica': 120 };
 export const ORDEM_MOD = ['Super Expressa', 'Expressa', 'Econômica', 'Agendada', 'Padrão'];
 export const modalidadeDe = (p) => MODALIDADES[Number(p.time_to_delivery)] || (p.schedule_time ? 'Agendada' : 'Padrão');
-// Dia gravado numa versão anterior é relido pelo servidor. 3 = pedidos um a um e Econômica com 2 h.
-export const VERSAO_DIA = 3;
+// Dia gravado numa versão anterior é relido pelo servidor. 3 = pedidos um a um e Econômica com 2 h; 4 = tempos com 3 casas.
+export const VERSAO_DIA = 4;
 // Pedido gravado um a um para a análise de lojas, sem dado de cliente, endereço ou entregador:
 // [loja, modalidade, situação F/C/A, hora, aceite, sem busca 0/1, ponta 1, espera na loja, ponta 2, total, km,
-//  min da busca ao cancelamento, min da criação ao cancelamento]. Tempos em minutos com 1 casa; null = sem carimbo.
+//  min da busca ao cancelamento, min da criação ao cancelamento]. Tempos em minutos com 3 casas (a comparação com o prazo usa a folga EPS da análise); null = sem carimbo.
 export const P = { loja: 0, mod: 1, st: 2, hora: 3, aceite: 4, semBusca: 5, p1: 6, espera: 7, p2: 8, total: 9, km: 10, cancBusca: 11, cancCriacao: 12 };
-const um = (v) => (v == null ? null : Math.round(v * 10) / 10);
+const um = (v) => (v == null ? null : Math.round(v * 1000) / 1000);
 const espera = (ms) => new Promise((s) => setTimeout(s, ms));
 
 // Ids de merchant, do cadastro de lojas: 678, 7300, 933, 495, 890, 7362, 839, 7356

@@ -276,6 +276,14 @@ body:not(.sem-entrada) #conteudo > *:nth-child(3){animation-delay:.1s}
   .relogio{display:none}
 }
 @media (forced-colors:active){.medidor i,.barra i,.hora i,.motivo .bar i{background:CanvasText}}
+/* quadro por KM */
+.km th.grp{text-align:center;color:var(--ink2);border-bottom:1px solid var(--line2)}
+.km th.sep,.km td.sep{border-left:1px solid var(--line2)}
+.km td.pc{white-space:nowrap}
+.km tfoot td{font-weight:700;color:var(--ink);border-top:1px solid var(--line2);border-bottom:0}
+.km td:first-child,.km th:first-child{position:sticky;left:0;background:var(--panel);z-index:1}
+.ic{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;font:700 10px/1 var(--body);margin-right:6px;vertical-align:-3px}
+.ic.ok{background:var(--ok-d);color:var(--ok)}.ic.med{background:var(--warn-d);color:var(--warn)}.ic.mau{background:var(--bad-d);color:var(--bad)}
 /* abas e análise de lojas */
 .abas{display:flex;gap:4px;margin:0 0 14px;border-bottom:1px solid var(--line2);overflow-x:auto}
 .abas button{background:transparent;border:0;border-bottom:2px solid transparent;color:var(--ink2);font:600 14px var(--display);padding:10px 14px 9px;cursor:pointer;white-space:nowrap;margin-bottom:-1px}
@@ -372,6 +380,25 @@ const achaMod = (k, m) => (k?.mods || []).find((x) => x.mod === m);
 // célula de tabela: OTD da modalidade com a base embaixo
 const celMod = (k, m) => { const x = achaMod(k, m); return `<td>${x?.otdN ? `${pc(x.otd)}<small class="b">${num(x.noPrazo)} de ${num(x.otdN)} no prazo</small>` : '—'}</td>`; };
 const thMods = ORDEM_MODS.map((m) => `<th>OTD ${m}<small class="b">${prazoTxt(m)}</small></th>`).join('');
+
+// Quadro por KM: faixas de 1 km, como no Power BI. Ícone pelos mesmos selos de OTD do painel.
+const icone = (v) => (v == null ? '' : v >= 85 ? '<span class="ic ok" aria-label="Bom">✓</span>' : v >= 70 ? '<span class="ic med" aria-label="Atenção">!</span>' : '<span class="ic mau" aria-label="Crítico">✕</span>');
+const celPc = (v, sep) => `<td class="pc${sep ? ' sep' : ''}">${icone(v)}${pc(v)}</td>`;
+function blocoKm(a) {
+  const q = a.porKm;
+  if (!q) return `<section><h2>Entregas por KM</h2><p class="vazio">Este período tem dias gravados antes dos pedidos um a um; eles estão sendo relidos.</p></section>`;
+  const lin = (x, tag = 'td') => `<tr><${tag} class="loja">${esc(x.faixa)}</${tag}><td class="forte">${num(x.fin)}</td><td>${num(x.base)}</td>
+    <td class="sep">${num(x.geralOn)}</td><td>${num(x.geralOff)}</td>${celPc(x.geral)}
+    <td class="sep">${num(x.lojaOn)}</td><td>${num(x.lojaOff)}</td>${celPc(x.loja)}
+    <td class="sep">${num(x.clienteOn)}</td><td>${num(x.clienteOff)}</td>${celPc(x.cliente)}
+    <td class="sep">${min(x.espera)}</td>${celPc(x.modalidade, false)}</tr>`;
+  return `<section><h2>Entregas por KM</h2><p class="nota">Finalizadas por faixa de 1 km da distância do pedido. On time geral: ponta 1 + ponta 2 em até 30 min. Loja: da criação à chegada na loja em até 15 min. Cliente: da saída da loja à chegada no cliente em até 15 min. Base: finalizadas com os dois tempos. A última coluna é o OTD no prazo da modalidade (30 min, 60 min, 2 h), a regra do resto do painel.</p>
+  <div class="rolagem"><table class="km"><thead>
+    <tr><th rowspan="2">KM</th><th rowspan="2">Finalizadas</th><th rowspan="2">Com os dois tempos</th><th colspan="3" class="grp sep">Geral · até 30 min</th><th colspan="3" class="grp sep">Loja · ponta 1 até 15 min</th><th colspan="3" class="grp sep">Cliente · ponta 2 até 15 min</th><th rowspan="2" class="sep">Espera na loja</th><th rowspan="2">OTD da modalidade</th></tr>
+    <tr><th class="sep">On time</th><th>Off time</th><th>%</th><th class="sep">On time</th><th>Off time</th><th>%</th><th class="sep">On time</th><th>Off time</th><th>%</th></tr>
+  </thead><tbody>${q.linhas.map((x) => lin(x)).join('') || '<tr><td colspan="14" class="vazio">Nenhuma entrega finalizada.</td></tr>'}</tbody>
+  <tfoot>${lin(q.total)}</tfoot></table></div></section>`;
+}
 
 function blocoModalidades(a) {
   const k = a.kpis;
@@ -691,7 +718,7 @@ function desenhar() {
   const a = d.atual;
   // Redesenhar a cada leitura não pode fechar o que a pessoa abriu
   const abertos = [...document.querySelectorAll('details[open][data-chave]')].map((x) => x.dataset.chave);
-  $('#conteudo').innerHTML = blocoKpis(a) + blocoBuscando() + blocoAndamento() + blocoModalidades(a) + blocoPrioridade(a) + blocoCancPrioridade(a) + blocoEvolucao() + blocoEntregadores(d) + blocoOrientacoes(a) + blocoRankings(a)
+  $('#conteudo').innerHTML = blocoKpis(a) + blocoBuscando() + blocoAndamento() + blocoModalidades(a) + blocoKm(a) + blocoPrioridade(a) + blocoCancPrioridade(a) + blocoEvolucao() + blocoEntregadores(d) + blocoOrientacoes(a) + blocoRankings(a)
     + `<div class="grade2">${blocoMotivos(a)}${blocoHoras(a)}</div>` + blocoBandeiras(a)
     + `<section><h2>Todas as lojas</h2><p class="nota">${num(a.lojas.length)} lojas com pedido ${dados.atual.periodo ? 'no período' : 'no dia'}, da maior para a menor demanda.</p><p><input id="busca" type="search" placeholder="Buscar loja por número ou bairro" aria-label="Buscar loja" value="${esc(busca)}"></p><div id="todas">${blocoLojas(a)}</div></section>`
     + blocoRequisicoes(d) + regras();
