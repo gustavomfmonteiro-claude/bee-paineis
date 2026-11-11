@@ -326,6 +326,37 @@ function montarLojas(dePedido, atePedido, loja, analisar = analisarLojas) {
   return JSON.stringify({ gerado_em: new Date().toISOString(), primeiro: lista[0] || null, ultimo: lista[lista.length - 1] || null, periodoVazio: !!vazio, analise: r });
 }
 
+// Visitas externas: lojas visitadas do relatório (visitas.json) contra as lojas ativas do cadastro, com os
+// números do período escolhido para cada loja. Não visitadas vêm das que mais cancelam para as que menos cancelam.
+const VISITAS = lerJson(path.join(DIR, 'visitas.json'), null);
+function montarVisitas(dePedido, atePedido) {
+  if (!VISITAS) return JSON.stringify({ visitas: null });
+  const lista = Object.keys(historico).sort();
+  let de = ehData(dePedido) ? dePedido : null, ate = ehData(atePedido) ? atePedido : null;
+  if (de && ate && de > ate) [de, ate] = [ate, de];
+  let dias = de || ate ? lista.filter((d) => (!de || d >= de) && (!ate || d <= ate)) : [];
+  if (!dias.length && lista.length) dias = [lista[lista.length - 1]];
+  const a = dias.length ? analisarDia(somarDias(dias.map((d) => historico[d]))) : null;
+  const linha = Object.fromEntries((a?.lojas || []).map((l) => [l.id, l]));
+  const nomes = { ...VISITAS.nomesCadastro };
+  for (const d of Object.values(historico)) for (const [id, l] of Object.entries(d.lojas)) nomes[id] = l.n;
+  const visit = new Map(VISITAS.visitadas.map((v) => [String(v.id), v]));
+  const inativas = new Set(VISITAS.inativas.map(String));
+  const ids = [...new Set([...LOJAS_CADASTRO.map(String), ...visit.keys()])].filter((id) => !inativas.has(id));
+  const PRIO = ['678', '7300', '933', '495', '890', '7362', '839', '7356'];
+  const lojas = ids.map((id) => {
+    const n = nomes[id] || 'Loja ' + id, m = n.match(/^\s*(\d+)\s*-\s*(PAGUE MENOS|EXTRAFARMA)\s*-\s*(.+?)\s*$/i);
+    const l = linha[id], v = visit.get(id);
+    return { id, nome: n, num: m ? m[1] : '', band: /EXTRAFARMA/i.test(n) ? 'EF' : 'PM', bairro: m ? m[3] : n.replace(/^.*PAGUE MENOS\s*/i, '').trim() || n,
+      prio: m ? PRIO.includes(m[1]) : false, visitada: !!v,
+      dem: l?.dem || 0, fin: l?.fin || 0, canc: l?.canc || 0, taxaCanc: l?.taxaCanc ?? null, cOp: l?.cOp || 0, pctOp: l?.pctOp ?? null, otd: l?.otd ?? null,
+      relatorio: v?.relatorio || null, motivo: v?.motivo || null };
+  });
+  return JSON.stringify({ gerado_em: new Date().toISOString(), de: dias[0] || null, ate: dias[dias.length - 1] || null,
+    meta: { titulo: VISITAS.titulo, fonte: VISITAS.fonte, periodoVisitas: VISITAS.periodoVisitas, responsavel: VISITAS.responsavel, periodoAnalisado: VISITAS.periodoAnalisado, periodoMotivos: VISITAS.periodoMotivos, qtdCabecalho: VISITAS.qtdCabecalho, inativas: VISITAS.inativas.length },
+    problemas: VISITAS.problemas, responsaveis: VISITAS.responsaveis, lojas });
+}
+
 // ---------------------------------------------------------------------- web
 const clientes = new Set();
 function emitir(evento) { for (const c of clientes) c.write(evento ? `event: ${evento}\ndata: 1\n\n` : 'data: atualizado\n\n'); }
@@ -348,6 +379,10 @@ http.createServer((req, res) => {
   if (url.pathname === '/api/lojas') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     return res.end(montarLojas(url.searchParams.get('de'), url.searchParams.get('ate'), url.searchParams.get('loja')));
+  }
+  if (url.pathname === '/api/visitas') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    return res.end(montarVisitas(url.searchParams.get('de'), url.searchParams.get('ate')));
   }
   if (url.pathname === '/api/cancelamentos') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });

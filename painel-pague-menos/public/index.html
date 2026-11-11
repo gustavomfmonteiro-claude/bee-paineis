@@ -379,6 +379,8 @@ section.hud::after{bottom:-1px;right:-1px;border-left:0;border-top:0;border-bott
 .rk-t.mod::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--m)}
 .rk-t.ac{--k:#3987e5}
 .oris{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px}
+.relato{display:grid;gap:10px;margin-bottom:6px}
+.relato p{margin:0;padding:11px 14px;border-left:3px solid var(--bee);border-radius:0 10px 10px 0;background:rgba(17,26,41,.6);color:var(--ink2);font-size:13.5px;line-height:1.55}
 tr.clica{cursor:pointer}tr.clica:hover td{color:var(--ink)}.rk-t.p1{--k:#9085e9}.rk-t.p2{--k:#d55181}
 /* seções ao vivo que abrem e fecham */
 .recolher{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0 11px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink2);font:500 12px var(--mono);cursor:pointer}
@@ -490,7 +492,7 @@ td.quente{color:var(--warn);font-weight:600}
       <span class="vivo" id="vivo"><i></i><span>conectando</span></span>
     </div>
   </header>
-  <nav class="abas" role="tablist" aria-label="Visões do painel"><button type="button" role="tab" data-aba="vivo" aria-selected="true"><span class="ponto" aria-hidden="true"></span><span class="rot-aba"><span class="lg">Operação </span>ao vivo</span></button><button type="button" role="tab" data-aba="gerais" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="rot-aba"><span class="lg">Dados </span>gerais</span></button><button type="button" role="tab" data-aba="lojas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11h18V9M9 20v-6h6v6"/></svg><span class="rot-aba"><span class="lg">Análise de </span>lojas</span></button><button type="button" role="tab" data-aba="canc" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg><span class="rot-aba"><span class="lg">Análise de </span>cancelamentos</span></button></nav>
+  <nav class="abas" role="tablist" aria-label="Visões do painel"><button type="button" role="tab" data-aba="vivo" aria-selected="true"><span class="ponto" aria-hidden="true"></span><span class="rot-aba"><span class="lg">Operação </span>ao vivo</span></button><button type="button" role="tab" data-aba="gerais" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="rot-aba"><span class="lg">Dados </span>gerais</span></button><button type="button" role="tab" data-aba="lojas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11h18V9M9 20v-6h6v6"/></svg><span class="rot-aba"><span class="lg">Análise de </span>lojas</span></button><button type="button" role="tab" data-aba="canc" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg><span class="rot-aba"><span class="lg">Análise de </span>cancelamentos</span></button><button type="button" role="tab" data-aba="visitas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span class="rot-aba"><span class="lg">Visitas </span>externas</span></button></nav>
   <div class="filtro-periodo" id="filtroPeriodo" hidden>
     <div><span class="fp-rot">Período</span><div class="fp-presets" role="group" aria-label="Período rápido">
       <button type="button" data-p="hoje">Hoje</button><button type="button" data-p="ontem">Ontem</button><button type="button" data-p="7">7 dias</button><button type="button" data-p="30">30 dias</button><button type="button" data-p="mes">Este mês</button><button type="button" data-p="mesAnt">Mês anterior</button></div></div>
@@ -502,6 +504,7 @@ td.quente{color:var(--warn);font-weight:600}
   <div id="gerais" hidden></div>
   <div id="analise" hidden></div>
   <div id="cancel" hidden></div>
+  <div id="visitas" hidden></div>
 </div>
 <div id="dica"></div>
 <dialog id="zapDlg"><form><h3>Enviar WhatsApp?</h3><p id="zapPara"></p><blockquote id="zapTexto"></blockquote><div class="zap-acoes"><button type="button" id="zapNao">Cancelar</button><button type="submit">Enviar</button></div></form></dialog>
@@ -1192,6 +1195,7 @@ async function carregar() {
   if (aba === 'gerais') carregarPeriodo();
   if (aba === 'lojas') carregarLojas();
   if (aba === 'canc') carregarCanc();
+  if (aba === 'visitas') carregarVisitas();
   setTimeout(() => document.body.classList.add('sem-entrada'), 700);
 }
 let periodoEmVoo = false;
@@ -1284,6 +1288,7 @@ function recarregarPeriodo() {
   if (aba === 'gerais') carregarPeriodo();
   if (aba === 'lojas') carregarLojas();
   if (aba === 'canc') carregarCanc();
+  if (aba === 'visitas') carregarVisitas();
 }
 function mudarPeriodo() {
   let de = $('#de').value, ate = $('#ate').value;
@@ -1394,7 +1399,7 @@ addEventListener('scroll', () => { dica.style.display = 'none'; }, { passive: tr
 
 // ------------------------------------------------------------ aba Análise de lojas
 // Tudo vem de /api/lojas, calculado pedido a pedido só com a loja escolhida (ou o grupo inteiro) no período De/Até.
-let aba = { '#lojas': 'lojas', '#gerais': 'gerais', '#cancelamentos': 'canc' }[location.hash] || 'vivo', lojaSel = '', lojasDados = null, lojasEmVoo = false;
+let aba = { '#lojas': 'lojas', '#gerais': 'gerais', '#cancelamentos': 'canc', '#visitas': 'visitas' }[location.hash] || 'vivo', lojaSel = '', lojasDados = null, lojasEmVoo = false;
 try { lojaSel = localStorage.getItem('pm-loja') || ''; } catch {}
 const base = (n, txt = 'entregas') => (n ? `${num(n)} ${n === 1 ? txt.replace(/s$/, '') : txt}` : 'sem base');
 const prazoMod = (m, prazos) => (prazos[m] ? (prazos[m] >= 120 ? prazos[m] / 60 + ' h' : prazos[m] + ' min') : 'sem prazo');
@@ -1405,11 +1410,13 @@ function mostrarAba() {
   $('#gerais').hidden = aba !== 'gerais';
   $('#analise').hidden = aba !== 'lojas';
   $('#cancel').hidden = aba !== 'canc';
+  $('#visitas').hidden = aba !== 'visitas';
   avisos();
   desenharFiltro();
   if (aba === 'gerais') { if (dadosP) desenharGerais(); if (dados) carregarPeriodo(); }
   else if (aba === 'lojas') { if (dados) carregarLojas(); }
   else if (aba === 'canc') { if (cancDados) desenharCanc(); if (dados) carregarCanc(); }
+  else if (aba === 'visitas') { if (visDados) desenharVisitas(); if (dados) carregarVisitas(); }
   else montarGraficos();
 }
 
@@ -1660,6 +1667,81 @@ function desenharCanc() {
   const escolher = (id) => { lojaSel = id; try { localStorage.setItem('pm-loja', lojaSel); } catch {} carregarCanc(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   $('#selLojaCanc').addEventListener('change', (e) => escolher(e.target.value));
   for (const tr of document.querySelectorAll('#cancel tr.clica')) tr.addEventListener('click', () => escolher(tr.dataset.loja));
+}
+
+// ------------------------------------------------------------ aba Visitas externas
+// /api/visitas: lojas visitadas do relatório contra as lojas ativas do cadastro, com os números do período.
+let visDados = null, visEmVoo = false, visBusca = '';
+async function carregarVisitas() {
+  if (visEmVoo) return;
+  visEmVoo = true;
+  try {
+    visDados = await (await fetch('/api/visitas?' + new URLSearchParams({ de: periodo.de, ate: periodo.ate }), { cache: 'no-store' })).json();
+    desenharVisitas();
+  } catch (e) {
+    $('#visitas').innerHTML = `<section><p class="vazio">Não foi possível carregar as visitas (${esc(e.message)}).</p></section>`;
+  } finally { visEmVoo = false; }
+}
+
+function desenharVisitas() {
+  const j = visDados;
+  if (!j?.lojas) { $('#visitas').innerHTML = '<section><p class="vazio">Nenhum relatório de visitas carregado.</p></section>'; return; }
+  const m = j.meta, ls = j.lojas, vis = ls.filter((l) => l.visitada), nao = ls.filter((l) => !l.visitada);
+  const p = (n, d) => (d ? Math.round((1000 * n) / d) / 10 : null);
+  const pctVis = p(vis.length, ls.length);
+  const band = (b) => { const t = ls.filter((l) => l.band === b), v = t.filter((l) => l.visitada).length; return { t: t.length, v, pct: p(v, t.length) }; };
+  const pm = band('PM'), ef = band('EF');
+  const prioT = ls.filter((l) => l.prio), prioV = prioT.filter((l) => l.visitada).length;
+  const faixa = j.de === j.ate ? dataBr(j.de) : `${dataBr(j.de)} a ${dataBr(j.ate)}`;
+
+  const topo = `<section class="hud"><div class="topo-sec"><h2>Visitas externas</h2><span class="sub">${esc(m.titulo)} · ${esc(m.periodoVisitas)} · responsável ${esc(m.responsavel)}</span></div>
+    <p class="nota">Lojas visitadas segundo o relatório "${esc(m.fonte)}", comparadas com as ${num(ls.length)} lojas ativas de Pague Menos e Extrafarma no cadastro do painel${m.inativas ? ` (${num(m.inativas)} inativa fica fora)` : ''}.${m.qtdCabecalho && Number(m.qtdCabecalho) !== vis.length ? ` O cabeçalho do relatório diz ${esc(m.qtdCabecalho)} lojas, mas a lista traz ${num(vis.length)}; o painel usa a lista.` : ''}</p>
+    <div class="rk">
+      <div class="rk-t total"><span class="l">Lojas da rede</span><span class="v">${num(ls.length)}</span><span class="f">Pague Menos ${num(pm.t)} · Extrafarma ${num(ef.t)}</span></div>
+      <div class="rk-t fin"><span class="l">Visitadas</span><span class="v">${num(vis.length)}</span><span class="f">${pc(pctVis)} da rede</span></div>
+      <div class="rk-t canc"><span class="l">Ainda não visitadas</span><span class="v">${num(nao.length)}</span><span class="f">${pc(pctVis == null ? null : Math.round(1000 - 10 * pctVis) / 10)} da rede</span></div>
+      <div class="rk-t and"><span class="l">Prioritárias visitadas</span><span class="v">${num(prioV)} de ${num(prioT.length)}</span><span class="f">${pc(p(prioV, prioT.length))} das lojas prioritárias</span></div>
+    </div>
+    <h3 class="sub-h">Cobertura da rede</h3>${segmentos([{ nome: 'Visitadas', val: vis.length, cor: COR.op, claro: true }, { nome: 'Ainda não visitadas', val: nao.length, cor: COR.naoOp }], { fmt: (v) => num(v) + ' lojas' })}
+    <div class="duo" style="margin-top:6px"><div><h3 class="sub-h">Por bandeira</h3>${hbarras([
+      { rot: 'Pague Menos', sub: `${num(pm.v)} de ${num(pm.t)} lojas`, val: pm.pct, cor: COR.PM, extra: ` <small>${num(pm.v)} de ${num(pm.t)}</small>`, tip: `<b>Pague Menos</b><br>${num(pm.v)} visitadas de ${num(pm.t)} · ${pc(pm.pct)}` },
+      { rot: 'Extrafarma', sub: `${num(ef.v)} de ${num(ef.t)} lojas`, val: ef.pct, cor: COR.EF, extra: ` <small>${num(ef.v)} de ${num(ef.t)}</small>`, tip: `<b>Extrafarma</b><br>${num(ef.v)} visitadas de ${num(ef.t)} · ${pc(ef.pct)}` },
+      { rot: 'Prioritárias', sub: 'lojas em observação', val: p(prioV, prioT.length), cor: COR.volume, extra: ` <small>${num(prioV)} de ${num(prioT.length)}</small>` },
+    ], { max: 100 })}</div>
+    <div><h3 class="sub-h">Por bairro · bairros com 2 lojas ou mais</h3>${(() => {
+      const b = new Map();
+      for (const l of ls) { const k = l.bairro.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\s+/g, ' ').trim(); const x = b.get(k) || { nome: l.bairro, t: 0, v: 0 }; x.t++; if (l.visitada) x.v++; b.set(k, x); }
+      const lst = [...b.values()].filter((x) => x.t >= 2).sort((a, c) => c.t - a.t || c.v - a.v).slice(0, 14);
+      return hbarras(lst.map((x) => ({ rot: x.nome, sub: `${num(x.t)} lojas`, val: p(x.v, x.t), cor: x.v ? COR.op : COR.naoOp, extra: ` <small>${num(x.v)} de ${num(x.t)}</small>`, tip: `<b>${esc(x.nome)}</b><br>${num(x.v)} visitadas de ${num(x.t)} lojas` })), { max: 100 });
+    })()}</div></div></section>`;
+
+  // próximas visitas: não visitadas com mais cancelamento no período
+  const sugest = [...nao].filter((l) => l.dem).sort((a, b) => b.canc - a.canc || (b.taxaCanc || 0) - (a.taxaCanc || 0)).slice(0, 20);
+  const linhaNum = (l) => `<td>${num(l.dem)}</td><td class="forte">${num(l.canc)}</td><td>${pc(l.taxaCanc)}</td><td>${pc(l.pctOp)}</td><td>${pc(l.otd)}</td>`;
+  const nomeL = (l) => `<td class="loja">${l.num ? esc(l.num) + ' · ' : ''}${esc(l.bairro)}<small>${l.band}</small>${l.prio ? '<span class="star" title="Loja prioritária">★</span>' : ''}</td>`;
+  const cabNum = '<th>Pedidos</th><th>Cancelados</th><th>Taxa</th><th>Operacional</th><th>OTD</th>';
+  const proximas = `<section><h2>Próximas visitas sugeridas</h2><p class="nota">Lojas ainda não visitadas com mais cancelamentos em ${faixa} (período da barra acima). Operacional = falta ou problema do entregador.</p>
+    ${sugest.length ? `<div class="rolagem"><table><thead><tr><th>Loja</th>${cabNum}</tr></thead><tbody>${sugest.map((l) => `<tr>${nomeL(l)}${linhaNum(l)}</tr>`).join('')}</tbody></table></div>` : '<p class="vazio">Nenhuma loja não visitada com pedidos no período.</p>'}</section>`;
+
+  // lojas visitadas: o que o relatório registrou e como estão agora
+  const f = visBusca.trim().toLowerCase();
+  const filtra = (arr) => arr.filter((l) => !f || `${l.num} ${l.bairro} ${l.nome}`.toLowerCase().includes(f));
+  const visitadas = `<section><h2>Lojas visitadas</h2><p class="nota">No relatório: pedidos, canceladas e taxa de ${esc(m.periodoAnalisado)}, e o principal responsável e motivo de ${esc(m.periodoMotivos)}. Ao lado, os números do painel em ${faixa}.</p>
+    <p><input id="buscaVis" type="search" placeholder="Buscar loja por número ou bairro" aria-label="Buscar loja" value="${esc(visBusca)}"></p>
+    <div class="rolagem" id="tabVis"><table><thead><tr><th>Loja</th><th>Relatório: pedidos</th><th>Canceladas</th><th>Taxa</th><th class="txt">Principal responsável</th><th class="txt">Principal motivo</th><th class="sep">Painel: pedidos</th><th>Cancelados</th><th>Taxa</th><th>OTD</th></tr></thead><tbody>${filtra([...vis].sort((a, b) => (b.relatorio?.canc || 0) - (a.relatorio?.canc || 0))).map((l) => `<tr>${nomeL(l)}<td>${num(l.relatorio?.total)}</td><td class="forte">${num(l.relatorio?.canc)}</td><td>${esc(l.relatorio?.taxa || '—')}</td><td class="txt">${esc(l.motivo?.responsavel || '—')}</td><td class="txt">${esc(l.motivo?.motivo || '—')}</td><td class="sep">${num(l.dem)}</td><td class="forte">${num(l.canc)}</td><td>${pc(l.taxaCanc)}</td><td>${pc(l.otd)}</td></tr>`).join('')}</tbody></table></div></section>`;
+
+  const todasNao = `<section><details data-chave="nao-visitadas"><summary>Ver as ${num(nao.length)} lojas ainda não visitadas</summary><div class="rolagem"><table><thead><tr><th>Loja</th>${cabNum}</tr></thead><tbody>${filtra([...nao].sort((a, b) => b.canc - a.canc || b.dem - a.dem)).map((l) => `<tr>${nomeL(l)}${linhaNum(l)}</tr>`).join('')}</tbody></table></div></details></section>`;
+
+  const relato = `<section><h2>O que a visita encontrou</h2><p class="nota">Problemas mais recorrentes, como estão no relatório.</p>
+    <div class="relato">${j.problemas.map((t) => `<p>${esc(t)}</p>`).join('')}</div>
+    <h3 class="sub-h">Lojas por principal responsável e motivo de cancelamento</h3>
+    <div class="rolagem"><table><thead><tr><th class="txt">Principal responsável</th><th class="txt">Principal motivo</th><th>Lojas</th></tr></thead><tbody>${j.responsaveis.map((r) => `<tr><td class="txt">${esc(r.responsavel)}</td><td class="txt">${esc(r.motivo)}</td><td class="forte">${num(r.lojas)}</td></tr>`).join('')}</tbody></table></div></section>`;
+
+  const abertos = [...document.querySelectorAll('#visitas details[open][data-chave]')].map((x) => x.dataset.chave);
+  $('#visitas').innerHTML = topo + proximas + visitadas + todasNao + relato;
+  for (const k of abertos) document.querySelector(`#visitas details[data-chave="${k}"]`)?.setAttribute('open', '');
+  montarGraficos();
+  $('#buscaVis').addEventListener('input', (e) => { visBusca = e.target.value; const pos = e.target.selectionStart; desenharVisitas(); const el = $('#buscaVis'); el.focus(); el.setSelectionRange(pos, pos); });
 }
 
 // A página recarrega sozinha quando chega coleta nova

@@ -1,0 +1,625 @@
+{
+ "fonte": "RELATÓRIO GERAL DE VISITAS - REDE PAGUE MENOS 26.docx",
+ "titulo": "Relatório de Visitação nas Lojas",
+ "rede": "Rede Pague Menos",
+ "periodoVisitas": "07/2026 a 11/2026",
+ "responsavel": "Gisele dos Santos",
+ "periodoAnalisado": "06/2026 a 11/2026",
+ "periodoMotivos": "01/06 a 10/11",
+ "qtdCabecalho": "15",
+ "visitadas": [
+  {
+   "id": "80571",
+   "nome": "1126 - PAGUE MENOS - FÁTIMA",
+   "relatorio": {
+    "total": 615,
+    "fin": 223,
+    "canc": 392,
+    "taxa": "63,7%"
+   },
+   "motivo": {
+    "cancelamentos": "390",
+    "responsavel": "Motivo Empresa, tendo 320 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo aceite de outra transportadora\", tendo 316 cancelamentos."
+   }
+  },
+  {
+   "id": "80566",
+   "nome": "36 - PAGUE MENOS - FÁTIMA",
+   "relatorio": {
+    "total": 1444,
+    "fin": 1241,
+    "canc": 203,
+    "taxa": "14,1%"
+   },
+   "motivo": {
+    "cancelamentos": "201",
+    "responsavel": "Motivo Bee, tendo 138 cancelamentos.",
+    "motivo": "\"Demora do entregador\", tendo 160 cancelamentos."
+   }
+  },
+  {
+   "id": "145859",
+   "nome": "12 - PAGUE MENOS - JOSE WALTER",
+   "relatorio": {
+    "total": 193,
+    "fin": 84,
+    "canc": 109,
+    "taxa": "56,5%"
+   },
+   "motivo": {
+    "cancelamentos": "109",
+    "responsavel": "Motivo Bee, tendo 74 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo tempo limite de 5 minutos para aceite\", tendo 46 cancelamentos."
+   }
+  },
+  {
+   "id": "177377",
+   "nome": "1522 - PAGUE MENOS - JOSE WALTER",
+   "relatorio": {
+    "total": 2142,
+    "fin": 1912,
+    "canc": 230,
+    "taxa": "10,7%"
+   },
+   "motivo": {
+    "cancelamentos": "229",
+    "responsavel": "Motivo Bee, tendo 146 cancelamentos.",
+    "motivo": "\"Demora do entregador \", tendo 184 cancelamentos."
+   }
+  },
+  {
+   "id": "145754",
+   "nome": "7300 - EXTRAFARMA - PREFEITO JOSE WALTER",
+   "relatorio": {
+    "total": 1405,
+    "fin": 1095,
+    "canc": 310,
+    "taxa": "22,1%"
+   },
+   "motivo": {
+    "cancelamentos": "303",
+    "responsavel": "Motivo Bee, tendo 238 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo tempo limite de 5 minutos para aceite\", tendo 147 cancelamentos."
+   }
+  },
+  {
+   "id": "145903",
+   "nome": "1091 - PAGUE MENOS - MONTESE",
+   "relatorio": {
+    "total": 809,
+    "fin": 258,
+    "canc": 551,
+    "taxa": "68,1%"
+   },
+   "motivo": {
+    "cancelamentos": "551",
+    "responsavel": "Motivo Empresa, tendo 454 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo aceite de outra transportadora \", tendo 451 cancelamentos."
+   }
+  },
+  {
+   "id": "145845",
+   "nome": "11 - PAGUE MENOS - MONTESE",
+   "relatorio": {
+    "total": 367,
+    "fin": 130,
+    "canc": 237,
+    "taxa": "64,6%"
+   },
+   "motivo": {
+    "cancelamentos": "233",
+    "responsavel": "Motivo Empresa, tendo 198 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo aceite de outra transportadora \", tendo 193 cancelamentos."
+   }
+  },
+  {
+   "id": "159833",
+   "nome": "1471 - PAGUE MENOS - BARRA DO CEARA",
+   "relatorio": {
+    "total": 276,
+    "fin": 37,
+    "canc": 239,
+    "taxa": "86,6%"
+   },
+   "motivo": {
+    "cancelamentos": "238",
+    "responsavel": "Motivo Empresa, tendo 231 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo aceite de outra transportadora \", tendo 227 cancelamentos."
+   }
+  },
+  {
+   "id": "170774",
+   "nome": "1494 - PAGUE MENOS - BARRA DO CEARA",
+   "relatorio": {
+    "total": 763,
+    "fin": 74,
+    "canc": 689,
+    "taxa": "90,3%"
+   },
+   "motivo": {
+    "cancelamentos": "689",
+    "responsavel": "Motivo Empresa, tendo 666 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo aceite de outra transportadora \", tendo 662 cancelamentos."
+   }
+  },
+  {
+   "id": "145891",
+   "nome": "611 - PAGUE MENOS - BELA VISTA",
+   "relatorio": {
+    "total": 29,
+    "fin": 16,
+    "canc": 13,
+    "taxa": "44,8%"
+   },
+   "motivo": {
+    "cancelamentos": "13",
+    "responsavel": "Motivo Bee, tendo 10 cancelamentos.",
+    "motivo": "\"Demora do entregador \", tendo 11 cancelamentos."
+   }
+  },
+  {
+   "id": "145798",
+   "nome": "10 - PAGUE MENOS - BARRA DO CEARA",
+   "relatorio": {
+    "total": 580,
+    "fin": 118,
+    "canc": 462,
+    "taxa": "79,9%"
+   },
+   "motivo": {
+    "cancelamentos": "462",
+    "responsavel": "Motivo Empresa, tendo 309 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo aceite de outra transportadora \", tendo 302 cancelamentos."
+   }
+  },
+  {
+   "id": "145749",
+   "nome": "7207 - EXTRAFARMA - JARDIM IRACEMA",
+   "relatorio": {
+    "total": 1747,
+    "fin": 745,
+    "canc": 1002,
+    "taxa": "57,4%"
+   },
+   "motivo": {
+    "cancelamentos": "976",
+    "responsavel": "Motivo Empresa, tendo 779 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo aceite de outra transportadora \", tendo 744 cancelamentos."
+   }
+  },
+  {
+   "id": "145905",
+   "nome": "1209 - PAGUE MENOS - SAO GERARDO",
+   "relatorio": {
+    "total": 390,
+    "fin": 97,
+    "canc": 293,
+    "taxa": "75,1%"
+   },
+   "motivo": {
+    "cancelamentos": "293",
+    "responsavel": "Motivo Empresa, tendo 246 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo aceite de outra transportadora \", tendo 245 cancelamentos."
+   }
+  },
+  {
+   "id": "145800",
+   "nome": "28 - PAGUE MENOS - MONTE CASTELO",
+   "relatorio": {
+    "total": 526,
+    "fin": 219,
+    "canc": 307,
+    "taxa": "58,4%"
+   },
+   "motivo": {
+    "cancelamentos": "302",
+    "responsavel": "Motivo Empresa, tendo 221 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo aceite de outra transportadora \", tendo 211 cancelamentos."
+   }
+  },
+  {
+   "id": "145884",
+   "nome": "7 - PAGUE MENOS - FARIAS BRITO",
+   "relatorio": {
+    "total": 3653,
+    "fin": 3549,
+    "canc": 104,
+    "taxa": "2,8%"
+   },
+   "motivo": {
+    "cancelamentos": "101",
+    "responsavel": "Motivo Bee, tendo 56 cancelamentos.",
+    "motivo": "\"Demora do entregador \", tendo 75 cancelamentos."
+   }
+  },
+  {
+   "id": "145886",
+   "nome": "46 - PAGUE MENOS - FATIMA",
+   "relatorio": {
+    "total": 118,
+    "fin": 99,
+    "canc": 19,
+    "taxa": "16,1%"
+   },
+   "motivo": {
+    "cancelamentos": "19",
+    "responsavel": "Motivo Empresa, tendo 10 cancelamentos.",
+    "motivo": "\"Demora do entregador\", tendo 12 cancelamentos."
+   }
+  },
+  {
+   "id": "145268",
+   "nome": "7137 - EXTRAFARMA - JOSÉ BONIFÁCIO",
+   "relatorio": {
+    "total": 451,
+    "fin": 42,
+    "canc": 409,
+    "taxa": "90,7%"
+   },
+   "motivo": {
+    "cancelamentos": "409",
+    "responsavel": "Motivo Empresa, tendo 379 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo aceite de outra transportadora\", tendo 376 cancelamentos."
+   }
+  },
+  {
+   "id": "126317",
+   "nome": "765 - PAGUE MENOS - FÁTIMA",
+   "relatorio": {
+    "total": 276,
+    "fin": 142,
+    "canc": 134,
+    "taxa": "48,6%"
+   },
+   "motivo": {
+    "cancelamentos": "133",
+    "responsavel": "Motivo Bee, tendo 81 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo tempo limite de 5 minutos para aceite\", tendo 69 cancelamentos."
+   }
+  },
+  {
+   "id": "145835",
+   "nome": "63 - PAGUE MENOS - RODOLFO TEOFILO",
+   "relatorio": {
+    "total": 816,
+    "fin": 255,
+    "canc": 561,
+    "taxa": "68,8%"
+   },
+   "motivo": {
+    "cancelamentos": "540",
+    "responsavel": "Motivo Bee, tendo 284 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo tempo limite de 5 minutos para aceite\", tendo 240 cancelamentos."
+   }
+  },
+  {
+   "id": "145731",
+   "nome": "7058 - EXTRAFARMA - SAO GERARDO",
+   "relatorio": {
+    "total": 973,
+    "fin": 760,
+    "canc": 213,
+    "taxa": "21,9%"
+   },
+   "motivo": {
+    "cancelamentos": "213",
+    "responsavel": "Motivo Empresa, tendo 153 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo aceite de outra transportadora \", tendo 127 cancelamentos."
+   }
+  },
+  {
+   "id": "142216",
+   "nome": "7474 - EXTRAFARMA - PRESIDENTE KENNEDY",
+   "relatorio": {
+    "total": 261,
+    "fin": 139,
+    "canc": 122,
+    "taxa": "46,7%"
+   },
+   "motivo": {
+    "cancelamentos": "122",
+    "responsavel": "Motivo Bee, tendo 110 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo tempo limite de 5 minutos para aceite\", tendo 98 cancelamentos."
+   }
+  },
+  {
+   "id": "142211",
+   "nome": "7363 - EXTRAFARMA - ITAPERI",
+   "relatorio": {
+    "total": 1072,
+    "fin": 992,
+    "canc": 80,
+    "taxa": "7,5%"
+   },
+   "motivo": {
+    "cancelamentos": "76",
+    "responsavel": "Motivo Empresa, tendo 51 cancelamentos.",
+    "motivo": "\"Demora do entregador\", tendo 24 cancelamentos."
+   }
+  },
+  {
+   "id": "145267",
+   "nome": "7112 - EXTRAFARMA - CENTRO",
+   "relatorio": {
+    "total": 729,
+    "fin": 601,
+    "canc": 128,
+    "taxa": "17,6%"
+   },
+   "motivo": {
+    "cancelamentos": "125",
+    "responsavel": "Motivo Bee, tendo 95 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo tempo limite de 5 minutos para aceite\", tendo 55 cancelamentos."
+   }
+  },
+  {
+   "id": "145728",
+   "nome": "7353 - EXTRAFARMA - CENTRO",
+   "relatorio": {
+    "total": 737,
+    "fin": 626,
+    "canc": 111,
+    "taxa": "15,1%"
+   },
+   "motivo": {
+    "cancelamentos": "111",
+    "responsavel": "Motivo Empresa, tendo 56 cancelamentos.",
+    "motivo": "\"Demora do entregador\", tendo 67 cancelamentos."
+   }
+  },
+  {
+   "id": "166655",
+   "nome": "843 - PAGUE MENOS - CENTRO AQUIRAZ",
+   "relatorio": {
+    "total": 3,
+    "fin": 3,
+    "canc": 0,
+    "taxa": "0"
+   },
+   "motivo": {
+    "cancelamentos": "0",
+    "responsavel": "0",
+    "motivo": "0"
+   }
+  },
+  {
+   "id": "166729",
+   "nome": "912 - PAGUE MENOS - PORTO DAS DUNAS AQUIRAZ",
+   "relatorio": {
+    "total": 0,
+    "fin": 0,
+    "canc": 0,
+    "taxa": "0"
+   },
+   "motivo": {
+    "cancelamentos": "0",
+    "responsavel": "0",
+    "motivo": "0"
+   }
+  },
+  {
+   "id": "174608",
+   "nome": "FARMACIA PAGUE MENOS PORTO DAS DUNAS - 2",
+   "relatorio": {
+    "total": 0,
+    "fin": 0,
+    "canc": 0,
+    "taxa": "0"
+   },
+   "motivo": {
+    "cancelamentos": "0",
+    "responsavel": "0",
+    "motivo": "0"
+   }
+  },
+  {
+   "id": "145902",
+   "nome": "1026 - PAGUE MENOS - JOSE BONIFACIO",
+   "relatorio": {
+    "total": 405,
+    "fin": 133,
+    "canc": 272,
+    "taxa": "67,2%"
+   },
+   "motivo": {
+    "cancelamentos": "266",
+    "responsavel": "Motivo Empresa, tendo 137 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo aceite de outra transportadora \", tendo 126 cancelamentos."
+   }
+  },
+  {
+   "id": "80569",
+   "nome": "1071 - PAGUE MENOS - FÁTIMA",
+   "relatorio": {
+    "total": 475,
+    "fin": 239,
+    "canc": 236,
+    "taxa": "49,7%"
+   },
+   "motivo": {
+    "cancelamentos": "235",
+    "responsavel": "Motivo Empresa, tendo 149 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo tempo limite de 5 minutos para aceite \", tendo 97 cancelamentos."
+   }
+  },
+  {
+   "id": "145271",
+   "nome": "7515 - EXTRAFARMA - JOSÉ BONIFÁCIO",
+   "relatorio": {
+    "total": 24,
+    "fin": 21,
+    "canc": 3,
+    "taxa": "12,55%"
+   },
+   "motivo": {
+    "cancelamentos": "3",
+    "responsavel": "Motivo Empresa, tendo 2 cancelamentos.",
+    "motivo": "\"Comportamento inadequado do entregador\", \"Empresa não reconhece a corrida\" e \"Entregador diferente do sistema\", tendo 1 cancelamento cada."
+   }
+  },
+  {
+   "id": "145839",
+   "nome": "1196 - PAGUE MENOS - RODOLFO TEOFILO",
+   "relatorio": {
+    "total": 28,
+    "fin": 26,
+    "canc": 2,
+    "taxa": "7,1%"
+   },
+   "motivo": {
+    "cancelamentos": "2",
+    "responsavel": "Motivo Bee e Empresa, tendo 1 cancelamento cada.",
+    "motivo": "\"Demora do entregador\" e \"Erro Operacional\", tendo 1 cancelamento cada."
+   }
+  },
+  {
+   "id": "156846",
+   "nome": "1474 - PAGUE MENOS - DAMAS",
+   "relatorio": {
+    "total": 214,
+    "fin": 132,
+    "canc": 82,
+    "taxa": "38,3%"
+   },
+   "motivo": {
+    "cancelamentos": "82",
+    "responsavel": "Motivo Bee, tendo 72 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo tempo limite de 5 minutos para aceite\", tendo 58 cancelamentos."
+   }
+  },
+  {
+   "id": "145838",
+   "nome": "15 - PAGUE MENOS - DAMAS",
+   "relatorio": {
+    "total": 632,
+    "fin": 566,
+    "canc": 66,
+    "taxa": "10,4%"
+   },
+   "motivo": {
+    "cancelamentos": "64",
+    "responsavel": "Motivo Bee, tendo 37 cancelamentos.",
+    "motivo": "\"Demora do entregador\", tendo 43 cancelamentos."
+   }
+  },
+  {
+   "id": "114197",
+   "nome": "678 - PAGUE MENOS - MESSEJANA",
+   "relatorio": {
+    "total": 3710,
+    "fin": 3400,
+    "canc": 310,
+    "taxa": "8,4%"
+   },
+   "motivo": {
+    "cancelamentos": "309",
+    "responsavel": "Motivo Bee, tendo 213 cancelamentos.",
+    "motivo": "\"Demora do entregador\", tendo 137 cancelamentos."
+   }
+  },
+  {
+   "id": "141424",
+   "nome": "7173 - EXTRAFARMA - MESSEJANA",
+   "relatorio": {
+    "total": 1644,
+    "fin": 1155,
+    "canc": 489,
+    "taxa": "29,7%"
+   },
+   "motivo": {
+    "cancelamentos": "486",
+    "responsavel": "Motivo Empresa, tendo 298 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo aceite de outra transportadora\", tendo 232 cancelamentos."
+   }
+  },
+  {
+   "id": "145854",
+   "nome": "890 - PAGUE MENOS - MESSEJANA",
+   "relatorio": {
+    "total": 1965,
+    "fin": 1607,
+    "canc": 358,
+    "taxa": "18,2%"
+   },
+   "motivo": {
+    "cancelamentos": "358",
+    "responsavel": "Motivo Bee, tendo 265 cancelamentos.",
+    "motivo": "\"Acionamento cancelado pelo tempo limite de 5 minutos para aceite\", tendo 189 cancelamentos."
+   }
+  }
+ ],
+ "problemas": [
+  "Em nenhuma das lojas a Bee Delivery é prioridade, das 36 lojas, duas não são ‘leilão’, pois estão fora do Target e outras duas aparecemos como a 5° empresa.",
+  "As principais transportadoras que atendem as lojas visitadas são a Ryd e Help, na região da Barra do Ceará e José Walter foi perceptível uma maior predominância da Help que deixa alguns entregadores ‘fixos’ em lojas consideradas promissoras. Em regiões mais residênciais como Montese, Fátima, São Gerardo e Farias Brito, há maior recorrência da transportadora Ryd, pelos relatos de loja e conversa com entregadores.",
+  "Em regiões mais periféricas como Barra do Ceará e José Walter há reclamação por parte das lojas por falta de entregadores no modal ‘moto’ para suprirem a demanda, muitas vezes elas usam a Bee Delivery para entregas mais distantes, acima de 4 km, pois as outras transportadoras não possuem operação suficiente para atender em comparação a Bee.",
+  "Já em regiões mais residênciais, as maiores reclamações são referentes à falta de entregadores que façam entregas em prédios em que os clientes, idosos e gestantes, não podem descer para receber o pedido, em parte dos casos, são prédios que não possuem portaria organizada para receber os pedidos. Além disso, foi relatado também falta de entregadores para horários da noite, de 20h as 22-23h, em que muitas vezes os clientes preferem cancelar os pedidos do que esperar para receber outro dia.",
+  "Também é importante salientar que em quase todas as lojas visitadas, era perceptível a falta de costume das lojas em utilizar o sistema da Bee Delivery, sabendo somente entrar em chat suporte, mas não em verificar as entregas em sistema, usando só a Ativmob."
+ ],
+ "responsaveis": [
+  {
+   "responsavel": "Motivo Empresa",
+   "motivo": "Acionamento cancelado pelo aceite de outra transportadora",
+   "lojas": 13
+  },
+  {
+   "responsavel": "Motivo Empresa",
+   "motivo": "Acionamento cancelado pelo tempo limite de 5 minutos para aceite",
+   "lojas": 1
+  },
+  {
+   "responsavel": "Motivo Empresa",
+   "motivo": "Demora do entregador",
+   "lojas": 3
+  },
+  {
+   "responsavel": "Motivo Empresa",
+   "motivo": "‘Comportamento inadequado do entregador’, ‘Empresa não reconhece a corrida’ e ‘Entregador diferente do sistema’",
+   "lojas": 1
+  },
+  {
+   "responsavel": "Motivo Bee",
+   "motivo": "Demora do entregador",
+   "lojas": 6
+  },
+  {
+   "responsavel": "Motivo Bee",
+   "motivo": "Acionamento cancelado pelo tempo limite de 5 minutos para aceite",
+   "lojas": 8
+  },
+  {
+   "responsavel": "Motivo Bee / Empresa",
+   "motivo": "‘Demora do entregador’ e ‘Erro Operacional’",
+   "lojas": 1
+  },
+  {
+   "responsavel": "-",
+   "motivo": "-",
+   "lojas": 3
+  }
+ ],
+ "nomesCadastro": {
+  "80573": "61 - PAGUE MENOS - EDSON QUEIROZ",
+  "141420": "7418 - EXTRAFARMA - COCÓ",
+  "145266": "7098 - EXTRAFARMA - PARANGABA",
+  "145736": "7148 - EXTRAFARMA - EDSON QUEIROZ",
+  "145745": "7145 - EXTRAFARMA - CENTRO",
+  "145746": "7149 - EXTRAFARMA - ALDEOTA",
+  "145747": "7150 - EXTRAFARMA - JEREISSATI I",
+  "145750": "7226 - EXTRAFARMA - JOAQUIM TAVORA",
+  "145753": "7277 - EXTRAFARMA - MESSEJANA",
+  "145763": "7410 - EXTRAFARMA - ALDEOTA",
+  "145806": "39 - PAGUE MENOS - CENTRO",
+  "145832": "1149 - PAGUE MENOS - ALDEOTA",
+  "145840": "234 - PAGUE MENOS - EDSON QUEIROZ",
+  "166655": "843 - PAGUE MENOS - CENTRO AQUIRAZ",
+  "166729": "912 - PAGUE MENOS - PORTO DAS DUNAS AQUIRAZ",
+  "167573": "38 - PAGUE MENOS - CENTRO MARANGUAPE",
+  "174608": "FARMACIA PAGUE MENOS PORTO DAS DUNAS - 2",
+  "178864": "1535 - PAGUE MENOS - PRESIDENTE KENNEDY",
+  "178878": "1541 - PAGUE MENOS - PARQUE IRACEMA"
+ },
+ "inativas": [
+  "145745"
+ ]
+}
