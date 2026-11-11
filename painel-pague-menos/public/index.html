@@ -377,7 +377,9 @@ section.hud::after{bottom:-1px;right:-1px;border-left:0;border-top:0;border-bott
 .rk.rk3{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media (max-width:760px){.rk.rk3{grid-template-columns:1fr}}
 .rk-t.mod::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--m)}
-.rk-t.ac{--k:#3987e5}.rk-t.p1{--k:#9085e9}.rk-t.p2{--k:#d55181}
+.rk-t.ac{--k:#3987e5}
+.oris{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px}
+tr.clica{cursor:pointer}tr.clica:hover td{color:var(--ink)}.rk-t.p1{--k:#9085e9}.rk-t.p2{--k:#d55181}
 /* seções ao vivo que abrem e fecham */
 .recolher{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0 11px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink2);font:500 12px var(--mono);cursor:pointer}
 .recolher:hover{color:var(--ink);border-color:rgba(148,170,196,.45)}
@@ -488,7 +490,7 @@ td.quente{color:var(--warn);font-weight:600}
       <span class="vivo" id="vivo"><i></i><span>conectando</span></span>
     </div>
   </header>
-  <nav class="abas" role="tablist" aria-label="Visões do painel"><button type="button" role="tab" data-aba="vivo" aria-selected="true"><span class="ponto" aria-hidden="true"></span><span class="rot-aba"><span class="lg">Operação </span>ao vivo</span></button><button type="button" role="tab" data-aba="gerais" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="rot-aba"><span class="lg">Dados </span>gerais</span></button><button type="button" role="tab" data-aba="lojas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11h18V9M9 20v-6h6v6"/></svg><span class="rot-aba"><span class="lg">Análise de </span>lojas</span></button></nav>
+  <nav class="abas" role="tablist" aria-label="Visões do painel"><button type="button" role="tab" data-aba="vivo" aria-selected="true"><span class="ponto" aria-hidden="true"></span><span class="rot-aba"><span class="lg">Operação </span>ao vivo</span></button><button type="button" role="tab" data-aba="gerais" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="rot-aba"><span class="lg">Dados </span>gerais</span></button><button type="button" role="tab" data-aba="lojas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11h18V9M9 20v-6h6v6"/></svg><span class="rot-aba"><span class="lg">Análise de </span>lojas</span></button><button type="button" role="tab" data-aba="canc" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg><span class="rot-aba"><span class="lg">Análise de </span>cancelamentos</span></button></nav>
   <div class="filtro-periodo" id="filtroPeriodo" hidden>
     <div><span class="fp-rot">Período</span><div class="fp-presets" role="group" aria-label="Período rápido">
       <button type="button" data-p="hoje">Hoje</button><button type="button" data-p="ontem">Ontem</button><button type="button" data-p="7">7 dias</button><button type="button" data-p="30">30 dias</button><button type="button" data-p="mes">Este mês</button><button type="button" data-p="mesAnt">Mês anterior</button></div></div>
@@ -499,6 +501,7 @@ td.quente{color:var(--warn);font-weight:600}
   <div id="conteudo"></div>
   <div id="gerais" hidden></div>
   <div id="analise" hidden></div>
+  <div id="cancel" hidden></div>
 </div>
 <div id="dica"></div>
 <dialog id="zapDlg"><form><h3>Enviar WhatsApp?</h3><p id="zapPara"></p><blockquote id="zapTexto"></blockquote><div class="zap-acoes"><button type="button" id="zapNao">Cancelar</button><button type="submit">Enviar</button></div></form></dialog>
@@ -560,15 +563,19 @@ function graf(spec) {
 }
 function montarGraficos() {
   const vivos = new Set();
+  let semLargura = 0;
   for (const el of document.querySelectorAll('.graf[data-graf]')) {
     const s = GRAF.get(el.dataset.graf);
     if (!s) continue;
     vivos.add(el.dataset.graf);
     if (el.offsetParent === null) continue; // aba escondida: desenha quando aparecer
+    if (el.clientWidth < 60) { semLargura++; continue; } // página ainda sem layout: tenta de novo logo
     el.innerHTML = (s.tipo === 'linhas' ? svgLinhas : svgColunas)(s, el.clientWidth, el.clientHeight);
   }
   for (const k of GRAF.keys()) if (!vivos.has(k)) GRAF.delete(k);
+  if (semLargura && tentativasGraf++ < 20) setTimeout(montarGraficos, 400); else if (!semLargura) tentativasGraf = 0;
 }
+let tentativasGraf = 0;
 let redesenhoJanela = null;
 addEventListener('resize', () => { clearTimeout(redesenhoJanela); redesenhoJanela = setTimeout(montarGraficos, 150); });
 
@@ -1184,6 +1191,7 @@ async function carregar() {
   desenhar();
   if (aba === 'gerais') carregarPeriodo();
   if (aba === 'lojas') carregarLojas();
+  if (aba === 'canc') carregarCanc();
   setTimeout(() => document.body.classList.add('sem-entrada'), 700);
 }
 let periodoEmVoo = false;
@@ -1275,6 +1283,7 @@ function recarregarPeriodo() {
   desenharFiltro();
   if (aba === 'gerais') carregarPeriodo();
   if (aba === 'lojas') carregarLojas();
+  if (aba === 'canc') carregarCanc();
 }
 function mudarPeriodo() {
   let de = $('#de').value, ate = $('#ate').value;
@@ -1385,7 +1394,7 @@ addEventListener('scroll', () => { dica.style.display = 'none'; }, { passive: tr
 
 // ------------------------------------------------------------ aba Análise de lojas
 // Tudo vem de /api/lojas, calculado pedido a pedido só com a loja escolhida (ou o grupo inteiro) no período De/Até.
-let aba = { '#lojas': 'lojas', '#gerais': 'gerais' }[location.hash] || 'vivo', lojaSel = '', lojasDados = null, lojasEmVoo = false;
+let aba = { '#lojas': 'lojas', '#gerais': 'gerais', '#cancelamentos': 'canc' }[location.hash] || 'vivo', lojaSel = '', lojasDados = null, lojasEmVoo = false;
 try { lojaSel = localStorage.getItem('pm-loja') || ''; } catch {}
 const base = (n, txt = 'entregas') => (n ? `${num(n)} ${n === 1 ? txt.replace(/s$/, '') : txt}` : 'sem base');
 const prazoMod = (m, prazos) => (prazos[m] ? (prazos[m] >= 120 ? prazos[m] / 60 + ' h' : prazos[m] + ' min') : 'sem prazo');
@@ -1395,10 +1404,12 @@ function mostrarAba() {
   $('#conteudo').hidden = aba !== 'vivo';
   $('#gerais').hidden = aba !== 'gerais';
   $('#analise').hidden = aba !== 'lojas';
+  $('#cancel').hidden = aba !== 'canc';
   avisos();
   desenharFiltro();
   if (aba === 'gerais') { if (dadosP) desenharGerais(); if (dados) carregarPeriodo(); }
   else if (aba === 'lojas') { if (dados) carregarLojas(); }
+  else if (aba === 'canc') { if (cancDados) desenharCanc(); if (dados) carregarCanc(); }
   else montarGraficos();
 }
 
@@ -1536,9 +1547,120 @@ function desenharLojas() {
 
 for (const b of document.querySelectorAll('.abas button')) b.addEventListener('click', () => {
   aba = b.dataset.aba;
-  history.replaceState(null, '', aba === 'vivo' ? location.pathname : '#' + aba);
+  history.replaceState(null, '', aba === 'vivo' ? location.pathname : '#' + (aba === 'canc' ? 'cancelamentos' : aba));
   mostrarAba();
 });
+
+// ------------------------------------------------------------ aba Cancelamentos
+// /api/cancelamentos: a loja escolhida (ou o grupo) no período, sempre com a referência do grupo ao lado.
+let cancDados = null, cancEmVoo = false;
+async function carregarCanc() {
+  if (cancEmVoo) return;
+  cancEmVoo = true;
+  try {
+    const qs = new URLSearchParams({ de: periodo.de, ate: periodo.ate, loja: lojaSel });
+    cancDados = await (await fetch('/api/cancelamentos?' + qs, { cache: 'no-store' })).json();
+    desenharCanc();
+  } catch (e) {
+    $('#cancel').innerHTML = `<section><p class="vazio">Não foi possível carregar os cancelamentos (${esc(e.message)}).</p></section>`;
+  } finally { cancEmVoo = false; }
+}
+
+function desenharCanc() {
+  const j = cancDados, a = j?.analise;
+  if (!a) { $('#cancel').innerHTML = '<section><p class="vazio">Ainda não há dados coletados.</p></section>'; return; }
+  const r = a.resumo, g = a.grupo, mb = num(a.minBusca);
+  const faixaTxt = a.de === a.ate ? dataBr(a.de) : `${dataBr(a.de)} a ${dataBr(a.ate)}`;
+  const daLoja = !!a.loja;
+  const refG = (v) => (daLoja ? ` · grupo ${pc(v)}` : '');
+  const titulo = daLoja ? `Loja ${esc(a.loja.num)} · ${esc(a.loja.bairro)} <small class="selo">${a.loja.band === 'EF' ? 'Extrafarma' : 'Pague Menos'}</small>` : 'Grupo inteiro · Pague Menos + Extrafarma';
+  const opcoes = (prio) => a.lojas.filter((l) => l.prio === prio).map((l) => `<option value="${l.id}"${l.id === lojaSel ? ' selected' : ''}>${esc(l.num || '—')} · ${esc(l.bairro)} (${l.band}) · ${num(l.canc)} canc. de ${num(l.dem)}</option>`).join('');
+
+  const filtro = `<section class="filtro-lojas"><div class="topo-sec"><h2>Cancelamentos</h2><span class="sub">${faixaTxt}${a.fechado ? '' : ' · inclui hoje, ao vivo'} · período na barra acima</span></div>
+    <label class="per" for="selLojaCanc">Loja<select id="selLojaCanc"><option value="">Análise geral · todas as lojas (${num(a.lojas.length)})</option><optgroup label="Lojas prioritárias">${opcoes(true)}</optgroup><optgroup label="Demais lojas, das que mais cancelam para as que menos cancelam">${opcoes(false)}</optgroup></select></label></section>`;
+
+  const kpis = `<section><h2>${titulo}</h2><p class="nota">${daLoja ? 'Números só desta loja; ao lado, a referência do grupo no mesmo período.' : 'Grupo inteiro no período. Escolha uma loja para ver os problemas da unidade.'}</p>
+    <div class="kpis">
+      ${kpiA('Cancelados', num(r.canc), `de ${num(r.dem)} pedidos${refG(g.taxa)}`, r.taxa, 'canc', '', { v: pc(r.taxa), rot: 'dos pedidos', cor: 'mau' })}
+      ${kpiA('Operacionais', num(r.op), `falta ou problema do entregador${refG(g.pctOp)}`, r.pctOp, 'neutro', '', { v: pc(r.pctOp), rot: 'dos cancelamentos', cor: 'azul' })}
+      ${kpiA(`Menos de ${mb} min de busca`, num(r.c5), `cancelaram cedo${refG(g.pctC5)}`, r.pctC5, 'neutro', '', { v: pc(r.pctC5), rot: 'dos cancelamentos', cor: 'azul' })}
+      ${kpiA('Antes do aceite', num(r.antesAceite), `nem chegaram a ter entregador${refG(g.pctAntes)}`, r.pctAntes, 'neutro', '', { v: pc(r.pctAntes), rot: 'dos cancelamentos', cor: 'azul' })}
+      <div class="kpi"><span class="rot">Tempo até cancelar</span><b>${min(r.medianaBusca)}</b><span class="pct">${min(r.mediaBusca)}<em>em média</em></span><small>mediana, do início da busca${daLoja ? ` · grupo ${min(g.medianaBusca)}` : ''}</small></div>
+      <div class="kpi"><span class="rot">Não operacionais</span><b>${num(r.naoOp)}</b><span class="pct">${pc(r.canc ? Math.round(1000 - 10 * r.pctOp) / 10 : null)}<em>dos cancelamentos</em></span><small>loja, cliente, outra transportadora, cadastro</small></div>
+    </div></section>`;
+
+  const atencao = `<section><h2>Pontos de atenção</h2><p class="nota">Gerados pelas regras a partir dos números ${daLoja ? 'da loja, comparados com o grupo' : 'do grupo'}. Apontam onde olhar; a causa de cada caso precisa ser confirmada com a loja e a operação.</p>
+    ${a.atencao.length ? `<div class="oris">${a.atencao.map((x) => `<div class="ori"><span class="chip ${x.nivel === 'alta' ? 'mau' : 'med'}">${x.nivel === 'alta' ? 'Alta' : 'Média'}</span><h3>${esc(x.titulo)}</h3><p>${esc(x.texto)}</p></div>`).join('')}</div>` : '<p class="vazio">Nenhum número fora do padrão neste período.</p>'}</section>`;
+
+  // minuto a minuto: operacional (amarelo) × não operacional (cinza), empilhado; a dica traz o acumulado
+  const cm = a.minutos.map((x) => x.faixa);
+  const grafMin = graf({ tipo: 'colunas', titulo: 'Cancelamentos por minuto de busca', altura: 280, cats: cm, empilhado: true,
+    series: [{ nome: 'Operacional', cor: COR.op, vals: a.minutos.map((x) => x.op) }, { nome: 'Não operacional', cor: COR.naoOp, vals: a.minutos.map((x) => x.naoOp) }],
+    tip: (i) => { const x = a.minutos[i]; return `<b>${esc(x.faixa)} min de busca</b><br>${num(x.n)} cancelamentos<br><i class="ch" style="background:${COR.op}"></i>Operacional ${num(x.op)}<br><i class="ch" style="background:${COR.naoOp}"></i>Não operacional ${num(x.naoOp)}<br>Até aqui: ${pc(x.acumulado)} dos cancelamentos`; } });
+  const ate = (n) => a.minutos.slice(0, n).reduce((t, x) => t + x.n, 0);
+  const totMin = r.canc ? a.minutos.reduce((t, x) => t + x.n, 0) : 0;
+  const minuto = `<section><div class="topo-sec"><h2>Minuto a minuto</h2><span class="sub">do início da busca até o cancelamento</span></div>
+    <div class="numeros">
+      <div><span>Até 1 min</span><b>${pc(totMin ? Math.round((1000 * ate(1)) / totMin) / 10 : null)}</b><small>${num(ate(1))} cancelamentos</small></div>
+      <div><span>Até ${mb} min</span><b>${pc(totMin ? Math.round((1000 * ate(a.minBusca)) / totMin) / 10 : null)}</b><small>${num(ate(a.minBusca))} cancelamentos</small></div>
+      <div><span>Até 10 min</span><b>${pc(totMin ? Math.round((1000 * ate(10)) / totMin) / 10 : null)}</b><small>${num(ate(10))} cancelamentos</small></div>
+      <div><span>15 min ou mais</span><b>${pc(totMin ? Math.round((1000 * a.minutos[a.minutos.length - 1].n) / totMin) / 10 : null)}</b><small>${num(a.minutos[a.minutos.length - 1].n)} cancelamentos</small></div>
+    </div>
+    ${legenda([{ nome: 'Operacional', cor: COR.op }, { nome: 'Não operacional', cor: COR.naoOp }])}${grafMin}
+    ${a.semMinuto ? `<p class="nota pe">${num(a.semMinuto)} cancelamento(s) sem horário de cancelamento ficaram fora do gráfico.</p>` : ''}</section>`;
+
+  // distância: quantidade e taxa em gráficos separados (um eixo por gráfico)
+  const ck = a.kms.map((x) => x.faixa);
+  const dicaKm = (i) => { const x = a.kms[i]; return `<b>${esc(x.faixa)} km</b><br>${num(x.canc)} cancelados de ${num(x.dem)} pedidos<br>Taxa ${pc(x.taxa)}`; };
+  const km = `<section><div class="topo-sec"><h2>Cancelamento por distância</h2><span class="sub">faixas de 1 km pela distância do pedido</span></div>
+    <div class="duo"><div><h3 class="sub-h">Cancelados por faixa (km)</h3>${graf({ tipo: 'colunas', titulo: 'Cancelados por faixa de km', altura: 260, cats: ck, rotulos: true, series: [{ nome: 'Cancelados', cor: COR.volume, vals: a.kms.map((x) => x.canc) }], tip: dicaKm })}</div>
+    <div><h3 class="sub-h">Taxa de cancelamento por faixa (km) · faixas com 10+ pedidos</h3>${graf({ tipo: 'colunas', titulo: 'Taxa de cancelamento por km', altura: 260, cats: ck, pct: true, rotulos: true, fmt: (v) => num(Math.round(v)) + '%', ref: r.taxa, refRot: `média ${pc(r.taxa)}`, series: [{ nome: 'Taxa', cor: COR.p2, vals: a.kms.map((x) => (x.dem >= BASE_MIN_PCT ? x.taxa : null)) }], tip: dicaKm })}</div></div>
+    ${a.semKm ? `<p class="nota pe">${num(a.semKm)} pedido(s) sem distância (${num(a.semKmCanc)} cancelados) ficaram fora.</p>` : ''}</section>`;
+
+  // modalidade
+  const mods = a.modalidades;
+  const modalidade = `<section><h2>Cancelamento por modalidade</h2><p class="nota">Taxa de cancelamento de cada modalidade e o tipo de cada cancelamento.</p>
+    <div class="duo"><div><h3 class="sub-h">Taxa de cancelamento</h3>${hbarras(mods.map((m) => ({ rot: m.mod, sub: `${num(m.dem)} pedidos`, val: m.taxa, cor: COR[m.mod] || COR.Agendada, extra: ` <small>${num(m.canc)} de ${num(m.dem)}</small>`, tip: `<b>${esc(m.mod)}</b><br>${num(m.canc)} cancelados de ${num(m.dem)} pedidos (${pc(m.taxa)})<br>Operacional ${num(m.op)} · não operacional ${num(m.naoOp)}<br>${num(m.c5)} com menos de ${mb} min de busca · mediana ${min(m.medianaBusca)}` })), { max: Math.max(10, ...mods.map((m) => m.taxa || 0)) })}</div>
+    <div><h3 class="sub-h">Operacional × não operacional</h3>${legenda([{ nome: 'Operacional', cor: COR.op }, { nome: 'Não operacional', cor: COR.naoOp }])}${hpilhas(mods.filter((m) => m.canc).map((m) => ({ rot: m.mod, sub: `${pc(m.pctC5)} com menos de ${mb} min`, partes: [{ nome: 'Operacional', val: m.op, cor: COR.op }, { nome: 'Não operacional', val: m.naoOp, cor: COR.naoOp }], valor: `${num(m.canc)}<small>cancelados</small>` })), { fmt: num })}</div></div></section>`;
+
+  // hora do dia
+  const ch = a.horas.map((x) => String(x.hora).padStart(2, '0') + 'h');
+  const hora = `<section><div class="topo-sec"><h2>Cancelamento por hora do dia</h2><span class="sub">hora de criação do pedido · horas com 10+ pedidos</span></div>
+    ${graf({ tipo: 'colunas', titulo: 'Taxa de cancelamento por hora', altura: 240, cats: ch, pct: true, ref: r.taxa, refRot: `média ${pc(r.taxa)}`, series: [{ nome: 'Taxa', cor: COR.p2, vals: a.horas.map((x) => (x.dem >= BASE_MIN_PCT ? x.taxa : null)) }], tip: (i) => { const x = a.horas[i]; return `<b>${ch[i]}</b><br>${num(x.canc)} cancelados de ${num(x.dem)} pedidos<br>Taxa ${pc(x.taxa)}`; } })}</section>`;
+
+  // motivos, tipo e fase
+  const ordemFase = ['Antes do aceite', 'Entregador a caminho ou na loja', 'Já em rota'];
+  const fases = [...a.fases].sort((x, y) => ordemFase.indexOf(x.nome) - ordemFase.indexOf(y.nome)).map((f, i) => ({ nome: f.nome, val: f.n, cor: COR.fase[i] || COR.fase[2], claro: i === 0 }));
+  const maxM = Math.max(1, ...a.motivos.map((m) => m.n));
+  const motivos = `<section><h2>Motivos</h2><p class="nota">Motivo como foi registrado na API. Amarelo é operacional; cinza, os demais.${a.pendentes ? ` ${num(a.pendentes)} ainda sem leitura de motivo.` : ''}</p>
+    <div class="duo"><div><h3 class="sub-h">Por tipo de motivo</h3>${segmentos(a.grupos.map((x) => ({ nome: x.nome, val: x.n, cor: x.op ? COR.op : COR.naoOp, claro: x.op })).slice(0, 6))}
+      <h3 class="sub-h">Em que fase cancelou</h3>${segmentos(fases)}</div>
+    <div><h3 class="sub-h">Tipos de motivo</h3>${hbarras(a.grupos.map((x) => ({ rot: x.nome, sub: x.op ? 'operacional' : 'não operacional', val: x.n, cor: x.op ? COR.op : COR.naoOp, extra: ` <small>${pc(x.pct)}</small>`, tip: `<b>${esc(x.nome)}</b><br>${num(x.n)} cancelamentos · ${pc(x.pct)}<br>${num(x.c5)} com menos de ${mb} min de busca<br>${num(x.antes)} antes do aceite` })), { max: Math.max(1, ...a.grupos.map((x) => x.n)), fmt: num })}</div></div>
+    <h3 class="sub-h">Motivos como foram registrados</h3>${hbarras(a.motivos.slice(0, 12).map((m) => ({ rot: m.nome, sub: m.op ? 'operacional' : m.grupo, val: m.n, cor: m.op ? COR.op : COR.naoOp, extra: ` <small>${pc(m.pct)}</small>`, tip: `<b>${esc(m.nome)}</b><br>${num(m.n)} cancelamentos · ${pc(m.pct)}<br>${num(m.c5)} com menos de ${mb} min de busca · ${num(m.antes)} antes do aceite` })), { max: maxM, fmt: num, largo: true })}</section>`;
+
+  // ranking das lojas (grupo): clicar escolhe a loja
+  const ranking = daLoja ? '' : `<section><h2>Lojas que mais cancelam</h2><p class="nota">As 20 lojas com mais cancelamentos no período. Clique numa loja para abrir a análise dela.</p>
+    <div class="rolagem"><table><thead><tr><th>Loja</th><th>Pedidos</th><th>Cancelados</th><th>Taxa</th><th>Operacional</th><th>Menos de ${mb} min</th><th>Antes do aceite</th><th class="txt">Principal motivo</th></tr></thead><tbody>${a.ranking.map((l) => `<tr class="clica" data-loja="${l.id}"><td class="loja">${esc(l.num)} · ${esc(l.bairro)}<small>${l.band}</small>${l.prio ? '<span class="star">★</span>' : ''}</td><td>${num(l.dem)}</td><td class="forte">${num(l.canc)}</td><td class="forte">${pc(l.taxa)}</td><td>${pc(l.pctOp)}</td><td>${pc(l.pctC5)}</td><td>${pc(l.pctAntes)}</td><td class="txt">${l.principal ? `${esc(l.principal.motivo)} (${num(l.principal.n)})` : '—'}</td></tr>`).join('')}</tbody></table></div></section>`;
+
+  const lista = a.lista.length ? `<section><details data-chave="canc-lista"${daLoja ? ' open' : ''}><summary>${a.listaCortada ? `Ver os ${num(a.lista.length)} mais recentes de ${num(r.canc)} cancelamentos` : `Ver os ${num(a.lista.length)} cancelamentos, um a um`}</summary><div class="rolagem"><table><thead><tr><th>Data</th><th>Hora</th>${daLoja ? '' : '<th class="txt">Loja</th>'}<th class="txt">Modalidade</th><th>Min de busca</th><th>Min desde a criação</th><th class="txt">Fase</th><th class="txt">Motivo</th><th class="txt">Tipo</th><th>Pedido</th></tr></thead><tbody>${a.lista.map((x) => `<tr><td>${dataBr(x.dia).slice(0, 5)}</td><td class="forte">${esc(x.h)}</td>${daLoja ? '' : `<td class="txt">${esc(x.loja)} · ${esc(x.bairro)}</td>`}<td class="txt">${esc(x.mod || '—')}</td><td${x.minBusca != null && x.minBusca < a.minBusca ? ' class="quente"' : ''}>${min(x.minBusca)}</td><td>${min(x.minCriacao)}</td><td class="txt">${esc(x.fase)}</td><td class="txt">${esc(x.motivo)}</td><td class="txt">${x.op ? '<span class="tag" style="margin:0">Operacional</span>' : 'Não operacional'}</td><td>${esc(x.id)}</td></tr>`).join('')}</tbody></table></div></details></section>` : '';
+
+  const regrasC = `<section><details><summary>Como cada número desta aba é calculado</summary><ul class="regras">
+    <li><b>Base:</b> pedidos do período gravados um a um e a lista de cancelamentos com motivo lido na API. Escolhida uma loja, entram só os dela; a referência do grupo usa o mesmo período.</li>
+    <li><b>Operacional:</b> falta de entregador ou atraso/problema do entregador. O resto (loja, cliente, outra transportadora, cadastro, integração) é não operacional.</li>
+    <li><b>Minuto a minuto:</b> do início da busca por entregador até o cancelamento; pedido sem busca conta da criação.</li>
+    <li><b>Distância:</b> a do pedido, em faixas de 1 km (0–1 km, 1–2 km…) e 10 km ou mais. Taxa = cancelados ÷ pedidos da faixa.</li>
+    <li><b>Hora:</b> hora de criação do pedido. Faixa ou hora com menos de 10 pedidos fica fora dos gráficos de taxa, para não oscilar de 0 a 100% com um pedido.</li>
+    <li><b>Pontos de atenção:</b> taxa 25% acima do grupo; metade ou mais cancelando com menos de 5 min; metade ou mais operacional; um motivo com 35% ou mais; faixa de km, modalidade ou hora com taxa 1,5 vez a da loja (1,4 vez na modalidade).</li>
+  </ul></details></section>`;
+
+  const abertos = [...document.querySelectorAll('#cancel details[open][data-chave]')].map((x) => x.dataset.chave);
+  $('#cancel').innerHTML = filtro + kpis + atencao + minuto + km + modalidade + hora + motivos + ranking + lista + regrasC;
+  for (const k of abertos) document.querySelector(`#cancel details[data-chave="${k}"]`)?.setAttribute('open', '');
+  montarGraficos();
+  const escolher = (id) => { lojaSel = id; try { localStorage.setItem('pm-loja', lojaSel); } catch {} carregarCanc(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  $('#selLojaCanc').addEventListener('change', (e) => escolher(e.target.value));
+  for (const tr of document.querySelectorAll('#cancel tr.clica')) tr.addEventListener('click', () => escolher(tr.dataset.loja));
+}
 
 // A página recarrega sozinha quando chega coleta nova
 const vivo = $('#vivo');

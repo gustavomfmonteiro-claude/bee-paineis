@@ -9,7 +9,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { configurar, coletar, entregadoresProximos, lerBuscando, lerEntregadores, pedidoBuscando, temAcesso, VERSAO_DIA } from './coletor.mjs';
-import { analisarDia, analisarLojas, evolucao, rankingEntregadores, somarDias } from './analise.mjs';
+import { analisarCancelamentos, analisarDia, analisarLojas, evolucao, rankingEntregadores, somarDias } from './analise.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 let arqEnv = '';
@@ -314,14 +314,15 @@ function montarDados(diaPedido, dePedido, atePedido) {
 }
 
 // Análise de lojas: mesmo período do filtro De/Até; sem período, o dia mais recente.
-function montarLojas(dePedido, atePedido, loja) {
+// Mesmo período da Análise de lojas; `analisar` escolhe a análise (lojas ou cancelamentos).
+function montarLojas(dePedido, atePedido, loja, analisar = analisarLojas) {
   const lista = Object.keys(historico).sort();
   let de = ehData(dePedido) ? dePedido : null, ate = ehData(atePedido) ? atePedido : null;
   if (de && ate && de > ate) [de, ate] = [ate, de];
   let dias = de || ate ? lista.filter((d) => (!de || d >= de) && (!ate || d <= ate)) : [];
   const vazio = (de || ate) && !dias.length;
   if (!dias.length && lista.length) dias = [lista[lista.length - 1]];
-  const r = dias.length ? analisarLojas(dias.map((d) => historico[d]), /^\d+$/.test(loja || '') ? loja : '') : null;
+  const r = dias.length ? analisar(dias.map((d) => historico[d]), /^\d+$/.test(loja || '') ? loja : '') : null;
   return JSON.stringify({ gerado_em: new Date().toISOString(), primeiro: lista[0] || null, ultimo: lista[lista.length - 1] || null, periodoVazio: !!vazio, analise: r });
 }
 
@@ -347,6 +348,10 @@ http.createServer((req, res) => {
   if (url.pathname === '/api/lojas') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     return res.end(montarLojas(url.searchParams.get('de'), url.searchParams.get('ate'), url.searchParams.get('loja')));
+  }
+  if (url.pathname === '/api/cancelamentos') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    return res.end(montarLojas(url.searchParams.get('de'), url.searchParams.get('ate'), url.searchParams.get('loja'), analisarCancelamentos));
   }
   if (url.pathname === '/api/evolucao') {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });

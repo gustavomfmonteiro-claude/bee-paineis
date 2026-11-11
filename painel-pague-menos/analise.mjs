@@ -486,3 +486,126 @@ export function analisarLojas(dias, loja) {
     },
   };
 }
+
+// ------------------------------------------------------------ aba Cancelamentos
+// Leitura criteriosa dos cancelamentos de uma loja (ou do grupo), sempre ao lado da referência do grupo.
+// Pedidos um a um (P) dão km, modalidade, hora e minutos até cancelar; a lista de cancelamentos dá motivo,
+// tipo (operacional ou não) e fase. Minuto a minuto = do início da busca (ou da criação, sem busca) até cancelar.
+const MIN_FAIXAS = 15;   // 0–1 ... 14–15 min e "15 min ou mais"
+const KM_FAIXAS = 10;    // 0–1 ... 9–10 km e "10 km ou mais"
+const MIN_TAXA = 10;     // pedidos mínimos para uma faixa entrar em comparação de taxa
+
+function resumoCanc(regs, cancs) {
+  const dem = regs.length, canc = regs.filter((r) => r[P.st] === 'C').length;
+  const op = cancs.filter((c) => c.op).length, c5 = cancs.filter((c) => c.mb != null && c.mb < MIN_BUSCA).length;
+  const antes = cancs.filter((c) => c.f === 'Antes do aceite').length;
+  const mbs = cancs.map((c) => c.mb).filter((v) => v != null).sort((a, b) => a - b);
+  const mediana = mbs.length ? Math.round(10 * (mbs.length % 2 ? mbs[(mbs.length - 1) / 2] : (mbs[mbs.length / 2 - 1] + mbs[mbs.length / 2]) / 2)) / 10 : null;
+  return { dem, canc, taxa: pct(canc, dem), op, naoOp: cancs.length - op, pctOp: pct(op, cancs.length), c5, pctC5: pct(c5, cancs.length),
+    antesAceite: antes, pctAntes: pct(antes, cancs.length), medianaBusca: mediana, mediaBusca: media(mbs.reduce((t, v) => t + v, 0), mbs.length) };
+}
+
+export function analisarCancelamentos(dias, loja) {
+  const nomes = {}, demanda = {}, cancPorLoja = {};
+  for (const d of dias) for (const [id, l] of Object.entries(d.lojas)) { nomes[id] = l.n; demanda[id] = (demanda[id] || 0) + l.dem; cancPorLoja[id] = (cancPorLoja[id] || 0) + l.canc; }
+  const lojas = Object.keys(nomes).map((id) => ({ id, ...identificar(nomes[id]), dem: demanda[id], canc: cancPorLoja[id], prio: PRIORITARIAS.includes(identificar(nomes[id]).num) }))
+    .sort((a, b) => Number(b.prio) - Number(a.prio) || b.canc - a.canc || b.dem - a.dem);
+  const escolhida = loja && nomes[loja] ? String(loja) : '';
+  const todosR = [], todosC = [];
+  for (const d of dias) {
+    for (const r of d.pedidos || []) todosR.push(r);
+    for (const c of d.cancs) todosC.push({ ...c, dia: d.dia });
+  }
+  const regs = escolhida ? todosR.filter((r) => r[P.loja] === escolhida) : todosR;
+  const cancs = escolhida ? todosC.filter((c) => c.l === escolhida) : todosC;
+  const resumo = resumoCanc(regs, cancs), grupo = resumoCanc(todosR, todosC);
+
+  // minuto a minuto: quanto tempo de busca até cancelar, operacional × não operacional
+  const minutos = Array.from({ length: MIN_FAIXAS + 1 }, (_, i) => ({ faixa: i < MIN_FAIXAS ? `${i}–${i + 1}` : `${MIN_FAIXAS}+`, n: 0, op: 0, naoOp: 0 }));
+  let semMinuto = 0;
+  for (const c of cancs) {
+    if (c.mb == null) { semMinuto++; continue; }
+    const x = minutos[Math.min(MIN_FAIXAS, Math.floor(c.mb))];
+    x.n++; if (c.op) x.op++; else x.naoOp++;
+  }
+  let acc = 0;
+  for (const x of minutos) { acc += x.n; x.acumulado = pct(acc, cancs.length - semMinuto); }
+
+  // distância: pedidos, cancelados e taxa por km (pedidos sem distância à parte)
+  const kms = Array.from({ length: KM_FAIXAS + 1 }, (_, i) => ({ faixa: i < KM_FAIXAS ? `${i}–${i + 1}` : `${KM_FAIXAS}+`, dem: 0, canc: 0 }));
+  let semKm = 0, semKmCanc = 0;
+  for (const r of regs) {
+    if (r[P.km] == null) { semKm++; if (r[P.st] === 'C') semKmCanc++; continue; }
+    const x = kms[Math.min(KM_FAIXAS, Math.floor(r[P.km]))];
+    x.dem++; if (r[P.st] === 'C') x.canc++;
+  }
+  for (const x of kms) x.taxa = pct(x.canc, x.dem);
+
+  // modalidade: taxa, tipo e rapidez do cancelamento
+  const modalidades = ORDEM_MOD.map((m) => {
+    const rs = regs.filter((r) => r[P.mod] === m), cs = cancs.filter((c) => c.md === m);
+    if (!rs.length) return null;
+    const r = resumoCanc(rs, cs);
+    return { mod: m, ...r };
+  }).filter(Boolean);
+
+  // hora do dia em que o pedido foi criado
+  const horas = Array.from({ length: 24 }, (_, h) => ({ hora: h, dem: 0, canc: 0 }));
+  for (const r of regs) { const h = Number(String(r[P.hora]).slice(0, 2)); if (horas[h]) { horas[h].dem++; if (r[P.st] === 'C') horas[h].canc++; } }
+  for (const x of horas) x.taxa = pct(x.canc, x.dem);
+
+  // motivos, tipos e fases
+  const mapa = (chave) => {
+    const m = new Map();
+    for (const c of cancs) {
+      const k = chave(c), x = m.get(k) || { nome: k, grupo: c.g, op: !!c.op, n: 0, c5: 0, antes: 0 };
+      x.n++; if (c.mb != null && c.mb < MIN_BUSCA) x.c5++; if (c.f === 'Antes do aceite') x.antes++;
+      m.set(k, x);
+    }
+    return [...m.values()].sort((a, b) => b.n - a.n).map((x) => ({ ...x, pct: pct(x.n, cancs.length) }));
+  };
+  const motivos = mapa((c) => c.m || 'Sem motivo informado'), grupos = mapa((c) => c.g), fases = mapa((c) => c.f);
+
+  // ranking das lojas (só na visão do grupo)
+  const ranking = escolhida ? [] : lojas.filter((l) => l.canc > 0).map((l) => {
+    const rs = todosR.filter((r) => r[P.loja] === l.id), cs = todosC.filter((c) => c.l === l.id);
+    const r = resumoCanc(rs, cs);
+    const principal = (() => { const m = new Map(); for (const c of cs) m.set(c.m || 'Sem motivo informado', (m.get(c.m || 'Sem motivo informado') || 0) + 1); return [...m.entries()].sort((a, b) => b[1] - a[1])[0]; })();
+    return { id: l.id, num: l.num, bairro: l.bairro, band: l.band, prio: l.prio, ...r, principal: principal ? { motivo: principal[0], n: principal[1] } : null };
+  }).sort((a, b) => b.canc - a.canc || b.taxa - a.taxa).slice(0, 20);
+
+  // pontos de atenção: cada um cita o número que o acionou e a referência do grupo
+  const atencao = [];
+  const ad = (nivel, titulo, texto) => atencao.push({ nivel, titulo, texto });
+  if (escolhida && resumo.dem >= MIN_TAXA && resumo.taxa != null && grupo.taxa != null && resumo.taxa > grupo.taxa * 1.25)
+    ad(resumo.taxa > grupo.taxa * 1.6 ? 'alta' : 'media', 'Cancelamento acima do grupo', `${br(resumo.taxa)}% dos pedidos cancelados, contra ${br(grupo.taxa)}% no grupo.`);
+  if (resumo.canc >= 5 && resumo.pctC5 >= 50)
+    ad(resumo.pctC5 >= 70 ? 'alta' : 'media', 'Cancela cedo', `${br(resumo.pctC5)}% dos cancelamentos saíram com menos de ${MIN_BUSCA} min de busca${escolhida ? ` (grupo: ${br(grupo.pctC5)}%)` : ''}. Mediana de ${br(resumo.medianaBusca)} min até cancelar.`);
+  if (resumo.canc >= 5 && resumo.pctOp >= 50)
+    ad(resumo.pctOp >= 65 ? 'alta' : 'media', 'Problema do lado do entregador', `${br(resumo.pctOp)}% dos cancelamentos são operacionais${escolhida ? ` (grupo: ${br(grupo.pctOp)}%)` : ''}: falta de entregador ou atraso/problema do entregador.`);
+  const topM = motivos[0];
+  if (topM && resumo.canc >= 5 && topM.pct >= 35)
+    ad(topM.pct >= 55 ? 'alta' : 'media', 'Motivo concentrado', `"${topM.nome}" responde por ${br(topM.pct)}% dos cancelamentos (${topM.n}).`);
+  const kmPior = kms.filter((x) => x.dem >= MIN_TAXA).sort((a, b) => b.taxa - a.taxa)[0];
+  if (kmPior && resumo.taxa != null && kmPior.taxa >= resumo.taxa * 1.5 && kmPior.canc >= 3)
+    ad('media', 'Distância pesa', `Na faixa de ${kmPior.faixa} km, ${br(kmPior.taxa)}% dos pedidos cancelam (${kmPior.canc} de ${kmPior.dem}), contra ${br(resumo.taxa)}% no total.`);
+  const modPior = modalidades.filter((m) => m.dem >= MIN_TAXA).sort((a, b) => b.taxa - a.taxa)[0];
+  if (modPior && resumo.taxa != null && modPior.taxa >= resumo.taxa * 1.4 && modPior.canc >= 3)
+    ad('media', 'Modalidade com mais cancelamento', `${modPior.mod}: ${br(modPior.taxa)}% dos pedidos cancelados (${modPior.canc} de ${modPior.dem}).`);
+  const horaPior = horas.filter((x) => x.dem >= MIN_TAXA).sort((a, b) => b.taxa - a.taxa)[0];
+  if (horaPior && resumo.taxa != null && horaPior.taxa >= resumo.taxa * 1.5 && horaPior.canc >= 3)
+    ad('media', 'Horário crítico', `Pedidos criados às ${String(horaPior.hora).padStart(2, '0')}h cancelam ${br(horaPior.taxa)}% (${horaPior.canc} de ${horaPior.dem}).`);
+  atencao.sort((a, b) => (a.nivel === 'alta' ? 0 : 1) - (b.nivel === 'alta' ? 0 : 1));
+
+  const lista = [...cancs].sort((a, b) => (b.dia + b.h).localeCompare(a.dia + a.h)).slice(0, LIMITE_LISTA).map((c) => ({
+    id: c.id, dia: c.dia, h: c.h, loja: identificar(nomes[c.l] || '').num || c.l, bairro: identificar(nomes[c.l] || '').bairro,
+    mod: c.md || null, minBusca: c.mb ?? null, minCriacao: c.min ?? null, fase: c.f, motivo: c.m || 'Sem motivo informado', grupo: c.g, op: !!c.op,
+  }));
+
+  return {
+    de: dias[0]?.dia || null, ate: dias[dias.length - 1]?.dia || null, fechado: dias.every((d) => d.fechado),
+    loja: escolhida ? lojas.find((l) => l.id === escolhida) : null, lojas, minBusca: MIN_BUSCA,
+    resumo, grupo, minutos, semMinuto, kms, semKm, semKmCanc, modalidades, horas, motivos, grupos, fases, ranking, atencao,
+    lista, listaCortada: cancs.length > LIMITE_LISTA, pendentes: cancs.filter((c) => c.pendente).length,
+  };
+}
