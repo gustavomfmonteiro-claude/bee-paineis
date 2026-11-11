@@ -379,6 +379,13 @@ section.hud::after{bottom:-1px;right:-1px;border-left:0;border-top:0;border-bott
 .rk-t.mod::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--m)}
 .rk-t.ac{--k:#3987e5}
 .oris{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px}
+.visao-linha{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:10px 0 2px}
+.visao-linha .fp-rot{margin:0}
+.evo-seg.visao button{display:inline-flex;align-items:baseline;gap:7px;min-height:38px;font-size:13px}
+.evo-seg.visao button small{font:500 11px var(--mono);color:var(--ink3)}
+.evo-seg.visao button[aria-pressed="true"] small{color:var(--ink2)}
+.filtro-lojas.visao-cliente{border-color:rgba(57,135,229,.55);box-shadow:inset 0 0 0 1px rgba(57,135,229,.25)}
+.filtro-lojas.visao-cliente .evo-seg.visao button[aria-pressed="true"]{background:rgba(57,135,229,.18);box-shadow:inset 0 -2px 0 #3987e5}
 .relato{display:grid;gap:10px;margin-bottom:6px}
 .relato p{margin:0;padding:11px 14px;border-left:3px solid var(--bee);border-radius:0 10px 10px 0;background:rgba(17,26,41,.6);color:var(--ink2);font-size:13.5px;line-height:1.55}
 tr.clica{cursor:pointer}tr.clica:hover td{color:var(--ink)}.rk-t.p1{--k:#9085e9}.rk-t.p2{--k:#d55181}
@@ -1399,10 +1406,14 @@ addEventListener('scroll', () => { dica.style.display = 'none'; }, { passive: tr
 
 // ------------------------------------------------------------ aba Análise de lojas
 // Tudo vem de /api/lojas, calculado pedido a pedido só com a loja escolhida (ou o grupo inteiro) no período De/Até.
+// Visão da Análise de lojas: Bee (prazo da operação: 30, 60 e 120 min) ou cliente (60, 120 e 240 min).
+let visaoLojas = 'bee';
+try { if (localStorage.getItem('pm-visao') === 'cliente') visaoLojas = 'cliente'; } catch {}
 let aba = { '#lojas': 'lojas', '#gerais': 'gerais', '#cancelamentos': 'canc', '#visitas': 'visitas' }[location.hash] || 'vivo', lojaSel = '', lojasDados = null, lojasEmVoo = false;
 try { lojaSel = localStorage.getItem('pm-loja') || ''; } catch {}
 const base = (n, txt = 'entregas') => (n ? `${num(n)} ${n === 1 ? txt.replace(/s$/, '') : txt}` : 'sem base');
-const prazoMod = (m, prazos) => (prazos[m] ? (prazos[m] >= 120 ? prazos[m] / 60 + ' h' : prazos[m] + ' min') : 'sem prazo');
+// na visão cliente (Super Expressa em 60 min) os prazos ficam em minutos, como foram definidos
+const prazoMod = (m, prazos) => (prazos[m] ? (prazos[m] >= 120 && prazos['Super Expressa'] !== 60 ? prazos[m] / 60 + ' h' : prazos[m] + ' min') : 'sem prazo');
 
 function mostrarAba() {
   for (const b of document.querySelectorAll('.abas button')) b.setAttribute('aria-selected', String(b.dataset.aba === aba));
@@ -1424,7 +1435,7 @@ async function carregarLojas() {
   if (lojasEmVoo) return;
   lojasEmVoo = true;
   try {
-    const qs = new URLSearchParams({ de: periodo.de, ate: periodo.ate, loja: lojaSel });
+    const qs = new URLSearchParams({ de: periodo.de, ate: periodo.ate, loja: lojaSel, visao: visaoLojas });
     lojasDados = await (await fetch('/api/lojas?' + qs, { cache: 'no-store' })).json();
     desenharLojas();
   } catch (e) {
@@ -1450,7 +1461,12 @@ function desenharLojas() {
   if (a.semRegistro.length) avisos.push(`<div class="aviso erro"><b>Dias ainda sem pedidos um a um:</b> ${a.semRegistro.map(dataBr).join(', ')}. Eles estão sendo relidos e entram nos próximos minutos.</div>`);
   if (lojaSel && !a.loja) avisos.push('<div class="aviso">A loja escolhida não teve pedido nesse período; mostrando o grupo inteiro.</div>');
 
-  const filtro = `<section class="filtro-lojas"><div class="topo-sec"><h2>Análise de lojas</h2><span class="sub">${faixaTxt}${a.fechado ? '' : ' · inclui hoje, ao vivo'} · período na barra acima</span></div>
+  const cliente = a.visao === 'cliente';
+  const filtro = `<section class="filtro-lojas${cliente ? ' visao-cliente' : ''}"><div class="topo-sec"><h2>Análise de lojas</h2><span class="sub">${faixaTxt}${a.fechado ? '' : ' · inclui hoje, ao vivo'} · período na barra acima</span></div>
+    <div class="visao-linha"><span class="fp-rot">Visão do prazo</span><div class="evo-seg visao" role="group" aria-label="Visão do prazo">
+      <button type="button" data-visao="bee" aria-pressed="${!cliente}">Visão Bee <small>30 · 60 · 120 min</small></button>
+      <button type="button" data-visao="cliente" aria-pressed="${cliente}">Visão cliente <small>60 · 120 · 240 min</small></button></div>
+      <span class="sub">${cliente ? 'OTD, faixas e marcas de prazo contam o tempo total que o cliente aceita em cada modalidade.' : 'OTD, faixas e marcas de prazo contam o prazo da operação Bee.'}</span></div>
     <label class="per" for="selLoja">Loja<select id="selLoja"><option value="">Análise geral · todas as lojas (${num(a.lojas.length)})</option><optgroup label="Lojas prioritárias">${grupoOpcoes(true)}</optgroup><optgroup label="Demais lojas, da maior demanda para a menor">${grupoOpcoes(false)}</optgroup></select></label></section>`;
 
   const kpis = `<section><h2>${titulo}</h2><p class="nota">Todos os números abaixo são só ${a.loja ? 'desta loja' : 'do grupo'} em ${faixaTxt}, contados pedido a pedido.</p>
@@ -1532,7 +1548,7 @@ function desenharLojas() {
 
   const regrasLojas = `<section><details><summary>Como cada número desta aba é calculado</summary><ul class="regras">
     <li><b>Base:</b> cada pedido do período, gravado um a um na leitura da API (loja, modalidade, horários e distância; sem cliente nem endereço). Escolhida uma loja, entram só os pedidos dela.</li>
-    <li><b>Modalidade:</b> pelo prazo do pedido, como no Radar. Prazo do OTD: Super Expressa 30 min, Expressa 60 min, Econômica 2 h.</li>
+    <li><b>Modalidade:</b> pelo prazo do pedido, como no Radar. Prazo do OTD na visão Bee: Super Expressa 30 min, Expressa 60 min, Econômica 2 h. Na visão cliente: 60 min, 120 min e 240 min. O botão no topo da aba troca a visão.</li>
     <li><b>OTD:</b> finalizada com chegada ao cliente até o prazo, contada da criação. Base: finalizadas com o carimbo de chegada.</li>
     <li><b>Pontas:</b> ponta 1 da criação à chegada na loja; espera da chegada à saída da loja; ponta 2 da saída à chegada no cliente. Médias das finalizadas que têm cada carimbo; tempo acima de 8 h é descartado como carimbo errado.</li>
     <li><b>Aceite:</b> do início da busca ao aceite. Pedido de integração que já nasce com entregador não passa por busca e fica de fora ("sem busca").</li>
@@ -1545,6 +1561,12 @@ function desenharLojas() {
   $('#analise').innerHTML = avisos.join('') + filtro + kpis + pontas + comparacao + `<div class="modgrid">${blocos}</div>` + faixasGeral + cancelamentos + regrasLojas;
   for (const k of abertos) document.querySelector(`#analise details[data-chave="${k}"]`)?.setAttribute('open', '');
   montarGraficos();
+  for (const b of document.querySelectorAll('#analise [data-visao]')) b.addEventListener('click', () => {
+    if (visaoLojas === b.dataset.visao) return;
+    visaoLojas = b.dataset.visao;
+    try { localStorage.setItem('pm-visao', visaoLojas); } catch {}
+    carregarLojas();
+  });
   $('#selLoja').addEventListener('change', (e) => {
     lojaSel = e.target.value;
     try { localStorage.setItem('pm-loja', lojaSel); } catch {}

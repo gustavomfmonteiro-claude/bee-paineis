@@ -9,7 +9,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { configurar, coletar, entregadoresProximos, lerBuscando, lerEntregadores, pedidoBuscando, temAcesso, VERSAO_DIA } from './coletor.mjs';
-import { analisarCancelamentos, analisarDia, analisarLojas, evolucao, rankingEntregadores, somarDias } from './analise.mjs';
+import { analisarCancelamentos, analisarDia, analisarLojas, evolucao, PRAZO_CLIENTE, rankingEntregadores, somarDias } from './analise.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 let arqEnv = '';
@@ -378,7 +378,9 @@ http.createServer((req, res) => {
   }
   if (url.pathname === '/api/lojas') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-    return res.end(montarLojas(url.searchParams.get('de'), url.searchParams.get('ate'), url.searchParams.get('loja')));
+    // visao=cliente: OTD e faixas contra o prazo do cliente (60, 120 e 240 min) em vez do prazo Bee
+    const cliente = url.searchParams.get('visao') === 'cliente';
+    return res.end(montarLojas(url.searchParams.get('de'), url.searchParams.get('ate'), url.searchParams.get('loja'), cliente ? (d, l) => analisarLojas(d, l, PRAZO_CLIENTE) : analisarLojas));
   }
   if (url.pathname === '/api/visitas') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });

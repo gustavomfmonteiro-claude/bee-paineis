@@ -419,7 +419,10 @@ function porFaixa(regs, prazoDe) {
 }
 
 // `dias` = dias do período (com pedidos um a um), `loja` = id do merchant ou vazio para o grupo.
-export function analisarLojas(dias, loja) {
+// Visão cliente: o prazo que o cliente enxerga em cada modalidade, o dobro do prazo da operação Bee.
+export const PRAZO_CLIENTE = { 'Super Expressa': 60, Expressa: 120, 'Econômica': 240 };
+
+export function analisarLojas(dias, loja, prazos = PRAZO_MOD) {
   const nomes = {}, demanda = {};
   for (const d of dias) for (const [id, l] of Object.entries(d.lojas)) { nomes[id] = l.n; demanda[id] = (demanda[id] || 0) + l.dem; }
   const lojas = Object.keys(nomes).map((id) => ({ id, ...identificar(nomes[id]), dem: demanda[id], prio: PRIORITARIAS.includes(identificar(nomes[id]).num) }))
@@ -432,7 +435,7 @@ export function analisarLojas(dias, loja) {
     for (const r of d.pedidos || []) if (!escolhida || r[P.loja] === escolhida) regs.push(r);
     for (const c of d.cancs) if (!escolhida || c.l === escolhida) cancs.push({ ...c, dia: d.dia });
   }
-  const prazoDe = (r) => PRAZO_MOD[r[P.mod]] || null;
+  const prazoDe = (r) => prazos[r[P.mod]] || null;
 
   // geral e por modalidade
   const geral = novoAcc();
@@ -441,8 +444,8 @@ export function analisarLojas(dias, loja) {
     const rs = regs.filter((r) => r[P.mod] === m);
     if (!rs.length) return null;
     const a = novoAcc();
-    for (const r of rs) acumular(a, r, PRAZO_MOD[m]);
-    return { mod: m, prazo: PRAZO_MOD[m] || null, ...fechar(a), faixas: porFaixa(rs, () => PRAZO_MOD[m]) };
+    for (const r of rs) acumular(a, r, prazos[m]);
+    return { mod: m, prazo: prazos[m] || null, ...fechar(a), faixas: porFaixa(rs, () => prazos[m]) };
   }).filter(Boolean);
 
   // cancelamentos: motivos, operacional e não operacional, menos de 5 min de busca
@@ -473,7 +476,7 @@ export function analisarLojas(dias, loja) {
   return {
     de: dias[0]?.dia || null, ate: dias[dias.length - 1]?.dia || null, fechado: dias.every((d) => d.fechado), lido_em: dias.map((d) => d.lido_em).sort().pop() || null,
     loja: escolhida ? lojas.find((l) => l.id === escolhida) : null, lojas, semRegistro,
-    prazos: PRAZO_MOD, faixaKm: FAIXA_KM, minBusca: MIN_BUSCA,
+    prazos, visao: prazos === PRAZO_CLIENTE ? 'cliente' : 'bee', faixaKm: FAIXA_KM, minBusca: MIN_BUSCA,
     geral: { ...fechar(geral), faixas: porFaixa(regs, prazoDe) },
     modalidades: mods,
     cancelamentos: {
