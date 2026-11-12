@@ -1,5 +1,5 @@
 // Transforma um dia coletado nos KPIs, rankings, orientações e lojas prioritárias do painel e do relatório.
-import { LOJAS_ENTREGADORES, PRAZO_MOD, ORDEM_MOD, P } from './coletor.mjs';
+import { IDS_PRIORITARIAS, LOJAS_ENTREGADORES, PRAZO_MOD, ORDEM_MOD, P } from './coletor.mjs';
 
 export const PRIORITARIAS = ['678', '7300', '933', '495', '890', '7362', '839', '7356', '63', '715', '7515'];
 const MIN_DEMANDA_TAXA = 10;   // volume mínimo para taxa e tempo médio entrarem em ranking ou orientação
@@ -422,9 +422,15 @@ function porFaixa(regs, prazoDe) {
 // Visão cliente: o prazo que o cliente enxerga em cada modalidade, o dobro do prazo da operação Bee.
 export const PRAZO_CLIENTE = { 'Super Expressa': 60, Expressa: 120, 'Econômica': 240 };
 
-export function analisarLojas(dias, loja, prazos = PRAZO_MOD) {
+// Loja prioritária (ou escolhida) sem pedido no período continua na lista, com zero, pelo nome do catálogo.
+function completarLojas(nomes, demanda, catalogo, loja) {
+  for (const id of [...IDS_PRIORITARIAS, ...(loja ? [String(loja)] : [])]) if (!nomes[id] && catalogo[id]) { nomes[id] = catalogo[id]; demanda[id] = 0; }
+}
+
+export function analisarLojas(dias, loja, prazos = PRAZO_MOD, catalogo = {}) {
   const nomes = {}, demanda = {};
   for (const d of dias) for (const [id, l] of Object.entries(d.lojas)) { nomes[id] = l.n; demanda[id] = (demanda[id] || 0) + l.dem; }
+  completarLojas(nomes, demanda, catalogo, loja);
   const lojas = Object.keys(nomes).map((id) => ({ id, ...identificar(nomes[id]), dem: demanda[id], prio: PRIORITARIAS.includes(identificar(nomes[id]).num) }))
     .sort((a, b) => Number(b.prio) - Number(a.prio) || b.dem - a.dem);
   const escolhida = loja && nomes[loja] ? String(loja) : '';
@@ -508,9 +514,11 @@ function resumoCanc(regs, cancs) {
     antesAceite: antes, pctAntes: pct(antes, cancs.length), medianaBusca: mediana, mediaBusca: media(mbs.reduce((t, v) => t + v, 0), mbs.length) };
 }
 
-export function analisarCancelamentos(dias, loja) {
+export function analisarCancelamentos(dias, loja, catalogo = {}) {
   const nomes = {}, demanda = {}, cancPorLoja = {};
   for (const d of dias) for (const [id, l] of Object.entries(d.lojas)) { nomes[id] = l.n; demanda[id] = (demanda[id] || 0) + l.dem; cancPorLoja[id] = (cancPorLoja[id] || 0) + l.canc; }
+  completarLojas(nomes, demanda, catalogo, loja);
+  for (const id of Object.keys(nomes)) cancPorLoja[id] ||= 0;
   const lojas = Object.keys(nomes).map((id) => ({ id, ...identificar(nomes[id]), dem: demanda[id], canc: cancPorLoja[id], prio: PRIORITARIAS.includes(identificar(nomes[id]).num) }))
     .sort((a, b) => Number(b.prio) - Number(a.prio) || b.canc - a.canc || b.dem - a.dem);
   const escolhida = loja && nomes[loja] ? String(loja) : '';

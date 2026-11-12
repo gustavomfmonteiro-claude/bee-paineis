@@ -850,7 +850,7 @@ function blocoCancPrioridade(a) {
   const ls = a.prioridade;
   const antes = (l) => l.cancelamentos.filter((c) => c.fase === 'Antes do aceite').length;
   const linha = (l) => (l.semPedidos
-    ? `<tr><td class="loja">${esc(l.num)}</td><td class="forte">0</td><td>—</td><td>0</td><td>0</td><td>0</td><td class="txt">Sem pedidos ${neste()}</td></tr>`
+    ? `<tr><td class="loja">${esc(l.num)}${l.bairro ? ' · ' + esc(l.bairro) : ''}${l.band ? `<small>${l.band}</small>` : ''}</td><td class="forte">0</td><td>—</td><td>0</td><td>0</td><td>0</td><td class="txt">Sem pedidos ${neste()}</td></tr>`
     : `<tr><td class="loja">${esc(l.num)} · ${esc(l.bairro)}<small>${l.band}</small></td><td class="forte">${num(l.canc)}</td><td>${pc(l.taxaCanc)}</td><td>${num(l.cOp)}</td><td>${num(l.c05)}</td><td>${num(antes(l))}</td><td class="txt">${l.motivos.length ? `${esc(l.motivos[0].motivo)} (${num(l.motivos[0].n)})` : '—'}</td></tr>`);
   const total = ls.reduce((t, l) => t + (l.canc || 0), 0);
   const opcoes = [['todas', 'Todas as lojas'], ...ls.map((l) => [l.num, 'Loja ' + l.num])].map(([v, r]) => `<option value="${v}"${v === filtroCanc ? ' selected' : ''}>${r}</option>`).join('');
@@ -865,7 +865,7 @@ const celulasMod = (l) => (l.mods || []).filter((x) => x.prazo).map((x) => `<div
 
 function blocoPrioridade(a) {
   const cards = a.prioridade.map((l) => {
-    if (l.semPedidos) return `<div class="card"><h3>Loja ${esc(l.num)}</h3><p class="vazio">Sem pedidos ${neste()}.</p></div>`;
+    if (l.semPedidos) return `<div class="card"><h3>Loja ${esc(l.num)}${l.bairro ? ' · ' + esc(l.bairro) : ''}</h3>${l.band ? `<div class="sub">${l.band === 'EF' ? 'Extrafarma' : 'Pague Menos'}</div>` : ''}<p class="vazio">Sem pedidos ${neste()}.</p></div>`;
     const motivos = l.motivos.length ? l.motivos.map((m) => `<div class="motivo${m.op ? ' op' : ''}"><div class="tt">${esc(m.motivo)}${m.op ? '<span class="tag">Operacional</span>' : ''}</div><div class="vv">${num(m.n)}${m.c05 ? ` · ${num(m.c05)} em 0 a 5 min` : ''}</div><div class="bar"><i style="width:${(100 * m.n) / l.canc}%"></i></div></div>`).join('') : `<p class="vazio">Nenhum cancelamento ${neste()}.</p>`;
     const lista = l.cancelamentos.length ? `<details data-chave="canc-${esc(l.num)}"><summary>${l.cancelamentos.length === 1 ? 'Ver o cancelamento' : `Ver os ${num(l.cancelamentos.length)} cancelamentos, um a um`}</summary><div class="rolagem"><table><thead><tr><th>Hora</th><th class="txt">Modalidade</th><th>Até cancelar</th><th class="txt">Fase</th><th class="txt">Motivo</th><th>Pedido</th></tr></thead><tbody>${l.cancelamentos.map((c) => `<tr><td class="nw">${esc(horaCanc(c))}</td><td class="txt">${esc(c.mod || '—')}</td><td>${min(c.min)}</td><td class="txt">${esc(c.fase)}</td><td class="txt">${esc(c.motivo)}</td><td>${esc(c.id)}</td></tr>`).join('')}</tbody></table></div></details>` : '';
     return `<div class="card"><h3>Loja ${esc(l.num)} · ${esc(l.bairro)}</h3><div class="sub">${l.band === 'EF' ? 'Extrafarma' : 'Pague Menos'}</div>

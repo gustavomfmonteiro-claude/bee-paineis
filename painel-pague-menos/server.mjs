@@ -296,6 +296,14 @@ async function completarEntregadores() {
 // --------------------------------------------------------------------- dados
 // Sem filtro mostra o dia mais recente. Com `de` e `ate` soma os dias do período que existem no histórico.
 const ehData = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+// Prioritária sem pedido no período: o cartão mostra o nome e o bairro, não só o número.
+function comNomePrioritarias(a) {
+  const cat = catalogoNomes(), porNum = {};
+  for (const [id, n] of Object.entries(cat)) { const m = n.match(/^\s*(\d+)\s*-\s*(PAGUE MENOS|EXTRAFARMA)\s*-\s*(.+?)\s*$/i); if (m) porNum[m[1]] = { id, nome: n, bairro: m[3], band: /EXTRAFARMA/i.test(n) ? 'EF' : 'PM' }; }
+  a.prioridade = a.prioridade.map((p) => (p.semPedidos && porNum[p.num] ? { ...p, ...porNum[p.num] } : p));
+  return a;
+}
+
 function montarDados(diaPedido, dePedido, atePedido) {
   const lista = Object.keys(historico).sort().reverse();
   let de = ehData(dePedido) ? dePedido : null, ate = ehData(atePedido) ? atePedido : null;
@@ -309,7 +317,7 @@ function montarDados(diaPedido, dePedido, atePedido) {
   return JSON.stringify({
     gerado_em: new Date().toISOString(),
     dias: lista.map((d) => ({ dia: d, fechado: !!historico[d].fechado })),
-    atual: base ? analisarDia(base) : null,
+    atual: base ? comNomePrioritarias(analisarDia(base)) : null,
     periodoPedido: de || ate ? { de, ate, vazio: !noPeriodo.length } : null,
     entregadores: rankingEntregadores(porDia, hoje()),
     coletas: [...coletas].reverse().slice(0, 15),
@@ -321,6 +329,14 @@ function montarDados(diaPedido, dePedido, atePedido) {
 
 // Análise de lojas: mesmo período do filtro De/Até; sem período, o dia mais recente.
 // Mesmo período da Análise de lojas; `analisar` escolhe a análise (lojas ou cancelamentos).
+// Nome de toda loja conhecida (histórico + cadastro do relatório de visitas): loja sem pedido no período
+// continua aparecendo com o nome certo.
+function catalogoNomes() {
+  const c = { ...(VISITAS?.nomesCadastro || {}) };
+  for (const d of Object.values(historico)) for (const [id, l] of Object.entries(d.lojas)) c[id] = l.n;
+  return c;
+}
+
 function montarLojas(dePedido, atePedido, loja, analisar = analisarLojas) {
   const lista = Object.keys(historico).sort();
   let de = ehData(dePedido) ? dePedido : null, ate = ehData(atePedido) ? atePedido : null;
@@ -328,7 +344,7 @@ function montarLojas(dePedido, atePedido, loja, analisar = analisarLojas) {
   let dias = de || ate ? lista.filter((d) => (!de || d >= de) && (!ate || d <= ate)) : [];
   const vazio = (de || ate) && !dias.length;
   if (!dias.length && lista.length) dias = [lista[lista.length - 1]];
-  const r = dias.length ? analisar(dias.map((d) => historico[d]), /^\d+$/.test(loja || '') ? loja : '') : null;
+  const r = dias.length ? analisar(dias.map((d) => historico[d]), /^\d+$/.test(loja || '') ? loja : '', catalogoNomes()) : null;
   return JSON.stringify({ gerado_em: new Date().toISOString(), primeiro: lista[0] || null, ultimo: lista[lista.length - 1] || null, periodoVazio: !!vazio, analise: r });
 }
 
@@ -386,7 +402,7 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     // visao=cliente: OTD e faixas contra o prazo do cliente (60, 120 e 240 min) em vez do prazo Bee
     const cliente = url.searchParams.get('visao') === 'cliente';
-    return res.end(montarLojas(url.searchParams.get('de'), url.searchParams.get('ate'), url.searchParams.get('loja'), cliente ? (d, l) => analisarLojas(d, l, PRAZO_CLIENTE) : analisarLojas));
+    return res.end(montarLojas(url.searchParams.get('de'), url.searchParams.get('ate'), url.searchParams.get('loja'), (d, l, c) => analisarLojas(d, l, cliente ? PRAZO_CLIENTE : undefined, c)));
   }
   if (url.pathname === '/api/visitas') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
