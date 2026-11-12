@@ -30,8 +30,8 @@ export const P = { loja: 0, mod: 1, st: 2, hora: 3, aceite: 4, semBusca: 5, p1: 
 const um = (v) => (v == null ? null : Math.round(v * 1000) / 1000);
 const espera = (ms) => new Promise((s) => setTimeout(s, ms));
 
-// Ids de merchant, do cadastro de lojas: 678, 7300, 933, 495, 890, 7362, 839, 7356
-export const IDS_PRIORITARIAS = ['114197', '145754', '145862', '106419', '145854', '146414', '145810', '145743'];
+// Ids de merchant, do cadastro de lojas: 678, 7300, 933, 495, 890, 7362, 839, 7356, 63, 715, 7515
+export const IDS_PRIORITARIAS = ['114197', '145754', '145862', '106419', '145854', '146414', '145810', '145743', '145835', '145894', '145271'];
 // 933, 495 e 7362: lojas com ranking de entregadores
 export const LOJAS_ENTREGADORES = { 145862: '933 · Centro · Pague Menos', 106419: '495 · Tamatanduba · Pague Menos', 146414: '7362 · Tamatanduba · Extrafarma' };
 

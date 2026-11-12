@@ -343,7 +343,7 @@ function montarVisitas(dePedido, atePedido) {
   const visit = new Map(VISITAS.visitadas.map((v) => [String(v.id), v]));
   const inativas = new Set(VISITAS.inativas.map(String));
   const ids = [...new Set([...LOJAS_CADASTRO.map(String), ...visit.keys()])].filter((id) => !inativas.has(id));
-  const PRIO = ['678', '7300', '933', '495', '890', '7362', '839', '7356'];
+  const PRIO = ['678', '7300', '933', '495', '890', '7362', '839', '7356', '63', '715', '7515'];
   const lojas = ids.map((id) => {
     const n = nomes[id] || 'Loja ' + id, m = n.match(/^\s*(\d+)\s*-\s*(PAGUE MENOS|EXTRAFARMA)\s*-\s*(.+?)\s*$/i);
     const l = linha[id], v = visit.get(id);

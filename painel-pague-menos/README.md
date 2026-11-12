@@ -1,7 +1,7 @@
 # Painel Pague Menos + Extrafarma — Bee Delivery Fortaleza
 
 Demanda operacional do grupo: OTD de 15 min em cada ponta, aceite, cancelamentos, finalizações, rankings
-de lojas, orientação de ajustes, detalhe das lojas prioritárias (678, 7300, 933, 495, 890, 7362, 839 e 7356), entregas buscando nessas
+de lojas, orientação de ajustes, detalhe das lojas prioritárias (678, 7300, 933, 495, 890, 7362, 839, 7356, 63, 715 e 7515), entregas buscando nessas
 lojas e ranking de entregadores de 933, 495 e 7362. Somente GET na API da Bee.
 
 ```

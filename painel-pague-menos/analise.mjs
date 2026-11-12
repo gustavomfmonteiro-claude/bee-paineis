@@ -1,7 +1,7 @@
 // Transforma um dia coletado nos KPIs, rankings, orientações e lojas prioritárias do painel e do relatório.
 import { LOJAS_ENTREGADORES, PRAZO_MOD, ORDEM_MOD, P } from './coletor.mjs';
 
-export const PRIORITARIAS = ['678', '7300', '933', '495', '890', '7362', '839', '7356'];
+export const PRIORITARIAS = ['678', '7300', '933', '495', '890', '7362', '839', '7356', '63', '715', '7515'];
 const MIN_DEMANDA_TAXA = 10;   // volume mínimo para taxa e tempo médio entrarem em ranking ou orientação
 const TOP = 10;
 // Folga das comparações com prazo: os tempos de cada pedido são gravados com 3 casas (0,06 s), então
