@@ -155,8 +155,12 @@ function somarUso(chave, r, extra) {
 // ---------------------------------------------------------------------- leituras
 let lendo = false, ultimoErro = null;
 
+// Se uma carga longa (histórico) estiver lendo, a leitura de 5 em 5 min fica pendente e roda entre um dia e outro.
+let indicadoresPendentes = false;
 async function lerIndicadores() {
-  if (lendo || !temAcesso()) return;
+  if (!temAcesso()) return;
+  if (lendo) { indicadoresPendentes = true; return; }
+  indicadoresPendentes = false;
   lendo = true;
   try {
     // Virou o dia: a primeira leitura também fecha ontem até 23:59.
@@ -214,9 +218,10 @@ async function atualizarVersao() {
   }
 }
 
-// Histórico desde HISTORICO_DESDE (padrão 01/10/2026): dia fechado que ainda não existe aqui é lido, um por vez,
-// do mais recente ao mais antigo, só nas lojas do grupo. Motivo já em cache não é pedido de novo.
-const HISTORICO_DESDE = /^\d{4}-\d{2}-\d{2}$/.test(cfg('HISTORICO_DESDE', '')) ? cfg('HISTORICO_DESDE') : '2026-10-01';
+// Histórico desde HISTORICO_DESDE (padrão 01/03/2026, primeiro dia com pedidos na API): dia fechado que ainda não
+// existe aqui é lido, um por vez, do mais recente ao mais antigo, só nas lojas do grupo. Motivo já em cache não é
+// pedido de novo. Entre um dia e outro, a leitura dos indicadores que ficou pendente roda antes.
+const HISTORICO_DESDE = /^\d{4}-\d{2}-\d{2}$/.test(cfg('HISTORICO_DESDE', '')) ? cfg('HISTORICO_DESDE') : '2026-03-01';
 async function completarHistorico() {
   const ontem = somaDias(hoje(), -1), faltam = [];
   for (let d = ontem; d >= HISTORICO_DESDE; d = somaDias(d, -1)) if (!historico[d]) faltam.push(d);
@@ -233,6 +238,7 @@ async function completarHistorico() {
       lendo = false;
       emitir();
     }
+    if (indicadoresPendentes) await lerIndicadores();
   }
 }
 

@@ -570,8 +570,14 @@ export function analisarCancelamentos(dias, loja) {
   const motivos = mapa((c) => c.m || 'Sem motivo informado'), grupos = mapa((c) => c.g), fases = mapa((c) => c.f);
 
   // ranking das lojas (só na visão do grupo)
+  // agrupa uma vez por loja: com o ano inteiro, filtrar todos os pedidos a cada loja ficaria lento
+  const rPorLoja = new Map(), cPorLoja = new Map();
+  if (!escolhida) {
+    for (const r of todosR) { const k = r[P.loja]; if (!rPorLoja.has(k)) rPorLoja.set(k, []); rPorLoja.get(k).push(r); }
+    for (const c of todosC) { if (!cPorLoja.has(c.l)) cPorLoja.set(c.l, []); cPorLoja.get(c.l).push(c); }
+  }
   const ranking = escolhida ? [] : lojas.filter((l) => l.canc > 0).map((l) => {
-    const rs = todosR.filter((r) => r[P.loja] === l.id), cs = todosC.filter((c) => c.l === l.id);
+    const rs = rPorLoja.get(l.id) || [], cs = cPorLoja.get(l.id) || [];
     const r = resumoCanc(rs, cs);
     const principal = (() => { const m = new Map(); for (const c of cs) m.set(c.m || 'Sem motivo informado', (m.get(c.m || 'Sem motivo informado') || 0) + 1); return [...m.entries()].sort((a, b) => b[1] - a[1])[0]; })();
     return { id: l.id, num: l.num, bairro: l.bairro, band: l.band, prio: l.prio, ...r, principal: principal ? { motivo: principal[0], n: principal[1] } : null };
