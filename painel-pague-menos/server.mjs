@@ -8,8 +8,8 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { configurar, coletar, entregadoresProximos, lerBuscando, lerEntregadores, pedidoBuscando, temAcesso, VERSAO_DIA } from './coletor.mjs';
-import { analisarCancelamentos, analisarDia, analisarLojas, evolucao, PRAZO_CLIENTE, rankingEntregadores, somarDias } from './analise.mjs';
+import { configurar, coletar, entregadoresProximos, IDS_PRIORITARIAS, lerBuscando, lerEntregadores, pedidoBuscando, temAcesso, VERSAO_DIA } from './coletor.mjs';
+import { analisarCancelamentos, analisarDia, analisarLojas, evolucao, PRAZO_CLIENTE, PRIORITARIAS, rankingEntregadores, somarDias } from './analise.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 let arqEnv = '';
@@ -415,6 +415,28 @@ function montarBlack() {
     base: { de: baseDias[0] || null, ate: baseDias[baseDias.length - 1] || null, dias: baseDias.length, antesDaSemana: baseDias.length === BLACK.dias && baseDias[baseDias.length - 1] === somaDias(d0, -1) }, porDia, lojas });
 }
 
+// Evolução da demanda: pedidos, finalizadas e canceladas de cada loja, dia a dia, no período do filtro.
+// A página agrupa por dia, semana, quinzena ou mês e calcula crescimento e queda; aqui só os contadores.
+const PRIO_NUMS = () => new Set(PRIORITARIAS);
+function montarEvoLojas(dePedido, atePedido) {
+  const lista = Object.keys(historico).sort();
+  let de = ehData(dePedido) ? dePedido : null, ate = ehData(atePedido) ? atePedido : null;
+  if (de && ate && de > ate) [de, ate] = [ate, de];
+  let dias = de || ate ? lista.filter((d) => (!de || d >= de) && (!ate || d <= ate)) : [];
+  if (!dias.length && lista.length) dias = lista.slice(-30);
+  const cat = catalogoNomes(), prio = PRIO_NUMS(), lojas = {};
+  dias.forEach((d, i) => {
+    for (const [id, l] of Object.entries(historico[d].lojas)) {
+      const x = (lojas[id] ||= { dem: Array(dias.length).fill(0), fin: Array(dias.length).fill(0), canc: Array(dias.length).fill(0) });
+      x.dem[i] = l.dem; x.fin[i] = l.fin; x.canc[i] = l.canc;
+    }
+  });
+  const info = (id) => { const n = cat[id] || 'Loja ' + id, m = n.match(/^\s*(\d+)\s*-\s*(PAGUE MENOS|EXTRAFARMA)\s*-\s*(.+?)\s*$/i); return { id, nome: n, num: m ? m[1] : '', band: /EXTRAFARMA/i.test(n) ? 'EF' : 'PM', bairro: m ? m[3] : n, prio: m ? prio.has(m[1]) : false }; };
+  for (const id of IDS_PRIORITARIAS) lojas[id] ||= { dem: Array(dias.length).fill(0), fin: Array(dias.length).fill(0), canc: Array(dias.length).fill(0) };
+  return JSON.stringify({ gerado_em: new Date().toISOString(), hoje: hoje(), dias, primeiro: lista[0] || null,
+    lojas: Object.entries(lojas).map(([id, x]) => ({ ...info(id), ...x })) });
+}
+
 // ---------------------------------------------------------------------- web
 const clientes = new Set();
 function emitir(evento) { for (const c of clientes) c.write(evento ? `event: ${evento}\ndata: 1\n\n` : 'data: atualizado\n\n'); }
@@ -439,6 +461,10 @@ http.createServer((req, res) => {
     // visao=cliente: OTD e faixas contra o prazo do cliente (60, 120 e 240 min) em vez do prazo Bee
     const cliente = url.searchParams.get('visao') === 'cliente';
     return res.end(montarLojas(url.searchParams.get('de'), url.searchParams.get('ate'), url.searchParams.get('loja'), (d, l, c) => analisarLojas(d, l, cliente ? PRAZO_CLIENTE : undefined, c)));
+  }
+  if (url.pathname === '/api/evolucao-lojas') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    return res.end(montarEvoLojas(url.searchParams.get('de'), url.searchParams.get('ate')));
   }
   if (url.pathname === '/api/black') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });

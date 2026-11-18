@@ -390,6 +390,17 @@ section.hud::after{bottom:-1px;right:-1px;border-left:0;border-top:0;border-bott
 .grupo-bf{border:1px solid var(--line);border-top:3px solid var(--g);border-radius:12px;padding:12px 14px;background:rgba(17,26,41,.5)}
 .grupo-bf h3{margin:0 0 2px;font:700 14px var(--display)}
 .grupo-bf .numeros{grid-template-columns:repeat(3,minmax(0,1fr));margin:8px 0 0}
+.pk2{position:relative;margin-top:10px;display:grid;gap:6px}
+.pk2-linha{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pk2-abre{display:inline-flex;align-items:center;justify-content:space-between;gap:12px;min-width:min(100%,380px);min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font:600 13.5px var(--body);cursor:pointer;text-align:left}
+.pk2-abre:hover,.pk2-abre[aria-expanded="true"]{border-color:var(--bee)}
+.pk2-abre svg{flex:none;color:var(--ink3);transition:transform .15s}.pk2-abre[aria-expanded="true"] svg{transform:rotate(180deg)}
+.pk-bt.ativo{border-color:var(--bee-l);color:var(--ink);background:var(--bee-d)}
+.pk2-pop{position:absolute;z-index:6;top:100%;left:0;margin-top:6px;width:min(760px,100%);display:grid;gap:8px;padding:12px;border:1px solid var(--line2);border-radius:12px;background:#0B1220;box-shadow:0 18px 50px -12px rgba(0,0,0,.85)}
+.pk2-pop[hidden]{display:none}
+.pk2-pop .pk-lista{max-height:320px}
+table.rank-evo tr,table.prio-evo tr{cursor:pointer}
+tr.prio-l td.loja{box-shadow:inset 3px 0 0 var(--bee)}
 .picker{margin-top:10px;display:grid;gap:8px}
 .pk-topo{display:flex;align-items:baseline;gap:10px}.pk-topo .fp-rot{margin:0}
 .pk-linha{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -528,7 +539,7 @@ td.quente{color:var(--warn);font-weight:600}
       <span class="vivo" id="vivo"><i></i><span>conectando</span></span>
     </div>
   </header>
-  <nav class="abas" role="tablist" aria-label="Visões do painel"><button type="button" role="tab" data-aba="vivo" aria-selected="true"><span class="ponto" aria-hidden="true"></span><span class="rot-aba"><span class="lg">Operação </span>ao vivo</span></button><button type="button" role="tab" data-aba="gerais" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="rot-aba"><span class="lg">Dados </span>gerais</span></button><button type="button" role="tab" data-aba="lojas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11h18V9M9 20v-6h6v6"/></svg><span class="rot-aba"><span class="lg">Análise de </span>lojas</span></button><button type="button" role="tab" data-aba="canc" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg><span class="rot-aba"><span class="lg">Análise de </span>cancelamentos</span></button><button type="button" role="tab" data-aba="visitas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span class="rot-aba"><span class="lg">Visitas </span>externas</span></button><button type="button" role="tab" data-aba="black" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span class="rot-aba">Black<span class="lg"> Friday</span></span></button></nav>
+  <nav class="abas" role="tablist" aria-label="Visões do painel"><button type="button" role="tab" data-aba="vivo" aria-selected="true"><span class="ponto" aria-hidden="true"></span><span class="rot-aba"><span class="lg">Operação </span>ao vivo</span></button><button type="button" role="tab" data-aba="gerais" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="rot-aba"><span class="lg">Dados </span>gerais</span></button><button type="button" role="tab" data-aba="lojas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11h18V9M9 20v-6h6v6"/></svg><span class="rot-aba"><span class="lg">Análise de </span>lojas</span></button><button type="button" role="tab" data-aba="evolucao" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg><span class="rot-aba">Evolução</span></button><button type="button" role="tab" data-aba="canc" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg><span class="rot-aba"><span class="lg">Análise de </span>cancelamentos</span></button><button type="button" role="tab" data-aba="visitas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span class="rot-aba"><span class="lg">Visitas </span>externas</span></button><button type="button" role="tab" data-aba="black" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span class="rot-aba">Black<span class="lg"> Friday</span></span></button></nav>
   <div class="filtro-periodo" id="filtroPeriodo" hidden>
     <div><span class="fp-rot">Período</span><div class="fp-presets" role="group" aria-label="Período rápido">
       <button type="button" data-p="hoje">Hoje</button><button type="button" data-p="ontem">Ontem</button><button type="button" data-p="7">7 dias</button><button type="button" data-p="30">30 dias</button><button type="button" data-p="mes">Este mês</button><button type="button" data-p="mesAnt">Mês anterior</button><button type="button" data-p="ano">Este ano</button></div></div>
@@ -539,6 +550,7 @@ td.quente{color:var(--warn);font-weight:600}
   <div id="conteudo"></div>
   <div id="gerais" hidden></div>
   <div id="analise" hidden></div>
+  <div id="evolucao" hidden></div>
   <div id="cancel" hidden></div>
   <div id="visitas" hidden></div>
   <div id="black" hidden></div>
@@ -1234,6 +1246,7 @@ async function carregar() {
   if (aba === 'canc') carregarCanc();
   if (aba === 'visitas') carregarVisitas();
   if (aba === 'black') carregarBlack();
+  if (aba === 'evolucao') carregarEvo();
   setTimeout(() => document.body.classList.add('sem-entrada'), 700);
 }
 let periodoEmVoo = false;
@@ -1328,6 +1341,7 @@ function recarregarPeriodo() {
   if (aba === 'lojas') carregarLojas();
   if (aba === 'canc') carregarCanc();
   if (aba === 'visitas') carregarVisitas();
+  if (aba === 'evolucao') carregarEvo();
 }
 function mudarPeriodo() {
   let de = $('#de').value, ate = $('#ate').value;
@@ -1441,7 +1455,7 @@ addEventListener('scroll', () => { dica.style.display = 'none'; }, { passive: tr
 // Visão da Análise de lojas: Bee (prazo da operação: 30, 60 e 120 min) ou cliente (60, 120 e 240 min).
 let visaoLojas = 'bee';
 try { if (localStorage.getItem('pm-visao') === 'cliente') visaoLojas = 'cliente'; } catch {}
-let aba = { '#lojas': 'lojas', '#gerais': 'gerais', '#cancelamentos': 'canc', '#visitas': 'visitas', '#black': 'black' }[location.hash] || 'vivo', lojaSel = '', lojasDados = null, lojasEmVoo = false;
+let aba = { '#lojas': 'lojas', '#gerais': 'gerais', '#cancelamentos': 'canc', '#evolucao': 'evolucao', '#visitas': 'visitas', '#black': 'black' }[location.hash] || 'vivo', lojaSel = '', lojasDados = null, lojasEmVoo = false;
 try { lojaSel = localStorage.getItem('pm-loja') || ''; } catch {}
 // Análise de lojas aceita várias lojas ao mesmo tempo (soma as entregas); a de cancelamentos segue com uma.
 let lojasSel = [], pkPend = null, pkBusca = '', evoGranL = 'semana';
@@ -1456,6 +1470,7 @@ function mostrarAba() {
   $('#conteudo').hidden = aba !== 'vivo';
   $('#gerais').hidden = aba !== 'gerais';
   $('#analise').hidden = aba !== 'lojas';
+  $('#evolucao').hidden = aba !== 'evolucao';
   $('#cancel').hidden = aba !== 'canc';
   $('#visitas').hidden = aba !== 'visitas';
   $('#black').hidden = aba !== 'black';
@@ -1463,6 +1478,7 @@ function mostrarAba() {
   desenharFiltro();
   if (aba === 'gerais') { if (dadosP) desenharGerais(); if (dados) carregarPeriodo(); }
   else if (aba === 'lojas') { if (dados) carregarLojas(); }
+  else if (aba === 'evolucao') { if (evoDados) desenharEvo(); if (dados) carregarEvo(); }
   else if (aba === 'canc') { if (cancDados) desenharCanc(); if (dados) carregarCanc(); }
   else if (aba === 'visitas') { if (visDados) desenharVisitas(); if (dados) carregarVisitas(); }
   else if (aba === 'black') { if (blackDados) desenharBlack(); carregarBlack(); }
@@ -1488,20 +1504,30 @@ function tabelaFaixas(fs, comMod) {
 
 // Seletor de lojas da Análise de lojas: pesquisa por nome ou número, várias lojas marcadas de uma vez,
 // atalho para todas as prioritárias. A escolha só vale ao clicar em "Aplicar".
-function seletorLojas(a) {
+// Seletor de lojas compacto: uma linha com o resumo; pesquisa, lista e marcação abrem num painel só ao clicar.
+// Serve à Análise de lojas e à Evolução (a escolha é a mesma nas duas). Só vale ao clicar em "Aplicar".
+let pkAberto = false;
+function seletorLojas(lojas) {
   if (!pkPend) pkPend = new Set(lojasSel);
-  const prio = a.lojas.filter((l) => l.prio);
-  const chips = [...pkPend].map((id) => a.lojas.find((l) => l.id === id)).filter(Boolean)
-    .map((l) => `<button type="button" class="pk-chip${l.prio ? ' prio' : ''}" data-pk-tira="${l.id}">${esc(l.num || '—')} · ${esc(l.bairro)} <span aria-hidden="true">×</span></button>`).join('');
+  const prio = lojas.filter((l) => l.prio), porId = Object.fromEntries(lojas.map((l) => [l.id, l]));
+  const ap = lojasSel.map((id) => porId[id]).filter(Boolean);
+  const todasPrio = ap.length === prio.length && prio.every((l) => lojasSel.includes(l.id));
+  const resumo = !ap.length ? 'Grupo inteiro · todas as lojas' : ap.length === 1 ? `${esc(ap[0].num)} · ${esc(ap[0].bairro)}` : todasPrio ? `${num(ap.length)} lojas prioritárias` : `${num(ap.length)} lojas: ${ap.slice(0, 3).map((l) => esc(l.num)).join(', ')}${ap.length > 3 ? ` e mais ${num(ap.length - 3)}` : ''}`;
   const mudou = [...pkPend].sort().join() !== [...lojasSel].sort().join();
-  return `<div class="picker">
-    <div class="pk-topo"><span class="fp-rot">Lojas</span><span class="sub">${pkPend.size ? `${num(pkPend.size)} ${pkPend.size === 1 ? 'loja marcada' : 'lojas marcadas, somadas'}` : 'nenhuma marcada: análise geral do grupo'}</span></div>
-    <div class="pk-linha"><input id="pkBusca" type="search" placeholder="Pesquisar loja pelo nome ou número" aria-label="Pesquisar loja" value="${esc(pkBusca)}">
-      <button type="button" class="pk-bt" data-pk="prio">Todas as prioritárias (${num(prio.length)})</button>
-      <button type="button" class="pk-bt" data-pk="limpar">Análise geral</button>
-      <button type="button" class="pk-bt aplicar${mudou ? ' pede' : ''}" data-pk="aplicar"${mudou ? '' : ' disabled'}>Aplicar seleção</button></div>
-    ${chips ? `<div class="pk-chips">${chips}</div>` : ''}
-    <div class="pk-lista" id="pkLista">${listaLojasPk(a)}</div></div>`;
+  return `<div class="pk2">
+    <span class="fp-rot">Lojas</span>
+    <div class="pk2-linha">
+      <button type="button" class="pk2-abre" data-pk="abrir" aria-expanded="${pkAberto}"><span>${resumo}</span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <button type="button" class="pk-bt${todasPrio ? ' ativo' : ''}" data-pk="prio">Todas as prioritárias (${num(prio.length)})</button>
+      <button type="button" class="pk-bt${!ap.length ? ' ativo' : ''}" data-pk="limpar">Grupo inteiro</button>
+    </div>
+    <div class="pk2-pop"${pkAberto ? '' : ' hidden'}>
+      <div class="pk-linha"><input id="pkBusca" type="search" placeholder="Pesquisar loja pelo nome ou número" aria-label="Pesquisar loja" value="${esc(pkBusca)}">
+        <span class="sub">${pkPend.size ? `${num(pkPend.size)} marcada${pkPend.size > 1 ? 's' : ''}` : 'nenhuma marcada'}</span>
+        <button type="button" class="pk-bt" data-pk="nenhuma"${pkPend.size ? '' : ' disabled'}>Desmarcar todas</button>
+        <button type="button" class="pk-bt aplicar${mudou ? ' pede' : ''}" data-pk="aplicar"${mudou ? '' : ' disabled'}>Aplicar</button></div>
+      <div class="pk-lista" id="pkLista">${listaLojasPk({ lojas })}</div>
+    </div></div>`;
 }
 function listaLojasPk(a) {
   const f = pkBusca.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -1511,24 +1537,34 @@ function listaLojasPk(a) {
   return (p.length ? `<div class="pk-grupo">Lojas prioritárias</div>${p.map(linha).join('')}` : '') + (d.length ? `<div class="pk-grupo">Demais lojas, da maior demanda para a menor</div>${d.map(linha).join('')}` : '') || '<p class="vazio">Nenhuma loja com esse nome ou número.</p>';
 }
 function ligarSeletorLojas(a) {
-  const box = document.querySelector('#analise .picker');
+  const box = document.querySelector(`#${aba === 'evolucao' ? 'evolucao' : 'analise'} .pk2`);
   if (!box) return;
-  const redesenhar = () => { const q = $('#pkBusca'), pos = q?.selectionStart; box.outerHTML = seletorLojas(a); ligarSeletorLojas(a); if (pos != null && document.activeElement !== $('#pkBusca')) { const n = $('#pkBusca'); n.focus(); n.setSelectionRange(pos, pos); } };
-  $('#pkBusca').addEventListener('input', (e) => { pkBusca = e.target.value; $('#pkLista').innerHTML = listaLojasPk(a); });
+  const redesenhar = () => { const pos = $('#pkBusca')?.selectionStart; box.outerHTML = seletorLojas(a.lojas); ligarSeletorLojas(a); const n = $('#pkBusca'); if (n && pkAberto && pos != null) { n.focus(); n.setSelectionRange(pos, pos); } };
+  $('#pkBusca')?.addEventListener('input', (e) => { pkBusca = e.target.value; $('#pkLista').innerHTML = listaLojasPk(a); });
   box.addEventListener('change', (e) => { const id = e.target.dataset?.pkId; if (!id) return; if (e.target.checked) pkPend.add(id); else pkPend.delete(id); redesenhar(); });
   box.addEventListener('click', (e) => {
-    const tira = e.target.closest('[data-pk-tira]'), bt = e.target.closest('[data-pk]');
-    if (tira) { pkPend.delete(tira.dataset.pkTira); redesenhar(); return; }
+    const bt = e.target.closest('[data-pk]');
     if (!bt) return;
-    if (bt.dataset.pk === 'prio') { for (const l of a.lojas.filter((x) => x.prio)) pkPend.add(l.id); redesenhar(); }
-    if (bt.dataset.pk === 'limpar') { pkPend = new Set(); aplicarLojas(); }
-    if (bt.dataset.pk === 'aplicar') aplicarLojas();
+    const acao = bt.dataset.pk;
+    if (acao === 'abrir') { pkAberto = !pkAberto; if (!pkAberto) pkPend = new Set(lojasSel); redesenhar(); if (pkAberto) $('#pkBusca')?.focus(); }
+    if (acao === 'prio') { pkPend = new Set(a.lojas.filter((x) => x.prio).map((x) => x.id)); aplicarLojas(); }
+    if (acao === 'limpar') { pkPend = new Set(); aplicarLojas(); }
+    if (acao === 'nenhuma') { pkPend = new Set(); redesenhar(); }
+    if (acao === 'aplicar') aplicarLojas();
   });
 }
+// clique fora fecha o painel de lojas sem aplicar
+document.addEventListener('click', (e) => {
+  if (!pkAberto || e.target.closest('.pk2')) return;
+  pkAberto = false; pkPend = new Set(lojasSel);
+  const pop = document.querySelector('.pk2-pop'); if (pop) pop.hidden = true;
+  const b = document.querySelector('.pk2-abre'); if (b) b.setAttribute('aria-expanded', 'false');
+});
 function aplicarLojas() {
   lojasSel = [...pkPend];
+  pkAberto = false;
   try { localStorage.setItem('pm-lojas-sel', JSON.stringify(lojasSel)); } catch {}
-  carregarLojas();
+  if (aba === 'evolucao') desenharEvo(); else carregarLojas();
 }
 
 // Evolução da demanda das lojas escolhidas (ou do grupo), por dia, semana, quinzena ou mês, no período do filtro.
@@ -1545,44 +1581,95 @@ function agruparEvo(dias, gran, campos) {
   for (const x of dias) { const [k, rot] = chaveEvo(x.dia, gran); if (!m.has(k)) m.set(k, { k, rot, de: x.dia, ate: x.dia, n: 0, ...Object.fromEntries(campos.map((c) => [c, 0])) }); const y = m.get(k); y.ate = x.dia; y.n++; for (const c of campos) y[c] += x[c] || 0; }
   return [...m.values()];
 }
-function blocoEvoLojas(a, selec, faixaTxt) {
-  const ev = a.evolucao;
-  if (!ev?.dias?.length) return '';
-  const gran = evoGranL;
-  const per = agruparEvo(ev.dias, gran, ['dem', 'fin', 'canc', 'grupo']);
-  const hoje = hojeFort();
+// ------------------------------------------------------------ aba Evolução
+// /api/evolucao-lojas: pedidos de cada loja, dia a dia, no período. Agrupa por dia, semana, quinzena ou mês;
+// compara períodos pela média de pedidos por dia (período parcial não parece queda).
+let evoDados = null, evoEmVoo = false, evoTodas = '';
+async function carregarEvo() {
+  if (evoEmVoo) return;
+  evoEmVoo = true;
+  try { evoDados = await (await fetch('/api/evolucao-lojas?' + new URLSearchParams({ de: periodo.de, ate: periodo.ate }), { cache: 'no-store' })).json(); desenharEvo(); }
+  catch (e) { $('#evolucao').innerHTML = `<section><p class="vazio">Não foi possível carregar a evolução (${esc(e.message)}).</p></section>`; }
+  finally { evoEmVoo = false; }
+}
+function desenharEvo() {
+  const j = evoDados;
+  if (!j?.dias?.length) { $('#evolucao').innerHTML = '<section><p class="vazio">Sem dias no período.</p></section>'; return; }
+  const gran = evoGranL, dias = j.dias, hj = j.hoje;
   const pctx = (n, d) => (d ? Math.round((1000 * n) / d) / 10 : null);
-  const cats = per.map((x) => x.rot);
-  const dica = (i) => { const x = per[i]; return `<b>${esc(x.rot)}</b> · ${dataBr(x.de)}${x.ate !== x.de ? ' a ' + dataBr(x.ate) : ''}${x.ate >= hoje ? ' · parcial' : ''}<br>${num(x.dem)} pedidos · ${num(x.fin)} finalizadas · ${num(x.canc)} canceladas<br>Cancelamento ${pc(pctx(x.canc, x.dem))}${selec.length ? ` · ${pc(pctx(x.dem, x.grupo))} do grupo` : ''}`; };
-  const grafDem = graf({ tipo: 'colunas', titulo: 'Pedidos por período', altura: 270, cats, empilhado: true, rotulos: false,
-    series: [{ nome: 'Finalizadas', cor: '#3987e5', vals: per.map((x) => x.fin) }, { nome: 'Outros', cor: '#56606D', vals: per.map((x) => x.dem - x.fin - x.canc) }, { nome: 'Canceladas', cor: '#d55181', vals: per.map((x) => x.canc) }], tip: dica });
-  const grafTaxa = graf({ tipo: 'linhas', titulo: 'Taxa de cancelamento por período', altura: 200, cats, pct: true, series: [{ nome: 'Cancelamento', cor: '#d55181', vals: per.map((x) => (x.dem >= BASE_MIN_PCT ? pctx(x.canc, x.dem) : null)) }], tip: dica });
-  // variação pela média por dia: período parcial (o atual, ou o primeiro cortado pelo filtro) compara de forma justa
-  const varDia = (x, ant) => (ant && ant.dem && ant.n && x.n ? Math.round((1000 * (x.dem / x.n - ant.dem / ant.n)) / (ant.dem / ant.n)) / 10 : null);
-  const linhas = per.map((x, i) => { const ant = per[i - 1], v = varDia(x, ant);
-    return `<tr><td class="loja">${esc(x.rot)}<small>${dataBr(x.de).slice(0, 5)}${x.ate !== x.de ? '–' + dataBr(x.ate).slice(0, 5) : ''}${x.ate >= hoje ? ' · parcial' : ''}</small></td><td class="forte">${num(x.dem)}</td><td>${num(Math.round(x.dem / x.n))}</td><td>${num(x.fin)}</td><td>${num(x.canc)}</td><td>${pc(pctx(x.canc, x.dem))}</td><td>${v == null ? '—' : `<span class="delta ${v >= 5 ? 'sobe' : v <= -5 ? 'desce' : 'igual'}">${v > 0 ? '+' : ''}${num(v)}%</span>`}</td>${selec.length ? `<td>${pc(pctx(x.dem, x.grupo))}</td>` : ''}</tr>`; }).reverse().join('');
+  const lojas = j.lojas.map((l) => ({ ...l, tot: l.dem.reduce((t, v) => t + v, 0) })).sort((a, b) => Number(b.prio) - Number(a.prio) || b.tot - a.tot);
+  const porId = Object.fromEntries(lojas.map((l) => [l.id, l]));
+  const pkL = lojas.map((l) => ({ ...l, dem: l.tot }));
+  const sel = lojasSel.filter((id) => porId[id]);
+  const alvo = sel.length ? sel.map((id) => porId[id]) : lojas;
+  const serie = dias.map((d, i) => ({ dia: d, dem: alvo.reduce((t, l) => t + l.dem[i], 0), fin: alvo.reduce((t, l) => t + l.fin[i], 0), canc: alvo.reduce((t, l) => t + l.canc[i], 0), grupo: lojas.reduce((t, l) => t + l.dem[i], 0) }));
+  const per = agruparEvo(serie, gran, ['dem', 'fin', 'canc', 'grupo']);
+  const media = (x) => (x?.n ? x.dem / x.n : 0);
+  const varDia = (x, ant) => (ant && media(ant) && x?.n ? Math.round((1000 * (media(x) - media(ant))) / media(ant)) / 10 : null);
+  const ult = per[per.length - 1], ant = per[per.length - 2], pri = per[0];
+  const total = per.reduce((t, x) => t + x.dem, 0), tc = per.reduce((t, x) => t + x.canc, 0);
+  const faixa = `${dataBr(dias[0])} a ${dataBr(dias[dias.length - 1])}`;
+  const rotG = { dia: 'dia', semana: 'semana', quinzena: 'quinzena', mes: 'mês' }[gran];
+  const delta = (v) => (v == null ? '—' : `<span class="delta ${v >= 5 ? 'sobe' : v <= -5 ? 'desce' : 'igual'}">${v > 0 ? '+' : ''}${num(v)}%</span>`);
 
-  // prioritárias em destaque: as últimas colunas de período lado a lado
-  const ult = per.slice(-8);
-  const prio = ev.prioridades.map((l) => {
-    const pp = agruparEvo(Object.entries(l.dias).map(([dia, v]) => ({ dia, dem: v[0], fin: v[1], canc: v[2] })), gran, ['dem', 'fin', 'canc']);
-    const porK = Object.fromEntries(pp.map((x) => [x.k, x]));
-    const vals = ult.map((u) => ({ ...(porK[u.k] || { dem: 0, canc: 0 }), n: u.n }));
-    const tot = pp.reduce((t, x) => t + x.dem, 0), tc = pp.reduce((t, x) => t + x.canc, 0);
-    return { ...l, vals, tot, tc, varia: vals.length > 1 ? varDia(vals[vals.length - 1], vals[vals.length - 2]) : null };
-  }).sort((x, y) => Number(y.selecionada) - Number(x.selecionada) || y.tot - x.tot);
-  const maxV = Math.max(1, ...prio.flatMap((l) => l.vals.map((v) => v.dem)));
-  const cel = (v) => `<td class="hm" style="--h:${(v.dem / maxV).toFixed(2)}">${num(v.dem)}${v.dem && v.canc ? `<small class="b">${pc(pctx(v.canc, v.dem))} canc.</small>` : ''}</td>`;
-  const tabPrio = `<div class="rolagem"><table class="prio-evo"><thead><tr><th class="l">Loja prioritária</th>${ult.map((u) => `<th>${esc(u.rot)}${u.ate >= hojeFort() || (gran !== 'dia' && u.n < ({ semana: 7, quinzena: 13, mes: 28 }[gran] || 1)) ? `<small class="b">${num(u.n)} ${u.n === 1 ? 'dia' : 'dias'}${u.ate >= hojeFort() ? ' · parcial' : ''}</small>` : ''}</th>`).join('')}<th>Total no período</th><th>Cancelamento</th><th>Última × anterior<small class="b">média por dia</small></th></tr></thead><tbody>${prio.map((l) => `<tr class="${l.selecionada ? 'sel' : ''}" data-evo-loja="${l.id}"><td class="loja"><span class="star">★</span> ${esc(l.num)} · ${esc(l.bairro)}<small>${l.band}</small>${l.selecionada ? '<span class="tag" style="margin-left:6px">na análise</span>' : ''}</td>${l.vals.map(cel).join('')}<td class="forte">${num(l.tot)}</td><td>${pc(pctx(l.tc, l.tot))}</td><td>${l.varia == null ? '—' : `<span class="delta ${l.varia >= 5 ? 'sobe' : l.varia <= -5 ? 'desce' : 'igual'}">${l.varia > 0 ? '+' : ''}${num(l.varia)}%</span>`}</td></tr>`).join('')}</tbody></table></div>`;
+  // por loja: período a período, e a variação da última contra a anterior (média por dia)
+  const porLoja = (l) => {
+    const pp = agruparEvo(dias.map((d, i) => ({ dia: d, dem: l.dem[i], fin: l.fin[i], canc: l.canc[i] })), gran, ['dem', 'fin', 'canc']);
+    const u = pp[pp.length - 1], a2 = pp[pp.length - 2];
+    return { ...l, pp, u, a2, varia: varDia(u, a2), dif: u && a2 ? Math.round((media(u) - media(a2)) * 10) / 10 : 0, totC: pp.reduce((t, x) => t + x.canc, 0) };
+  };
+  const base = (sel.length ? alvo : lojas).map(porLoja);
+  const MIN = 3; // pedidos por dia, em média, em pelo menos um dos dois períodos para entrar no ranking
+  const elegiveis = base.filter((l) => l.u && l.a2 && Math.max(media(l.u), media(l.a2)) >= MIN);
+  const ganhos = [...elegiveis].filter((l) => l.dif > 0).sort((a, b) => b.dif - a.dif).slice(0, 10);
+  const perdas = [...elegiveis].filter((l) => l.dif < 0).sort((a, b) => a.dif - b.dif).slice(0, 10);
+  const nomeL = (l) => `<td class="loja">${l.prio ? '<span class="star">★</span> ' : ''}${esc(l.num || '—')} · ${esc(l.bairro)}<small>${l.band}</small></td>`;
+  const linhaRank = (l) => `<tr class="${l.prio ? 'prio-l' : ''}" data-evo-loja="${l.id}">${nomeL(l)}<td>${num(Math.round(media(l.a2) * 10) / 10)}</td><td class="forte">${num(Math.round(media(l.u) * 10) / 10)}</td><td>${l.dif > 0 ? '+' : ''}${num(l.dif)}</td><td>${delta(l.varia)}</td></tr>`;
+  const cabRank = `<thead><tr><th class="l">Loja</th><th>Antes<small class="b">pedidos/dia</small></th><th>Agora<small class="b">pedidos/dia</small></th><th>Diferença</th><th>Variação</th></tr></thead>`;
+
+  const cats = per.map((x) => x.rot);
+  const dica = (i) => { const x = per[i]; return `<b>${esc(x.rot)}</b> · ${dataBr(x.de)}${x.ate !== x.de ? ' a ' + dataBr(x.ate) : ''}${x.ate >= hj ? ' · parcial' : ''}<br>${num(x.dem)} pedidos (${num(Math.round(media(x) * 10) / 10)} por dia)<br>${num(x.fin)} finalizadas · ${num(x.canc)} canceladas (${pc(pctx(x.canc, x.dem))})${sel.length ? `<br>${pc(pctx(x.dem, x.grupo))} do grupo` : ''}`; };
+  const prioL = lojas.filter((l) => l.prio).map(porLoja).sort((a, b) => Number(sel.includes(b.id)) - Number(sel.includes(a.id)) || b.tot - a.tot);
+  const ultN = per.slice(-8);
+  const maxV = Math.max(1, ...prioL.flatMap((l) => ultN.map((u) => l.pp.find((x) => x.k === u.k)?.dem || 0)));
+  const celP = (l, u) => { const x = l.pp.find((y) => y.k === u.k) || { dem: 0, canc: 0 }; return `<td class="hm" style="--h:${(x.dem / maxV).toFixed(2)}">${num(x.dem)}${x.dem && x.canc ? `<small class="b">${pc(pctx(x.canc, x.dem))} canc.</small>` : ''}</td>`; };
+  const thPer = (u) => `<th>${esc(u.rot)}${u.ate >= hj || (gran !== 'dia' && u.n < ({ semana: 7, quinzena: 13, mes: 28 }[gran] || 1)) ? `<small class="b">${num(u.n)} ${u.n === 1 ? 'dia' : 'dias'}${u.ate >= hj ? ' · parcial' : ''}</small>` : ''}</th>`;
+  const fT = evoTodas.trim().toLowerCase();
+  const todas = base.filter((l) => !fT || `${l.num} ${l.bairro}`.toLowerCase().includes(fT)).sort((a, b) => b.tot - a.tot);
 
   const botoes = [['dia', 'Diária'], ['semana', 'Semanal'], ['quinzena', 'Quinzenal'], ['mes', 'Mensal']].map(([v, r]) => `<button type="button" data-evo-gran="${v}" aria-pressed="${gran === v}">${r}</button>`).join('');
-  return `<section id="evoLojas"><div class="topo-sec"><h2>Evolução da demanda</h2><div class="evo-seg" role="group" aria-label="Agrupar por">${botoes}</div></div>
-    <p class="nota">${selec.length ? (selec.length === 1 ? 'Loja escolhida' : `${num(selec.length)} lojas escolhidas, somadas`) : 'Grupo inteiro'} em ${faixaTxt}, por ${{ dia: 'dia', semana: 'semana (segunda a domingo)', quinzena: 'quinzena (1 a 15 e 16 ao fim do mês)', mes: 'mês' }[gran]}. Troque o período na barra acima (por exemplo "Este ano") para ver mais tempo.</p>
-    ${legenda([{ nome: 'Finalizadas', cor: '#3987e5' }, { nome: 'Outros status', cor: '#56606D' }, { nome: 'Canceladas', cor: '#d55181' }])}${grafDem}
-    <h3 class="sub-h">Taxa de cancelamento</h3>${grafTaxa}
-    <details data-chave="evo-tabela"><summary>Ver a tabela por período</summary><div class="rolagem"><table><thead><tr><th class="l">Período</th><th>Pedidos</th><th>Média por dia</th><th>Finalizadas</th><th>Canceladas</th><th>% canc.</th><th>Variação<small class="b">média por dia</small></th>${selec.length ? '<th>Parte do grupo</th>' : ''}</tr></thead><tbody>${linhas}</tbody></table></div></details>
-    <h3 class="sub-h">Lojas prioritárias em destaque · ${ult.length === per.length ? 'todos os períodos' : `últimos ${num(ult.length)} períodos`}</h3>
-    <p class="nota pe" style="margin:0 0 8px">Pedidos por período de cada loja prioritária; a cor de fundo cresce com o volume. Clique numa loja para somá-la à análise (ou tirá-la).</p>${tabPrio}</section>`;
+  const titulo = sel.length === 1 ? `Loja ${esc(alvo[0].num)} · ${esc(alvo[0].bairro)}` : sel.length ? `${num(sel.length)} lojas somadas` : 'Grupo inteiro · Pague Menos + Extrafarma';
+  $('#evolucao').innerHTML = `<section class="filtro-lojas"><div class="topo-sec"><h2>Evolução da demanda</h2><div class="evo-seg" role="group" aria-label="Agrupar por">${botoes}</div></div>
+      <p class="nota">${faixa} · período na barra acima (use "Este ano" para ver desde ${j.primeiro ? dataBr(j.primeiro) : 'março'}). Cada período é comparado pela média de pedidos por dia, então semana, quinzena ou mês incompletos comparam de forma justa.</p>
+      ${seletorLojas(pkL)}</section>
+    <section class="hud"><div class="topo-sec"><h2>${titulo}</h2><span class="sub">por ${rotG}</span></div>
+      <div class="rk">
+        <div class="rk-t total"><span class="l">Pedidos no período</span><span class="v">${num(total)}</span><span class="f">${num(Math.round((total / dias.length) * 10) / 10)} por dia · ${num(dias.length)} dias</span></div>
+        <div class="rk-t ${varDia(ult, ant) >= 0 ? 'fin' : 'canc'}"><span class="l">Último × anterior</span><span class="v">${varDia(ult, ant) == null ? '—' : (varDia(ult, ant) > 0 ? '+' : '') + num(varDia(ult, ant)) + '%'}</span><span class="f">${ult ? `${esc(ult.rot)}: ${num(Math.round(media(ult) * 10) / 10)}/dia` : ''}${ant ? ` · ${esc(ant.rot)}: ${num(Math.round(media(ant) * 10) / 10)}/dia` : ''}</span></div>
+        <div class="rk-t ${varDia(ult, pri) >= 0 ? 'fin' : 'canc'}"><span class="l">Primeiro × último</span><span class="v">${per.length > 1 && varDia(ult, pri) != null ? (varDia(ult, pri) > 0 ? '+' : '') + num(varDia(ult, pri)) + '%' : '—'}</span><span class="f">${pri ? `${esc(pri.rot)} → ${esc(ult.rot)}, por dia` : ''}</span></div>
+        <div class="rk-t canc"><span class="l">Cancelamento</span><span class="v">${pc(pctx(tc, total))}</span><span class="f">${num(tc)} cancelados no período</span></div>
+      </div>
+      ${legenda([{ nome: 'Finalizadas', cor: '#3987e5' }, { nome: 'Outros status', cor: '#56606D' }, { nome: 'Canceladas', cor: '#d55181' }])}
+      ${graf({ tipo: 'colunas', titulo: 'Pedidos por período', altura: 290, cats, empilhado: true, series: [{ nome: 'Finalizadas', cor: '#3987e5', vals: per.map((x) => x.fin) }, { nome: 'Outros', cor: '#56606D', vals: per.map((x) => x.dem - x.fin - x.canc) }, { nome: 'Canceladas', cor: '#d55181', vals: per.map((x) => x.canc) }], tip: dica })}
+      <div class="duo"><div><h3 class="sub-h">Pedidos por dia, em média</h3>${graf({ tipo: 'linhas', titulo: 'Média de pedidos por dia', altura: 210, cats, series: [{ nome: 'Pedidos por dia', cor: COR.volume, vals: per.map((x) => Math.round(media(x) * 10) / 10) }], fmt: (v) => num(v), tip: dica })}</div>
+        <div><h3 class="sub-h">Taxa de cancelamento</h3>${graf({ tipo: 'linhas', titulo: 'Taxa de cancelamento', altura: 210, cats, pct: true, series: [{ nome: 'Cancelamento', cor: '#d55181', vals: per.map((x) => (x.dem >= BASE_MIN_PCT ? pctx(x.canc, x.dem) : null)) }], tip: dica })}</div></div>
+    </section>
+    <section><h2>Quem mais cresceu e quem mais caiu</h2><p class="nota">${ult && ant ? `${esc(ult.rot)} contra ${esc(ant.rot)}, pela média de pedidos por dia` : 'É preciso pelo menos dois períodos'}${sel.length ? ', só entre as lojas escolhidas' : ''}. Entram lojas com ${num(MIN)} pedidos por dia ou mais em um dos dois períodos. ★ = prioritária. Clique numa loja para somá-la à seleção.</p>
+      <div class="duo"><div><h3 class="sub-h">Maiores aumentos</h3>${ganhos.length ? `<div class="rolagem"><table class="rank-evo">${cabRank}<tbody>${ganhos.map(linhaRank).join('')}</tbody></table></div>` : '<p class="vazio">Nenhuma loja cresceu.</p>'}</div>
+        <div><h3 class="sub-h">Maiores quedas</h3>${perdas.length ? `<div class="rolagem"><table class="rank-evo">${cabRank}<tbody>${perdas.map(linhaRank).join('')}</tbody></table></div>` : '<p class="vazio">Nenhuma loja caiu.</p>'}</div></div></section>
+    <section><h2>Lojas prioritárias em destaque</h2><p class="nota">Pedidos de cada prioritária ${ultN.length === per.length ? 'em todos os períodos' : `nos últimos ${num(ultN.length)} períodos`}; o fundo cresce com o volume. Variação pela média por dia.</p>
+      <div class="rolagem"><table class="prio-evo"><thead><tr><th class="l">Loja prioritária</th>${ultN.map(thPer).join('')}<th>Total</th><th>Cancelamento</th><th>Último × anterior</th></tr></thead><tbody>${prioL.map((l) => `<tr class="${sel.includes(l.id) ? 'sel' : ''}" data-evo-loja="${l.id}"><td class="loja"><span class="star">★</span> ${esc(l.num)} · ${esc(l.bairro)}<small>${l.band}</small>${sel.includes(l.id) ? '<span class="tag" style="margin-left:6px">na seleção</span>' : ''}</td>${ultN.map((u) => celP(l, u)).join('')}<td class="forte">${num(l.tot)}</td><td>${pc(pctx(l.totC, l.tot))}</td><td>${delta(l.varia)}</td></tr>`).join('')}</tbody></table></div></section>
+    <section><details data-chave="evo-todas"><summary>Ver todas as ${num(base.length)} lojas${sel.length ? ' escolhidas' : ''}, período a período</summary>
+      <p><input id="buscaEvo" type="search" placeholder="Buscar loja por número ou bairro" aria-label="Buscar loja" value="${esc(evoTodas)}"></p>
+      <div class="rolagem"><table class="prio-evo"><thead><tr><th class="l">Loja</th>${ultN.map(thPer).join('')}<th>Total</th><th>Último × anterior</th></tr></thead><tbody>${todas.map((l) => `<tr class="${l.prio ? 'prio-l' : ''}" data-evo-loja="${l.id}">${nomeL(l)}${ultN.map((u) => { const x = l.pp.find((y) => y.k === u.k); return `<td>${num(x?.dem || 0)}</td>`; }).join('')}<td class="forte">${num(l.tot)}</td><td>${delta(l.varia)}</td></tr>`).join('')}</tbody></table></div></details></section>`;
+  const abertoTodas = evoTodas !== '';
+  if (abertoTodas) document.querySelector('#evolucao details[data-chave="evo-todas"]')?.setAttribute('open', '');
+  montarGraficos();
+  pkPend = new Set(lojasSel);
+  ligarSeletorLojas({ lojas: pkL });
+  for (const b of document.querySelectorAll('#evolucao [data-evo-gran]')) b.addEventListener('click', () => { evoGranL = b.dataset.evoGran; try { localStorage.setItem('pm-evo-gran', evoGranL); } catch {} desenharEvo(); });
+  for (const tr of document.querySelectorAll('#evolucao tr[data-evo-loja]')) tr.addEventListener('click', () => { const id = tr.dataset.evoLoja; pkPend = new Set(lojasSel); if (pkPend.has(id)) pkPend.delete(id); else pkPend.add(id); aplicarLojas(); });
+  $('#buscaEvo')?.addEventListener('input', (e) => { evoTodas = e.target.value; const pos = e.target.selectionStart; desenharEvo(); const n = $('#buscaEvo'); n.focus(); n.setSelectionRange(pos, pos); });
 }
 
 function desenharLojas() {
@@ -1606,7 +1693,7 @@ function desenharLojas() {
       <button type="button" data-visao="bee" aria-pressed="${!cliente}">Visão Bee <small>30 · 60 · 120 min</small></button>
       <button type="button" data-visao="cliente" aria-pressed="${cliente}">Visão cliente <small>60 · 120 · 240 min</small></button></div>
       <span class="sub">${cliente ? 'OTD, faixas e marcas de prazo contam o tempo total que o cliente aceita em cada modalidade.' : 'OTD, faixas e marcas de prazo contam o prazo da operação Bee.'}</span></div>
-    ${seletorLojas(a)}</section>`;
+    ${seletorLojas(a.lojas)}</section>`;
 
   const kpis = `<section><h2>${titulo}</h2><p class="nota">Todos os números abaixo são só ${a.loja ? 'desta loja' : selec.length > 1 ? `destas ${num(selec.length)} lojas, somadas` : 'do grupo'} em ${faixaTxt}, contados pedido a pedido.</p>
     <div class="kpis">
@@ -1697,7 +1784,7 @@ function desenharLojas() {
   </ul></details></section>`;
 
   const abertos = [...document.querySelectorAll('#analise details[open][data-chave]')].map((x) => x.dataset.chave);
-  $('#analise').innerHTML = avisos.join('') + filtro + kpis + blocoEvoLojas(a, selec, faixaTxt) + pontas + comparacao + `<div class="modgrid">${blocos}</div>` + faixasGeral + cancelamentos + regrasLojas;
+  $('#analise').innerHTML = avisos.join('') + filtro + kpis + pontas + comparacao + `<div class="modgrid">${blocos}</div>` + faixasGeral + cancelamentos + regrasLojas;
   for (const k of abertos) document.querySelector(`#analise details[data-chave="${k}"]`)?.setAttribute('open', '');
   montarGraficos();
   for (const b of document.querySelectorAll('#analise [data-visao]')) b.addEventListener('click', () => {
@@ -1708,10 +1795,6 @@ function desenharLojas() {
   });
   pkPend = new Set(lojasSel);
   ligarSeletorLojas(a);
-  for (const b of document.querySelectorAll('#analise [data-evo-gran]')) b.addEventListener('click', () => { evoGranL = b.dataset.evoGran; try { localStorage.setItem('pm-evo-gran', evoGranL); } catch {} desenharLojas(); });
-  for (const tr of document.querySelectorAll('#analise tr[data-evo-loja]')) tr.addEventListener('click', () => {
-    const id = tr.dataset.evoLoja; pkPend = new Set(lojasSel); if (pkPend.has(id)) pkPend.delete(id); else pkPend.add(id); aplicarLojas();
-  });
 }
 
 for (const b of document.querySelectorAll('.abas button')) b.addEventListener('click', () => {
