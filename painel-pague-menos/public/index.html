@@ -386,6 +386,9 @@ section.hud::after{bottom:-1px;right:-1px;border-left:0;border-top:0;border-bott
 .evo-seg.visao button[aria-pressed="true"] small{color:var(--ink2)}
 .filtro-lojas.visao-cliente{border-color:rgba(57,135,229,.55);box-shadow:inset 0 0 0 1px rgba(57,135,229,.25)}
 .filtro-lojas.visao-cliente .evo-seg.visao button[aria-pressed="true"]{background:rgba(57,135,229,.18);box-shadow:inset 0 -2px 0 #3987e5}
+.grupo-bf{border:1px solid var(--line);border-top:3px solid var(--g);border-radius:12px;padding:12px 14px;background:rgba(17,26,41,.5)}
+.grupo-bf h3{margin:0 0 2px;font:700 14px var(--display)}
+.grupo-bf .numeros{grid-template-columns:repeat(3,minmax(0,1fr));margin:8px 0 0}
 .relato{display:grid;gap:10px;margin-bottom:6px}
 .relato p{margin:0;padding:11px 14px;border-left:3px solid var(--bee);border-radius:0 10px 10px 0;background:rgba(17,26,41,.6);color:var(--ink2);font-size:13.5px;line-height:1.55}
 tr.clica{cursor:pointer}tr.clica:hover td{color:var(--ink)}.rk-t.p1{--k:#9085e9}.rk-t.p2{--k:#d55181}
@@ -499,7 +502,7 @@ td.quente{color:var(--warn);font-weight:600}
       <span class="vivo" id="vivo"><i></i><span>conectando</span></span>
     </div>
   </header>
-  <nav class="abas" role="tablist" aria-label="Visões do painel"><button type="button" role="tab" data-aba="vivo" aria-selected="true"><span class="ponto" aria-hidden="true"></span><span class="rot-aba"><span class="lg">Operação </span>ao vivo</span></button><button type="button" role="tab" data-aba="gerais" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="rot-aba"><span class="lg">Dados </span>gerais</span></button><button type="button" role="tab" data-aba="lojas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11h18V9M9 20v-6h6v6"/></svg><span class="rot-aba"><span class="lg">Análise de </span>lojas</span></button><button type="button" role="tab" data-aba="canc" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg><span class="rot-aba"><span class="lg">Análise de </span>cancelamentos</span></button><button type="button" role="tab" data-aba="visitas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span class="rot-aba"><span class="lg">Visitas </span>externas</span></button></nav>
+  <nav class="abas" role="tablist" aria-label="Visões do painel"><button type="button" role="tab" data-aba="vivo" aria-selected="true"><span class="ponto" aria-hidden="true"></span><span class="rot-aba"><span class="lg">Operação </span>ao vivo</span></button><button type="button" role="tab" data-aba="gerais" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="rot-aba"><span class="lg">Dados </span>gerais</span></button><button type="button" role="tab" data-aba="lojas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11h18V9M9 20v-6h6v6"/></svg><span class="rot-aba"><span class="lg">Análise de </span>lojas</span></button><button type="button" role="tab" data-aba="canc" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg><span class="rot-aba"><span class="lg">Análise de </span>cancelamentos</span></button><button type="button" role="tab" data-aba="visitas" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span class="rot-aba"><span class="lg">Visitas </span>externas</span></button><button type="button" role="tab" data-aba="black" aria-selected="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span class="rot-aba">Black<span class="lg"> Friday</span></span></button></nav>
   <div class="filtro-periodo" id="filtroPeriodo" hidden>
     <div><span class="fp-rot">Período</span><div class="fp-presets" role="group" aria-label="Período rápido">
       <button type="button" data-p="hoje">Hoje</button><button type="button" data-p="ontem">Ontem</button><button type="button" data-p="7">7 dias</button><button type="button" data-p="30">30 dias</button><button type="button" data-p="mes">Este mês</button><button type="button" data-p="mesAnt">Mês anterior</button><button type="button" data-p="ano">Este ano</button></div></div>
@@ -512,6 +515,7 @@ td.quente{color:var(--warn);font-weight:600}
   <div id="analise" hidden></div>
   <div id="cancel" hidden></div>
   <div id="visitas" hidden></div>
+  <div id="black" hidden></div>
 </div>
 <div id="dica"></div>
 <dialog id="zapDlg"><form><h3>Enviar WhatsApp?</h3><p id="zapPara"></p><blockquote id="zapTexto"></blockquote><div class="zap-acoes"><button type="button" id="zapNao">Cancelar</button><button type="submit">Enviar</button></div></form></dialog>
@@ -537,7 +541,7 @@ function chipOtd(v) {
   return '<span class="chip mau">Crítico</span>';
 }
 const nomeLoja = (l) => `${l.num ? esc(l.num) + ' · ' : ''}${esc(l.bairro)}<small>${l.band}</small>${PRIO.includes(l.num) ? '<span class="star" title="Loja prioritária">★</span>' : ''}`;
-const PRIO = ['678', '7300', '933', '495', '890', '7362', '839', '7356', '63', '715', '7515'];
+const PRIO = ['678', '7300', '933', '495', '890', '7362', '839', '7356', '63', '715', '7515', '283', '51', '237', '7192', '1408', '1268', '616', '649', '7190', '7272', '938'];
 const LISTA_PRIO = `${PRIO.slice(0, -1).join(', ')} e ${PRIO[PRIO.length - 1]}`;
 
 // Filtro De/Até: vazio = dia mais recente, ao vivo. Período soma os dias que o painel tem gravados.
@@ -1203,6 +1207,7 @@ async function carregar() {
   if (aba === 'lojas') carregarLojas();
   if (aba === 'canc') carregarCanc();
   if (aba === 'visitas') carregarVisitas();
+  if (aba === 'black') carregarBlack();
   setTimeout(() => document.body.classList.add('sem-entrada'), 700);
 }
 let periodoEmVoo = false;
@@ -1309,7 +1314,7 @@ function mudarPeriodo() {
 }
 function desenharFiltro() {
   const f = $('#filtroPeriodo');
-  f.hidden = aba === 'vivo';
+  f.hidden = aba === 'vivo' || aba === 'black'; // a Black Friday tem a semana fixa da planilha
   if (f.hidden) return;
   const dias = dados?.dias || [];
   const primeiro = dias[dias.length - 1]?.dia || '', ultimo = dias[0]?.dia || '';
@@ -1410,7 +1415,7 @@ addEventListener('scroll', () => { dica.style.display = 'none'; }, { passive: tr
 // Visão da Análise de lojas: Bee (prazo da operação: 30, 60 e 120 min) ou cliente (60, 120 e 240 min).
 let visaoLojas = 'bee';
 try { if (localStorage.getItem('pm-visao') === 'cliente') visaoLojas = 'cliente'; } catch {}
-let aba = { '#lojas': 'lojas', '#gerais': 'gerais', '#cancelamentos': 'canc', '#visitas': 'visitas' }[location.hash] || 'vivo', lojaSel = '', lojasDados = null, lojasEmVoo = false;
+let aba = { '#lojas': 'lojas', '#gerais': 'gerais', '#cancelamentos': 'canc', '#visitas': 'visitas', '#black': 'black' }[location.hash] || 'vivo', lojaSel = '', lojasDados = null, lojasEmVoo = false;
 try { lojaSel = localStorage.getItem('pm-loja') || ''; } catch {}
 const base = (n, txt = 'entregas') => (n ? `${num(n)} ${n === 1 ? txt.replace(/s$/, '') : txt}` : 'sem base');
 // na visão cliente (Super Expressa em 60 min) os prazos ficam em minutos, como foram definidos
@@ -1423,12 +1428,14 @@ function mostrarAba() {
   $('#analise').hidden = aba !== 'lojas';
   $('#cancel').hidden = aba !== 'canc';
   $('#visitas').hidden = aba !== 'visitas';
+  $('#black').hidden = aba !== 'black';
   avisos();
   desenharFiltro();
   if (aba === 'gerais') { if (dadosP) desenharGerais(); if (dados) carregarPeriodo(); }
   else if (aba === 'lojas') { if (dados) carregarLojas(); }
   else if (aba === 'canc') { if (cancDados) desenharCanc(); if (dados) carregarCanc(); }
   else if (aba === 'visitas') { if (visDados) desenharVisitas(); if (dados) carregarVisitas(); }
+  else if (aba === 'black') { if (blackDados) desenharBlack(); carregarBlack(); }
   else montarGraficos();
 }
 
@@ -1765,6 +1772,106 @@ function desenharVisitas() {
   for (const k of abertos) document.querySelector(`#visitas details[data-chave="${k}"]`)?.setAttribute('open', '');
   montarGraficos();
   $('#buscaVis').addEventListener('input', (e) => { visBusca = e.target.value; const pos = e.target.selectionStart; desenharVisitas(); const el = $('#buscaVis'); el.focus(); el.setSelectionRange(pos, pos); });
+}
+
+// ------------------------------------------------------------ aba Black Friday
+// /api/black: volumetria esperada da planilha da Pague Menos e os pedidos Bee da semana, loja a loja.
+let blackDados = null, blackEmVoo = false, blackBusca = '';
+async function carregarBlack() {
+  if (blackEmVoo) return;
+  blackEmVoo = true;
+  try { blackDados = await (await fetch('/api/black', { cache: 'no-store' })).json(); desenharBlack(); }
+  catch (e) { $('#black').innerHTML = `<section><p class="vazio">Não foi possível carregar a Black Friday (${esc(e.message)}).</p></section>`; }
+  finally { blackEmVoo = false; }
+}
+
+function desenharBlack() {
+  const j = blackDados;
+  if (!j?.lojas) { $('#black').innerHTML = '<section><p class="vazio">Nenhuma planilha de volumetria carregada.</p></section>'; return; }
+  const p = (n, d) => (d ? Math.round((1000 * n) / d) / 10 : null);
+  const soma = (ls, k) => ls.reduce((t, l) => t + (l[k] || 0), 0);
+  const brl = (v) => 'R$ ' + Number(v || 0).toLocaleString('pt-BR');
+  const sem = j.lojas.filter((l) => !l.fixo), com = j.lojas.filter((l) => l.fixo);
+  const tot = (ls) => ({ n: ls.length, vol: soma(ls, 'volumetria'), base: soma(ls, 'base'), extras: soma(ls, 'extras'), cob: soma(ls, 'cobertosFixo'), app: soma(ls, 'app'), desp: soma(ls, 'despesa'),
+    beeBase: soma(ls, 'beeBase'), prev: soma(ls, 'previstoBee'), bee: soma(ls, 'beeSemana'), fin: soma(ls, 'beeFin'), canc: soma(ls, 'beeCanc'), ateAgora: soma(ls, 'previstoAteAgora') });
+  const T = tot(j.lojas), TS = tot(sem), TC = tot(com);
+  const diasPara = Math.round((Date.parse(j.inicio + 'T12:00:00Z') - Date.parse(j.hoje + 'T12:00:00Z')) / 86400e3);
+  const estado = j.estado === 'antes' ? `Começa em ${num(diasPara)} ${diasPara === 1 ? 'dia' : 'dias'}` : j.estado === 'durante' ? `Em andamento · dia ${num(Math.min(j.dias, Math.floor(j.decorridos) + 1))} de ${num(j.dias)}` : 'Semana encerrada';
+  const alcance = (t) => p(t.bee, t.prev), ritmo = (t) => p(t.bee, t.ateAgora);
+  const baseTxt = j.base.de ? `${dataBr(j.base.de)} a ${dataBr(j.base.ate)}` : '—';
+
+  const topo = `<section class="hud"><div class="topo-sec"><h2>Black Friday · ${dataBr(j.inicio).slice(0, 5)} a ${dataBr(j.fim)}</h2><span class="chip ${j.estado === 'durante' ? 'ok' : 'med'}">${esc(estado)}</span></div>
+    <p class="nota">Volumetria esperada da planilha "${esc(j.fonte)}" (${esc(j.diretoria)}), ${num(j.dias)} dias. A planilha traz o volume total de cada loja; a <b>previsão Bee</b> soma os pedidos Bee habituais da loja (${baseTxt}${j.base.antesDaSemana ? ', os 8 dias antes da semana' : ', os últimos dias fechados até a semana começar'}) aos <b>pedidos no app</b> previstos na planilha.</p>
+    <div class="rk">
+      <div class="rk-t total"><span class="l">Volumetria esperada</span><span class="v">${num(T.vol)}</span><span class="f">pedidos em ${num(T.n)} lojas · ${num(Math.round(T.vol / j.dias))} por dia</span></div>
+      <div class="rk-t and"><span class="l">Pedidos no app previstos</span><span class="v">${num(T.app)}</span><span class="f">${num(Math.round(T.extras))} extras · ${num(T.cob)} cobertos por fixo</span></div>
+      <div class="rk-t ac"><span class="l">Previsão Bee</span><span class="v">${num(T.prev)}</span><span class="f">${num(T.beeBase)} habituais + ${num(T.app)} do app</span></div>
+      <div class="rk-t ${j.estado === 'antes' ? 'p1' : alcance(T) >= 85 ? 'fin' : 'canc'}"><span class="l">Bee na semana</span><span class="v">${num(T.bee)}</span><span class="f">${j.estado === 'antes' ? 'a semana ainda não começou' : `${pc(alcance(T))} da previsão · ritmo ${pc(ritmo(T))}`}</span></div>
+    </div>
+    <div class="numeros">
+      <div><span>Despesa prevista</span><b>${brl(T.desp)}</b><small>da planilha</small></div>
+      <div><span>Base habitual da loja</span><b>${num(Math.round(T.base))}</b><small>pedidos em 8 dias (todos os canais)</small></div>
+      <div><span>Participação Bee hoje</span><b>${pc(p(T.beeBase, T.base))}</b><small>Bee habitual ÷ base habitual</small></div>
+      <div><span>Finalizadas Bee na semana</span><b>${num(T.fin)}</b><small>${num(T.canc)} canceladas</small></div>
+    </div>
+    ${j.estado !== 'antes' ? `<h3 class="sub-h">Alcance da previsão Bee</h3>${hbarras([{ rot: 'Bee na semana', sub: `esperado até agora ${num(Math.round(T.ateAgora))}`, val: alcance(T), cor: COR.volume, extra: ` <small>${num(T.bee)} de ${num(T.prev)}</small>` }], { max: Math.max(100, alcance(T) || 0), ref: p(T.ateAgora, T.prev) })}<p class="nota pe">A marca é o esperado até agora, proporcional aos dias decorridos.</p>` : ''}
+  </section>`;
+
+  // os dois grupos lado a lado
+  const card = (t, titulo, desc, cor) => `<div class="grupo-bf" style="--g:${cor}"><h3>${titulo}</h3><p class="nota">${desc}</p>
+    <div class="numeros">
+      <div><span>Lojas</span><b>${num(t.n)}</b><small>${pc(p(t.n, T.n))} das lojas</small></div>
+      <div><span>Volumetria</span><b>${num(t.vol)}</b><small>${pc(p(t.vol, T.vol))} do total</small></div>
+      <div><span>Extras</span><b>${num(Math.round(t.extras))}</b><small>${num(t.cob)} cobertos por fixo</small></div>
+      <div><span>No app</span><b>${num(t.app)}</b><small>despesa ${brl(t.desp)}</small></div>
+      <div><span>Previsão Bee</span><b>${num(t.prev)}</b><small>${num(t.beeBase)} habituais + ${num(t.app)}</small></div>
+      <div><span>Bee na semana</span><b>${num(t.bee)}</b><small>${j.estado === 'antes' ? 'aguardando a semana' : `${pc(alcance(t))} da previsão`}</small></div>
+    </div></div>`;
+  const grupos = `<section><h2>Sem entregador fixo × com fixos do GR</h2><p class="nota">Pela coluna "Atendimento" da planilha: "App" = loja sem entregador fixo, todo o extra vai para o app; "Pool do GR" = loja sem fixo próprio, atendida pelos fixos do GR, e só o excedente vai para o app.</p>
+    <div class="duo">${card(TS, 'Lojas sem entregador fixo', 'Atendimento só por app: todo pedido extra precisa de entregador do app.', COR.p2)}${card(TC, 'Lojas com fixos do GR', 'Fixos do GR cobrem parte dos extras; o excedente vai para o app.', COR.p1)}</div>
+    ${segmentos([{ nome: 'Pedidos no app · sem fixo', val: TS.app, cor: COR.p2 }, { nome: 'Pedidos no app · com fixos do GR', val: TC.app, cor: COR.p1 }], { fmt: (v) => num(v) + ' pedidos no app' })}</section>`;
+
+  // dia a dia da semana
+  const prevDia = T.prev / j.dias, habDia = T.beeBase / j.dias;
+  const dias = Array.from({ length: j.dias }, (_, i) => somaDia(j.inicio, i));
+  const pd = Object.fromEntries((j.porDia || []).map((x) => [x.dia, x]));
+  const diaADia = `<section><div class="topo-sec"><h2>Dia a dia da semana</h2><span class="sub">pedidos Bee nas ${num(T.n)} lojas da planilha</span></div>
+    ${graf({ tipo: 'colunas', titulo: 'Pedidos Bee por dia da Black Friday', altura: 260, cats: dias.map((d) => `${d.slice(8)}/${d.slice(5, 7)}`), rotulos: true, ref: Math.round(prevDia), refRot: `previsão ${num(Math.round(prevDia))}/dia`,
+      series: [{ nome: 'Pedidos Bee', cor: COR.volume, vals: dias.map((d) => pd[d]?.dem || 0) }],
+      tip: (i) => { const x = pd[dias[i]]; return `<b>${dataBr(dias[i])}</b>${x?.parcial ? ' · parcial' : ''}<br>${x ? `${num(x.dem)} pedidos · ${num(x.fin)} finalizados · ${num(x.canc)} cancelados` : 'ainda sem pedidos'}<br>Previsão Bee: ${num(Math.round(prevDia))} por dia (habitual ${num(Math.round(habDia))})`; } })}
+    ${j.estado === 'antes' ? `<p class="nota pe">As colunas aparecem a partir de ${dataBr(j.inicio)}. A linha é a previsão Bee por dia: ${num(Math.round(habDia))} habituais + ${num(Math.round(T.app / j.dias))} do app.</p>` : ''}</section>`;
+
+  // por GR
+  const gr = new Map();
+  for (const l of j.lojas) { if (!gr.has(l.gr)) gr.set(l.gr, []); gr.get(l.gr).push(l); }
+  const porGr = `<section><h2>Por GR</h2><div class="rolagem"><table><thead><tr><th class="l">GR</th><th class="txt">Atendimento</th><th>Lojas</th><th>Volumetria</th><th>Extras</th><th>Cobertos por fixo</th><th>No app</th><th>Despesa</th><th>Previsão Bee</th><th>Bee na semana</th><th>Alcance</th></tr></thead><tbody>${[...gr.entries()].map(([g, ls]) => ({ g, t: tot(ls), fixo: ls.some((l) => l.fixo) && ls.some((l) => !l.fixo) ? 'misto' : ls[0].fixo ? 'Fixos do GR' : 'Só app' })).sort((a, b) => b.t.app - a.t.app).map(({ g, t, fixo }) => `<tr><td class="loja">${esc(g)}</td><td class="txt">${fixo}</td><td>${num(t.n)}</td><td>${num(t.vol)}</td><td>${num(Math.round(t.extras))}</td><td>${num(t.cob)}</td><td class="forte">${num(t.app)}</td><td>${brl(t.desp)}</td><td>${num(t.prev)}</td><td class="forte">${num(t.bee)}</td><td>${j.estado === 'antes' ? '—' : pc(alcance(t))}</td></tr>`).join('')}</tbody></table></div></section>`;
+
+  // tabelas das lojas, separadas por grupo
+  const f = blackBusca.trim().toLowerCase();
+  const chipR = (l) => { if (j.estado === 'antes' || !l.previstoAteAgora) return ''; const r = p(l.beeSemana, l.previstoAteAgora); return r >= 100 ? '<span class="chip ok">no ritmo</span>' : r >= 70 ? '<span class="chip med">abaixo</span>' : '<span class="chip mau">bem abaixo</span>'; };
+  const tabela = (ls, titulo) => {
+    const lin = ls.filter((l) => !f || `${l.filial} ${l.lojaBee} ${l.gr} ${l.cidade}`.toLowerCase().includes(f)).sort((a, b) => b.app - a.app || b.volumetria - a.volumetria);
+    return `<section><div class="topo-sec"><h2>${titulo}<span class="cont">${num(ls.length)}</span></h2><span class="sub">da maior para a menor quantidade de pedidos no app</span></div>
+      <div class="rolagem"><table><thead><tr><th class="l">Loja</th><th class="txt">GR</th><th>Volumetria</th><th>Média/dia</th><th>Base 8 dias</th><th>Extras</th><th>Cobertos por fixo</th><th>No app</th><th>Despesa</th><th class="sep">Bee habitual</th><th>Previsão Bee</th><th>Bee na semana</th><th>Alcance</th></tr></thead><tbody>${lin.map((l) => {
+        const nm = String(l.lojaBee || '').match(/^\s*(\d+)\s*-\s*(PAGUE MENOS|EXTRAFARMA)\s*-\s*(.+)$/i);
+        return `<tr><td class="loja">${esc(l.filial)} · ${esc(nm ? nm[3] : l.lojaBee)}<small>${l.band}</small>${PRIO.includes(String(l.filial)) ? '<span class="star" title="Loja prioritária">★</span>' : ''}</td><td class="txt">${esc(l.gr)}</td><td>${num(l.volumetria)}</td><td>${num(Math.round(l.mediaDia * 10) / 10)}</td><td>${num(Math.round(l.base))}</td><td>${num(Math.round(l.extras))}</td><td>${num(l.cobertosFixo)}</td><td class="forte">${num(l.app)}</td><td>${brl(l.despesa)}</td><td class="sep">${num(l.beeBase)}</td><td>${num(l.previstoBee)}</td><td class="forte">${num(l.beeSemana)}</td><td>${j.estado === 'antes' ? '—' : `${pc(p(l.beeSemana, l.previstoBee))} ${chipR(l)}`}</td></tr>`;
+      }).join('') || '<tr><td colspan="13" class="vazio">Nenhuma loja encontrada.</td></tr>'}</tbody></table></div></section>`;
+  };
+
+  const regrasB = `<section><details><summary>Como cada número desta aba é calculado</summary><ul class="regras">
+    <li><b>Planilha:</b> volumetria esperada, média diária, base habitual de 8 dias, extras, extras cobertos por fixo, pedidos no app e despesa prevista, como vieram, por loja. É o volume total da loja, de todos os canais.</li>
+    <li><b>Sem entregador fixo:</b> atendimento "App". <b>Com fixos do GR:</b> atendimento "Pool do GR (fixo do GR + app)": sem fixo próprio, atendida pelos fixos do GR, excedente no app.</li>
+    <li><b>Bee habitual:</b> pedidos Bee da loja nos 8 dias fechados antes da semana (enquanto a semana não chega, os 8 últimos dias fechados).</li>
+    <li><b>Previsão Bee:</b> Bee habitual + pedidos no app da planilha. <b>Alcance:</b> pedidos Bee na semana ÷ previsão Bee. <b>Ritmo:</b> pedidos Bee até agora ÷ previsão proporcional aos dias decorridos (no ritmo a partir de 100%, abaixo de 70% a 100%, bem abaixo de 70%).</li>
+    <li><b>Lojas:</b> as ${num(T.n)} lojas da planilha, ligadas ao cadastro da Bee pelo nome da coluna "Loja Bee".</li>
+  </ul></details></section>`;
+
+  const pos = document.activeElement?.id === 'buscaBlack' ? document.activeElement.selectionStart : null;
+  $('#black').innerHTML = topo + grupos + diaADia + porGr + `<section class="filtro-lojas"><p><input id="buscaBlack" type="search" placeholder="Buscar loja por número, nome, GR ou cidade" aria-label="Buscar loja" value="${esc(blackBusca)}"></p></section>` + tabela(sem, 'Lojas sem entregador fixo') + tabela(com, 'Lojas com fixos do GR') + regrasB;
+  montarGraficos();
+  const el = $('#buscaBlack');
+  el.addEventListener('input', (e) => { blackBusca = e.target.value; desenharBlack(); });
+  if (pos != null) { el.focus(); el.setSelectionRange(pos, pos); }
 }
 
 // A página recarrega sozinha quando chega coleta nova

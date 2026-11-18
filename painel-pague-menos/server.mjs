@@ -365,7 +365,7 @@ function montarVisitas(dePedido, atePedido) {
   const visit = new Map(VISITAS.visitadas.map((v) => [String(v.id), v]));
   const inativas = new Set(VISITAS.inativas.map(String));
   const ids = [...new Set([...LOJAS_CADASTRO.map(String), ...visit.keys()])].filter((id) => !inativas.has(id));
-  const PRIO = ['678', '7300', '933', '495', '890', '7362', '839', '7356', '63', '715', '7515'];
+  const PRIO = ['678', '7300', '933', '495', '890', '7362', '839', '7356', '63', '715', '7515', '283', '51', '237', '7192', '1408', '1268', '616', '649', '7190', '7272', '938'];
   const lojas = ids.map((id) => {
     const n = nomes[id] || 'Loja ' + id, m = n.match(/^\s*(\d+)\s*-\s*(PAGUE MENOS|EXTRAFARMA)\s*-\s*(.+?)\s*$/i);
     const l = linha[id], v = visit.get(id);
@@ -377,6 +377,42 @@ function montarVisitas(dePedido, atePedido) {
   return JSON.stringify({ gerado_em: new Date().toISOString(), de: dias[0] || null, ate: dias[dias.length - 1] || null,
     meta: { titulo: VISITAS.titulo, fonte: VISITAS.fonte, periodoVisitas: VISITAS.periodoVisitas, responsavel: VISITAS.responsavel, periodoAnalisado: VISITAS.periodoAnalisado, periodoMotivos: VISITAS.periodoMotivos, qtdCabecalho: VISITAS.qtdCabecalho, inativas: VISITAS.inativas.length },
     problemas: VISITAS.problemas, responsaveis: VISITAS.responsaveis, lojas });
+}
+
+// Black Friday: volumetria esperada da planilha da Pague Menos (blackfriday.json) contra os pedidos Bee.
+// A planilha traz o volume total da loja (todos os canais); para a Bee vale a previsão = pedidos Bee habituais
+// (8 dias fechados antes da semana) + "pedidos no app" da planilha. Alcance = Bee na semana ÷ previsão Bee.
+const BLACK = lerJson(path.join(DIR, 'blackfriday.json'), null);
+function montarBlack() {
+  if (!BLACK) return JSON.stringify({ black: null });
+  const lista = Object.keys(historico).sort(), d0 = BLACK.inicio, d1 = BLACK.fim, hj = hoje();
+  // janela habitual: os 8 dias fechados antes da semana; antes disso, os 8 últimos dias fechados que existem
+  const antes = lista.filter((d) => d < d0 && d < hj && historico[d].fechado);
+  const baseDias = antes.slice(-BLACK.dias);
+  const semana = lista.filter((d) => d >= d0 && d <= d1);
+  const somaLojas = (dias) => {
+    const t = {};
+    for (const d of dias) for (const [id, l] of Object.entries(historico[d].lojas)) { const x = (t[id] ||= { dem: 0, fin: 0, canc: 0 }); x.dem += l.dem; x.fin += l.fin; x.canc += l.canc; }
+    return t;
+  };
+  const base = somaLojas(baseDias), sem = somaLojas(semana);
+  // dias decorridos da semana (hoje conta pela fração do dia em Fortaleza)
+  const agora = new Date(), hora = Number(agora.toLocaleString('en-GB', { timeZone: 'America/Fortaleza', hour: '2-digit', hour12: false })) + agora.getMinutes() / 60;
+  const fechados = semana.filter((d) => d < hj).length, decorridos = Math.min(BLACK.dias, fechados + (semana.includes(hj) ? hora / 24 : 0));
+  const estado = hj < d0 ? 'antes' : hj > d1 ? 'depois' : 'durante';
+  const lojas = BLACK.lojas.map((l) => {
+    const b = base[l.id] || { dem: 0 }, w = sem[l.id] || { dem: 0, fin: 0, canc: 0 };
+    const previstoBee = b.dem + l.app;
+    return { ...l, beeBase: b.dem, previstoBee, beeSemana: w.dem, beeFin: w.fin, beeCanc: w.canc,
+      previstoAteAgora: Math.round(previstoBee * (decorridos / BLACK.dias) * 10) / 10 };
+  });
+  const porDia = semana.map((d) => {
+    let dem = 0, fin = 0, canc = 0;
+    for (const l of BLACK.lojas) { const x = historico[d].lojas[l.id]; if (x) { dem += x.dem; fin += x.fin; canc += x.canc; } }
+    return { dia: d, dem, fin, canc, parcial: d === hj };
+  });
+  return JSON.stringify({ gerado_em: agora.toISOString(), fonte: BLACK.fonte, diretoria: BLACK.diretoria, inicio: d0, fim: d1, dias: BLACK.dias, hoje: hj, estado, decorridos: Math.round(decorridos * 100) / 100,
+    base: { de: baseDias[0] || null, ate: baseDias[baseDias.length - 1] || null, dias: baseDias.length, antesDaSemana: baseDias.length === BLACK.dias && baseDias[baseDias.length - 1] === somaDias(d0, -1) }, porDia, lojas });
 }
 
 // ---------------------------------------------------------------------- web
@@ -403,6 +439,10 @@ http.createServer((req, res) => {
     // visao=cliente: OTD e faixas contra o prazo do cliente (60, 120 e 240 min) em vez do prazo Bee
     const cliente = url.searchParams.get('visao') === 'cliente';
     return res.end(montarLojas(url.searchParams.get('de'), url.searchParams.get('ate'), url.searchParams.get('loja'), (d, l, c) => analisarLojas(d, l, cliente ? PRAZO_CLIENTE : undefined, c)));
+  }
+  if (url.pathname === '/api/black') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    return res.end(montarBlack());
   }
   if (url.pathname === '/api/visitas') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
