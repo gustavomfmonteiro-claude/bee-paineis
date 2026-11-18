@@ -344,7 +344,7 @@ function montarLojas(dePedido, atePedido, loja, analisar = analisarLojas) {
   let dias = de || ate ? lista.filter((d) => (!de || d >= de) && (!ate || d <= ate)) : [];
   const vazio = (de || ate) && !dias.length;
   if (!dias.length && lista.length) dias = [lista[lista.length - 1]];
-  const r = dias.length ? analisar(dias.map((d) => historico[d]), /^\d+$/.test(loja || '') ? loja : '', catalogoNomes()) : null;
+  const r = dias.length ? analisar(dias.map((d) => historico[d]), /^\d+(,\d+)*$/.test(loja || '') ? loja : '', catalogoNomes()) : null;
   return JSON.stringify({ gerado_em: new Date().toISOString(), primeiro: lista[0] || null, ultimo: lista[lista.length - 1] || null, periodoVazio: !!vazio, analise: r });
 }
 

@@ -191,6 +191,7 @@ details summary:hover{color:var(--ink)}
 .modc dt{color:var(--ink3);font:500 10px/1.3 var(--mono);letter-spacing:.05em;text-transform:uppercase}
 .modc dd{margin:0;font:600 14px/1.3 var(--display);font-variant-numeric:tabular-nums}
 td small.b{display:block;color:var(--ink2);font-size:12px;font-weight:500}
+th small.b{display:block;color:var(--ink3);font:400 9.5px var(--mono);letter-spacing:.04em;text-transform:none;margin-top:2px}
 .mod{display:inline-block;font:600 10.5px/1 var(--body);padding:4px 7px;border-radius:999px;border:1px solid var(--bee);color:var(--ink);margin-left:5px}
 .busca small.total{color:var(--ink3);font-size:11px;font-weight:400}
 .prox-btn{min-height:32px;padding:0 10px;font:500 12px var(--body);color:var(--ink);background:var(--panel3);border:1px solid var(--line2);border-radius:8px;cursor:pointer;white-space:nowrap;transition:border-color .15s}
@@ -389,6 +390,31 @@ section.hud::after{bottom:-1px;right:-1px;border-left:0;border-top:0;border-bott
 .grupo-bf{border:1px solid var(--line);border-top:3px solid var(--g);border-radius:12px;padding:12px 14px;background:rgba(17,26,41,.5)}
 .grupo-bf h3{margin:0 0 2px;font:700 14px var(--display)}
 .grupo-bf .numeros{grid-template-columns:repeat(3,minmax(0,1fr));margin:8px 0 0}
+.picker{margin-top:10px;display:grid;gap:8px}
+.pk-topo{display:flex;align-items:baseline;gap:10px}.pk-topo .fp-rot{margin:0}
+.pk-linha{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pk-linha input[type=search]{flex:1 1 280px;max-width:420px}
+.pk-bt{min-height:36px;padding:0 13px;border-radius:9px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink2);font:500 12.5px var(--body);cursor:pointer}
+.pk-bt:hover{color:var(--ink);border-color:rgba(148,170,196,.45)}
+.pk-bt.aplicar{color:var(--ink3)}.pk-bt.aplicar.pede{background:var(--bee);border-color:var(--bee);color:#10130A;font-weight:600}
+.pk-bt:disabled{cursor:default;opacity:.6}
+.pk-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pk-chip{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:999px;border:1px solid var(--line2);background:rgba(57,135,229,.14);color:var(--ink);font:500 12px var(--body);cursor:pointer}
+.pk-chip.prio{background:rgba(255,210,0,.14);border-color:var(--bee-l)}
+.pk-chip span{color:var(--ink3)}
+.pk-lista{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 6px;background:rgba(5,9,17,.45)}
+.pk-grupo{font:500 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);padding:8px 6px 4px}
+.pk-item{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--ink2)}
+.pk-item:hover{background:rgba(148,170,196,.07);color:var(--ink)}
+.pk-item b{color:var(--ink)}.pk-item small{color:var(--ink3);font:500 10.5px var(--mono)}
+.pk-item em{margin-left:auto;font-style:normal;color:var(--ink3);font-size:12px}
+.pk-item input{accent-color:#FFD200;width:16px;height:16px}
+.pk-item.prio{border-left:2px solid var(--bee)}
+table.prio-evo tr{cursor:pointer}
+table.prio-evo td.loja{white-space:nowrap}
+table.prio-evo tr.sel td{color:var(--ink)}
+table.prio-evo tr.sel td.loja{box-shadow:inset 3px 0 0 var(--bee)}
+td.hm{background:rgba(255,210,0,calc(var(--h) * .28))}
 .relato{display:grid;gap:10px;margin-bottom:6px}
 .relato p{margin:0;padding:11px 14px;border-left:3px solid var(--bee);border-radius:0 10px 10px 0;background:rgba(17,26,41,.6);color:var(--ink2);font-size:13.5px;line-height:1.55}
 tr.clica{cursor:pointer}tr.clica:hover td{color:var(--ink)}.rk-t.p1{--k:#9085e9}.rk-t.p2{--k:#d55181}
@@ -1417,6 +1443,10 @@ let visaoLojas = 'bee';
 try { if (localStorage.getItem('pm-visao') === 'cliente') visaoLojas = 'cliente'; } catch {}
 let aba = { '#lojas': 'lojas', '#gerais': 'gerais', '#cancelamentos': 'canc', '#visitas': 'visitas', '#black': 'black' }[location.hash] || 'vivo', lojaSel = '', lojasDados = null, lojasEmVoo = false;
 try { lojaSel = localStorage.getItem('pm-loja') || ''; } catch {}
+// Análise de lojas aceita várias lojas ao mesmo tempo (soma as entregas); a de cancelamentos segue com uma.
+let lojasSel = [], pkPend = null, pkBusca = '', evoGranL = 'semana';
+try { lojasSel = JSON.parse(localStorage.getItem('pm-lojas-sel') || '[]'); evoGranL = localStorage.getItem('pm-evo-gran') || 'semana'; } catch {}
+if (!Array.isArray(lojasSel)) lojasSel = [];
 const base = (n, txt = 'entregas') => (n ? `${num(n)} ${n === 1 ? txt.replace(/s$/, '') : txt}` : 'sem base');
 // na visão cliente (Super Expressa em 60 min) os prazos ficam em minutos, como foram definidos
 const prazoMod = (m, prazos) => (prazos[m] ? (prazos[m] >= 120 && prazos['Super Expressa'] !== 60 ? prazos[m] / 60 + ' h' : prazos[m] + ' min') : 'sem prazo');
@@ -1443,7 +1473,7 @@ async function carregarLojas() {
   if (lojasEmVoo) return;
   lojasEmVoo = true;
   try {
-    const qs = new URLSearchParams({ de: periodo.de, ate: periodo.ate, loja: lojaSel, visao: visaoLojas });
+    const qs = new URLSearchParams({ de: periodo.de, ate: periodo.ate, loja: lojasSel.join(','), visao: visaoLojas });
     lojasDados = await (await fetch('/api/lojas?' + qs, { cache: 'no-store' })).json();
     desenharLojas();
   } catch (e) {
@@ -1456,18 +1486,119 @@ function tabelaFaixas(fs, comMod) {
   return `<div class="rolagem"><table><thead><tr><th>Distância</th><th>Pedidos</th><th>Finalizadas</th><th>Canceladas</th>${comMod ? '<th>OTD</th>' : '<th>OTD geral</th>'}<th>Tempo total</th><th>Até a loja</th><th>Loja ao cliente</th></tr></thead><tbody>${fs.map((f) => `<tr><td class="loja">${esc(f.faixa)}</td><td class="forte">${num(f.dem)}</td><td>${num(f.fin)}</td><td>${num(f.canc)}<small class="b">${pc(f.taxaCanc)}</small></td><td>${f.otdN ? `${pc(f.otd)}<small class="b">${num(f.noPrazo)} de ${num(f.otdN)}</small>` : '—'}</td><td>${min(f.total)}</td><td>${min(f.p1)}</td><td>${min(f.p2)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
+// Seletor de lojas da Análise de lojas: pesquisa por nome ou número, várias lojas marcadas de uma vez,
+// atalho para todas as prioritárias. A escolha só vale ao clicar em "Aplicar".
+function seletorLojas(a) {
+  if (!pkPend) pkPend = new Set(lojasSel);
+  const prio = a.lojas.filter((l) => l.prio);
+  const chips = [...pkPend].map((id) => a.lojas.find((l) => l.id === id)).filter(Boolean)
+    .map((l) => `<button type="button" class="pk-chip${l.prio ? ' prio' : ''}" data-pk-tira="${l.id}">${esc(l.num || '—')} · ${esc(l.bairro)} <span aria-hidden="true">×</span></button>`).join('');
+  const mudou = [...pkPend].sort().join() !== [...lojasSel].sort().join();
+  return `<div class="picker">
+    <div class="pk-topo"><span class="fp-rot">Lojas</span><span class="sub">${pkPend.size ? `${num(pkPend.size)} ${pkPend.size === 1 ? 'loja marcada' : 'lojas marcadas, somadas'}` : 'nenhuma marcada: análise geral do grupo'}</span></div>
+    <div class="pk-linha"><input id="pkBusca" type="search" placeholder="Pesquisar loja pelo nome ou número" aria-label="Pesquisar loja" value="${esc(pkBusca)}">
+      <button type="button" class="pk-bt" data-pk="prio">Todas as prioritárias (${num(prio.length)})</button>
+      <button type="button" class="pk-bt" data-pk="limpar">Análise geral</button>
+      <button type="button" class="pk-bt aplicar${mudou ? ' pede' : ''}" data-pk="aplicar"${mudou ? '' : ' disabled'}>Aplicar seleção</button></div>
+    ${chips ? `<div class="pk-chips">${chips}</div>` : ''}
+    <div class="pk-lista" id="pkLista">${listaLojasPk(a)}</div></div>`;
+}
+function listaLojasPk(a) {
+  const f = pkBusca.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const ok = (l) => !f || `${l.num} ${l.bairro} ${l.nome || ''}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(f);
+  const linha = (l) => `<label class="pk-item${l.prio ? ' prio' : ''}"><input type="checkbox" data-pk-id="${l.id}"${pkPend.has(l.id) ? ' checked' : ''}><b>${esc(l.num || '—')}</b> · ${esc(l.bairro)} <small>${l.band}</small>${l.prio ? '<span class="star">★</span>' : ''}<em>${num(l.dem)} ped.</em></label>`;
+  const p = a.lojas.filter((l) => l.prio && ok(l)), d = a.lojas.filter((l) => !l.prio && ok(l));
+  return (p.length ? `<div class="pk-grupo">Lojas prioritárias</div>${p.map(linha).join('')}` : '') + (d.length ? `<div class="pk-grupo">Demais lojas, da maior demanda para a menor</div>${d.map(linha).join('')}` : '') || '<p class="vazio">Nenhuma loja com esse nome ou número.</p>';
+}
+function ligarSeletorLojas(a) {
+  const box = document.querySelector('#analise .picker');
+  if (!box) return;
+  const redesenhar = () => { const q = $('#pkBusca'), pos = q?.selectionStart; box.outerHTML = seletorLojas(a); ligarSeletorLojas(a); if (pos != null && document.activeElement !== $('#pkBusca')) { const n = $('#pkBusca'); n.focus(); n.setSelectionRange(pos, pos); } };
+  $('#pkBusca').addEventListener('input', (e) => { pkBusca = e.target.value; $('#pkLista').innerHTML = listaLojasPk(a); });
+  box.addEventListener('change', (e) => { const id = e.target.dataset?.pkId; if (!id) return; if (e.target.checked) pkPend.add(id); else pkPend.delete(id); redesenhar(); });
+  box.addEventListener('click', (e) => {
+    const tira = e.target.closest('[data-pk-tira]'), bt = e.target.closest('[data-pk]');
+    if (tira) { pkPend.delete(tira.dataset.pkTira); redesenhar(); return; }
+    if (!bt) return;
+    if (bt.dataset.pk === 'prio') { for (const l of a.lojas.filter((x) => x.prio)) pkPend.add(l.id); redesenhar(); }
+    if (bt.dataset.pk === 'limpar') { pkPend = new Set(); aplicarLojas(); }
+    if (bt.dataset.pk === 'aplicar') aplicarLojas();
+  });
+}
+function aplicarLojas() {
+  lojasSel = [...pkPend];
+  try { localStorage.setItem('pm-lojas-sel', JSON.stringify(lojasSel)); } catch {}
+  carregarLojas();
+}
+
+// Evolução da demanda das lojas escolhidas (ou do grupo), por dia, semana, quinzena ou mês, no período do filtro.
+const MESES_C = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+function chaveEvo(d, gran) {
+  if (gran === 'dia') return [d, `${d.slice(8)}/${d.slice(5, 7)}`];
+  if (gran === 'mes') return [d.slice(0, 7), `${MESES_C[Number(d.slice(5, 7)) - 1]}/${d.slice(2, 4)}`];
+  if (gran === 'quinzena') { const q = Number(d.slice(8)) <= 15 ? 1 : 2; return [`${d.slice(0, 7)}-${q}`, `${q}ª ${MESES_C[Number(d.slice(5, 7)) - 1]}`]; }
+  const dt = new Date(d + 'T12:00:00Z'), seg = new Date(dt.getTime() - ((dt.getUTCDay() + 6) % 7) * 86400e3).toISOString().slice(0, 10);
+  return [seg, `sem. ${seg.slice(8)}/${seg.slice(5, 7)}`];
+}
+function agruparEvo(dias, gran, campos) {
+  const m = new Map();
+  for (const x of dias) { const [k, rot] = chaveEvo(x.dia, gran); if (!m.has(k)) m.set(k, { k, rot, de: x.dia, ate: x.dia, n: 0, ...Object.fromEntries(campos.map((c) => [c, 0])) }); const y = m.get(k); y.ate = x.dia; y.n++; for (const c of campos) y[c] += x[c] || 0; }
+  return [...m.values()];
+}
+function blocoEvoLojas(a, selec, faixaTxt) {
+  const ev = a.evolucao;
+  if (!ev?.dias?.length) return '';
+  const gran = evoGranL;
+  const per = agruparEvo(ev.dias, gran, ['dem', 'fin', 'canc', 'grupo']);
+  const hoje = hojeFort();
+  const pctx = (n, d) => (d ? Math.round((1000 * n) / d) / 10 : null);
+  const cats = per.map((x) => x.rot);
+  const dica = (i) => { const x = per[i]; return `<b>${esc(x.rot)}</b> · ${dataBr(x.de)}${x.ate !== x.de ? ' a ' + dataBr(x.ate) : ''}${x.ate >= hoje ? ' · parcial' : ''}<br>${num(x.dem)} pedidos · ${num(x.fin)} finalizadas · ${num(x.canc)} canceladas<br>Cancelamento ${pc(pctx(x.canc, x.dem))}${selec.length ? ` · ${pc(pctx(x.dem, x.grupo))} do grupo` : ''}`; };
+  const grafDem = graf({ tipo: 'colunas', titulo: 'Pedidos por período', altura: 270, cats, empilhado: true, rotulos: false,
+    series: [{ nome: 'Finalizadas', cor: '#3987e5', vals: per.map((x) => x.fin) }, { nome: 'Outros', cor: '#56606D', vals: per.map((x) => x.dem - x.fin - x.canc) }, { nome: 'Canceladas', cor: '#d55181', vals: per.map((x) => x.canc) }], tip: dica });
+  const grafTaxa = graf({ tipo: 'linhas', titulo: 'Taxa de cancelamento por período', altura: 200, cats, pct: true, series: [{ nome: 'Cancelamento', cor: '#d55181', vals: per.map((x) => (x.dem >= BASE_MIN_PCT ? pctx(x.canc, x.dem) : null)) }], tip: dica });
+  // variação pela média por dia: período parcial (o atual, ou o primeiro cortado pelo filtro) compara de forma justa
+  const varDia = (x, ant) => (ant && ant.dem && ant.n && x.n ? Math.round((1000 * (x.dem / x.n - ant.dem / ant.n)) / (ant.dem / ant.n)) / 10 : null);
+  const linhas = per.map((x, i) => { const ant = per[i - 1], v = varDia(x, ant);
+    return `<tr><td class="loja">${esc(x.rot)}<small>${dataBr(x.de).slice(0, 5)}${x.ate !== x.de ? '–' + dataBr(x.ate).slice(0, 5) : ''}${x.ate >= hoje ? ' · parcial' : ''}</small></td><td class="forte">${num(x.dem)}</td><td>${num(Math.round(x.dem / x.n))}</td><td>${num(x.fin)}</td><td>${num(x.canc)}</td><td>${pc(pctx(x.canc, x.dem))}</td><td>${v == null ? '—' : `<span class="delta ${v >= 5 ? 'sobe' : v <= -5 ? 'desce' : 'igual'}">${v > 0 ? '+' : ''}${num(v)}%</span>`}</td>${selec.length ? `<td>${pc(pctx(x.dem, x.grupo))}</td>` : ''}</tr>`; }).reverse().join('');
+
+  // prioritárias em destaque: as últimas colunas de período lado a lado
+  const ult = per.slice(-8);
+  const prio = ev.prioridades.map((l) => {
+    const pp = agruparEvo(Object.entries(l.dias).map(([dia, v]) => ({ dia, dem: v[0], fin: v[1], canc: v[2] })), gran, ['dem', 'fin', 'canc']);
+    const porK = Object.fromEntries(pp.map((x) => [x.k, x]));
+    const vals = ult.map((u) => ({ ...(porK[u.k] || { dem: 0, canc: 0 }), n: u.n }));
+    const tot = pp.reduce((t, x) => t + x.dem, 0), tc = pp.reduce((t, x) => t + x.canc, 0);
+    return { ...l, vals, tot, tc, varia: vals.length > 1 ? varDia(vals[vals.length - 1], vals[vals.length - 2]) : null };
+  }).sort((x, y) => Number(y.selecionada) - Number(x.selecionada) || y.tot - x.tot);
+  const maxV = Math.max(1, ...prio.flatMap((l) => l.vals.map((v) => v.dem)));
+  const cel = (v) => `<td class="hm" style="--h:${(v.dem / maxV).toFixed(2)}">${num(v.dem)}${v.dem && v.canc ? `<small class="b">${pc(pctx(v.canc, v.dem))} canc.</small>` : ''}</td>`;
+  const tabPrio = `<div class="rolagem"><table class="prio-evo"><thead><tr><th class="l">Loja prioritária</th>${ult.map((u) => `<th>${esc(u.rot)}${u.ate >= hojeFort() || (gran !== 'dia' && u.n < ({ semana: 7, quinzena: 13, mes: 28 }[gran] || 1)) ? `<small class="b">${num(u.n)} ${u.n === 1 ? 'dia' : 'dias'}${u.ate >= hojeFort() ? ' · parcial' : ''}</small>` : ''}</th>`).join('')}<th>Total no período</th><th>Cancelamento</th><th>Última × anterior<small class="b">média por dia</small></th></tr></thead><tbody>${prio.map((l) => `<tr class="${l.selecionada ? 'sel' : ''}" data-evo-loja="${l.id}"><td class="loja"><span class="star">★</span> ${esc(l.num)} · ${esc(l.bairro)}<small>${l.band}</small>${l.selecionada ? '<span class="tag" style="margin-left:6px">na análise</span>' : ''}</td>${l.vals.map(cel).join('')}<td class="forte">${num(l.tot)}</td><td>${pc(pctx(l.tc, l.tot))}</td><td>${l.varia == null ? '—' : `<span class="delta ${l.varia >= 5 ? 'sobe' : l.varia <= -5 ? 'desce' : 'igual'}">${l.varia > 0 ? '+' : ''}${num(l.varia)}%</span>`}</td></tr>`).join('')}</tbody></table></div>`;
+
+  const botoes = [['dia', 'Diária'], ['semana', 'Semanal'], ['quinzena', 'Quinzenal'], ['mes', 'Mensal']].map(([v, r]) => `<button type="button" data-evo-gran="${v}" aria-pressed="${gran === v}">${r}</button>`).join('');
+  return `<section id="evoLojas"><div class="topo-sec"><h2>Evolução da demanda</h2><div class="evo-seg" role="group" aria-label="Agrupar por">${botoes}</div></div>
+    <p class="nota">${selec.length ? (selec.length === 1 ? 'Loja escolhida' : `${num(selec.length)} lojas escolhidas, somadas`) : 'Grupo inteiro'} em ${faixaTxt}, por ${{ dia: 'dia', semana: 'semana (segunda a domingo)', quinzena: 'quinzena (1 a 15 e 16 ao fim do mês)', mes: 'mês' }[gran]}. Troque o período na barra acima (por exemplo "Este ano") para ver mais tempo.</p>
+    ${legenda([{ nome: 'Finalizadas', cor: '#3987e5' }, { nome: 'Outros status', cor: '#56606D' }, { nome: 'Canceladas', cor: '#d55181' }])}${grafDem}
+    <h3 class="sub-h">Taxa de cancelamento</h3>${grafTaxa}
+    <details data-chave="evo-tabela"><summary>Ver a tabela por período</summary><div class="rolagem"><table><thead><tr><th class="l">Período</th><th>Pedidos</th><th>Média por dia</th><th>Finalizadas</th><th>Canceladas</th><th>% canc.</th><th>Variação<small class="b">média por dia</small></th>${selec.length ? '<th>Parte do grupo</th>' : ''}</tr></thead><tbody>${linhas}</tbody></table></div></details>
+    <h3 class="sub-h">Lojas prioritárias em destaque · ${ult.length === per.length ? 'todos os períodos' : `últimos ${num(ult.length)} períodos`}</h3>
+    <p class="nota pe" style="margin:0 0 8px">Pedidos por período de cada loja prioritária; a cor de fundo cresce com o volume. Clique numa loja para somá-la à análise (ou tirá-la).</p>${tabPrio}</section>`;
+}
+
 function desenharLojas() {
   const j = lojasDados, a = j?.analise;
   if (!a) { $('#analise').innerHTML = '<section><p class="vazio">Ainda não há dados coletados.</p></section>'; return; }
   const g = a.geral, c = a.cancelamentos, pz = a.prazos;
   const kmTxt = (v) => (v == null ? '—' : num(Math.round(v * 10) / 10) + ' km');
-  const titulo = a.loja ? `Loja ${esc(a.loja.num)} · ${esc(a.loja.bairro)} <small class="selo">${a.loja.band === 'EF' ? 'Extrafarma' : 'Pague Menos'}</small>` : 'Grupo inteiro · Pague Menos + Extrafarma';
+  const selec = a.selecao || [];
+  const titulo = a.loja ? `Loja ${esc(a.loja.num)} · ${esc(a.loja.bairro)} <small class="selo">${a.loja.band === 'EF' ? 'Extrafarma' : 'Pague Menos'}</small>`
+    : selec.length > 1 ? `${num(selec.length)} lojas somadas <small class="selo">${selec.slice(0, 8).map((l) => esc(l.num)).join(', ')}${selec.length > 8 ? '…' : ''}</small>` : 'Grupo inteiro · Pague Menos + Extrafarma';
   const faixaTxt = a.de === a.ate ? dataBr(a.de) : `${dataBr(a.de)} a ${dataBr(a.ate)}`;
   const grupoOpcoes = (prio) => a.lojas.filter((l) => l.prio === prio).map((l) => `<option value="${l.id}"${l.id === lojaSel ? ' selected' : ''}>${esc(l.num || '—')} · ${esc(l.bairro)} (${l.band}) · ${num(l.dem)} ped.</option>`).join('');
   const avisos = [];
   if (j.periodoVazio) avisos.push(`<div class="aviso erro"><b>Nenhum dia com dados nesse período.</b> Mostrando ${dataBr(a.ate)}.</div>`);
   if (a.semRegistro.length) avisos.push(`<div class="aviso erro"><b>Dias ainda sem pedidos um a um:</b> ${a.semRegistro.map(dataBr).join(', ')}. Eles estão sendo relidos e entram nos próximos minutos.</div>`);
-  if (lojaSel && !a.loja) avisos.push('<div class="aviso">A loja escolhida não teve pedido nesse período; mostrando o grupo inteiro.</div>');
+  if (lojasSel.length && !selec.length) avisos.push('<div class="aviso">As lojas escolhidas não existem nesse período; mostrando o grupo inteiro.</div>');
 
   const cliente = a.visao === 'cliente';
   const filtro = `<section class="filtro-lojas${cliente ? ' visao-cliente' : ''}"><div class="topo-sec"><h2>Análise de lojas</h2><span class="sub">${faixaTxt}${a.fechado ? '' : ' · inclui hoje, ao vivo'} · período na barra acima</span></div>
@@ -1475,11 +1606,11 @@ function desenharLojas() {
       <button type="button" data-visao="bee" aria-pressed="${!cliente}">Visão Bee <small>30 · 60 · 120 min</small></button>
       <button type="button" data-visao="cliente" aria-pressed="${cliente}">Visão cliente <small>60 · 120 · 240 min</small></button></div>
       <span class="sub">${cliente ? 'OTD, faixas e marcas de prazo contam o tempo total que o cliente aceita em cada modalidade.' : 'OTD, faixas e marcas de prazo contam o prazo da operação Bee.'}</span></div>
-    <label class="per" for="selLoja">Loja<select id="selLoja"><option value="">Análise geral · todas as lojas (${num(a.lojas.length)})</option><optgroup label="Lojas prioritárias">${grupoOpcoes(true)}</optgroup><optgroup label="Demais lojas, da maior demanda para a menor">${grupoOpcoes(false)}</optgroup></select></label></section>`;
+    ${seletorLojas(a)}</section>`;
 
-  const kpis = `<section><h2>${titulo}</h2><p class="nota">Todos os números abaixo são só ${a.loja ? 'desta loja' : 'do grupo'} em ${faixaTxt}, contados pedido a pedido.</p>
+  const kpis = `<section><h2>${titulo}</h2><p class="nota">Todos os números abaixo são só ${a.loja ? 'desta loja' : selec.length > 1 ? `destas ${num(selec.length)} lojas, somadas` : 'do grupo'} em ${faixaTxt}, contados pedido a pedido.</p>
     <div class="kpis">
-      <div class="kpi"><span class="rot">Pedidos</span><b>${num(g.dem)}</b><small>${g.and ? `${num(g.and)} ainda em andamento` : `${num(a.loja ? 1 : a.lojas.length)} ${a.loja ? 'loja' : 'lojas'}`} · distância média ${kmTxt(g.km)}</small></div>
+      <div class="kpi"><span class="rot">Pedidos</span><b>${num(g.dem)}</b><small>${g.and ? `${num(g.and)} ainda em andamento` : `${num(a.loja ? 1 : selec.length || a.lojas.length)} ${a.loja ? 'loja' : 'lojas'}`} · distância média ${kmTxt(g.km)}</small></div>
       ${kpiA('Finalizadas', num(g.fin), 'dos pedidos', g.taxaFin, 'neutro')}
       ${kpiA('Canceladas', num(g.canc), `${pc(g.taxaCanc)} dos pedidos · ${num(c.op)} operacionais`, g.taxaCanc, 'neutro')}
       ${kpiA('OTD geral', pc(g.otd), g.otdN ? `${num(g.noPrazo)} de ${num(g.otdN)} no prazo da modalidade` : 'sem entrega com prazo', g.otd, classeOtd(g.otd), chipOtd(g.otd))}
@@ -1566,7 +1697,7 @@ function desenharLojas() {
   </ul></details></section>`;
 
   const abertos = [...document.querySelectorAll('#analise details[open][data-chave]')].map((x) => x.dataset.chave);
-  $('#analise').innerHTML = avisos.join('') + filtro + kpis + pontas + comparacao + `<div class="modgrid">${blocos}</div>` + faixasGeral + cancelamentos + regrasLojas;
+  $('#analise').innerHTML = avisos.join('') + filtro + kpis + blocoEvoLojas(a, selec, faixaTxt) + pontas + comparacao + `<div class="modgrid">${blocos}</div>` + faixasGeral + cancelamentos + regrasLojas;
   for (const k of abertos) document.querySelector(`#analise details[data-chave="${k}"]`)?.setAttribute('open', '');
   montarGraficos();
   for (const b of document.querySelectorAll('#analise [data-visao]')) b.addEventListener('click', () => {
@@ -1575,10 +1706,11 @@ function desenharLojas() {
     try { localStorage.setItem('pm-visao', visaoLojas); } catch {}
     carregarLojas();
   });
-  $('#selLoja').addEventListener('change', (e) => {
-    lojaSel = e.target.value;
-    try { localStorage.setItem('pm-loja', lojaSel); } catch {}
-    carregarLojas();
+  pkPend = new Set(lojasSel);
+  ligarSeletorLojas(a);
+  for (const b of document.querySelectorAll('#analise [data-evo-gran]')) b.addEventListener('click', () => { evoGranL = b.dataset.evoGran; try { localStorage.setItem('pm-evo-gran', evoGranL); } catch {} desenharLojas(); });
+  for (const tr of document.querySelectorAll('#analise tr[data-evo-loja]')) tr.addEventListener('click', () => {
+    const id = tr.dataset.evoLoja; pkPend = new Set(lojasSel); if (pkPend.has(id)) pkPend.delete(id); else pkPend.add(id); aplicarLojas();
   });
 }
 

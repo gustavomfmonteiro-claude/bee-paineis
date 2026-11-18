@@ -424,7 +424,8 @@ export const PRAZO_CLIENTE = { 'Super Expressa': 60, Expressa: 120, 'Econômica'
 
 // Loja prioritária (ou escolhida) sem pedido no período continua na lista, com zero, pelo nome do catálogo.
 function completarLojas(nomes, demanda, catalogo, loja) {
-  for (const id of [...IDS_PRIORITARIAS, ...(loja ? [String(loja)] : [])]) if (!nomes[id] && catalogo[id]) { nomes[id] = catalogo[id]; demanda[id] = 0; }
+  const pedidas = Array.isArray(loja) ? loja : loja ? String(loja).split(',') : [];
+  for (const id of [...IDS_PRIORITARIAS, ...pedidas]) if (!nomes[id] && catalogo[id]) { nomes[id] = catalogo[id]; demanda[id] = 0; }
 }
 
 export function analisarLojas(dias, loja, prazos = PRAZO_MOD, catalogo = {}) {
@@ -433,14 +434,25 @@ export function analisarLojas(dias, loja, prazos = PRAZO_MOD, catalogo = {}) {
   completarLojas(nomes, demanda, catalogo, loja);
   const lojas = Object.keys(nomes).map((id) => ({ id, ...identificar(nomes[id]), dem: demanda[id], prio: PRIORITARIAS.includes(identificar(nomes[id]).num) }))
     .sort((a, b) => Number(b.prio) - Number(a.prio) || b.dem - a.dem);
-  const escolhida = loja && nomes[loja] ? String(loja) : '';
+  // uma loja ou várias (ids separados por vírgula): a análise soma todas as entregas das escolhidas
+  const sel = new Set((Array.isArray(loja) ? loja : String(loja || '').split(',')).map((x) => x.trim()).filter((x) => nomes[x]));
+  const escolhida = sel.size === 1 ? [...sel][0] : '';
   const semRegistro = dias.filter((d) => !Array.isArray(d.pedidos)).map((d) => d.dia);
 
   const regs = [], cancs = [];
+  const evDias = [];
   for (const d of dias) {
-    for (const r of d.pedidos || []) if (!escolhida || r[P.loja] === escolhida) regs.push(r);
-    for (const c of d.cancs) if (!escolhida || c.l === escolhida) cancs.push({ ...c, dia: d.dia });
+    const e = { dia: d.dia, dem: 0, fin: 0, canc: 0, grupo: 0 };
+    for (const r of d.pedidos || []) {
+      e.grupo++;
+      if (!sel.size || sel.has(r[P.loja])) { regs.push(r); e.dem++; if (r[P.st] === 'F') e.fin++; else if (r[P.st] === 'C') e.canc++; }
+    }
+    evDias.push(e);
+    for (const c of d.cancs) if (!sel.size || sel.has(c.l)) cancs.push({ ...c, dia: d.dia });
   }
+  // evolução das prioritárias, dia a dia, para o painel de evolução (sempre, com ou sem seleção)
+  const prioIds = lojas.filter((l) => l.prio).map((l) => l.id);
+  const evPrio = prioIds.map((id) => ({ id, ...identificar(nomes[id]), selecionada: sel.has(id), dias: Object.fromEntries(dias.map((d) => [d.dia, d.lojas[id] ? [d.lojas[id].dem, d.lojas[id].fin, d.lojas[id].canc] : [0, 0, 0]])) }));
   const prazoDe = (r) => prazos[r[P.mod]] || null;
 
   // geral e por modalidade
@@ -481,7 +493,8 @@ export function analisarLojas(dias, loja, prazos = PRAZO_MOD, catalogo = {}) {
 
   return {
     de: dias[0]?.dia || null, ate: dias[dias.length - 1]?.dia || null, fechado: dias.every((d) => d.fechado), lido_em: dias.map((d) => d.lido_em).sort().pop() || null,
-    loja: escolhida ? lojas.find((l) => l.id === escolhida) : null, lojas, semRegistro,
+    loja: escolhida ? lojas.find((l) => l.id === escolhida) : null, selecao: lojas.filter((l) => sel.has(l.id)), lojas, semRegistro,
+    evolucao: { dias: evDias, prioridades: evPrio },
     prazos, visao: prazos === PRAZO_CLIENTE ? 'cliente' : 'bee', faixaKm: FAIXA_KM, minBusca: MIN_BUSCA,
     geral: { ...fechar(geral), faixas: porFaixa(regs, prazoDe) },
     modalidades: mods,
