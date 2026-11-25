@@ -78,6 +78,8 @@ http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://x');
     if (url.pathname === '/saude') return json(res, 200, { ok: true });
+    // o MCP não usa OAuth (a chave vai no cabeçalho ou no endereço): a descoberta responde 404, sem pedir senha
+    if (url.pathname.startsWith('/.well-known/')) return json(res, 404, { erro: 'não encontrado' });
     const mcp = url.pathname.match(/^\/mcp(?:\/([^/]+))?\/?$/);
     if (mcp) return await rotaMcp(req, res, mcp[1] ? decodeURIComponent(mcp[1]) : '');
 
