@@ -62,7 +62,11 @@ function lerCorpo(req) {
 
 async function rotaMcp(req, res, chaveNoCaminho) {
   const bearer = String(req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
-  if (!igual(chaveNoCaminho || bearer || '', MCP_TOKEN)) return json(res, 401, { erro: 'chave do MCP inválida' }, { 'WWW-Authenticate': 'Bearer' });
+  if (!igual(chaveNoCaminho || bearer || '', MCP_TOKEN)) {
+    // registra a tentativa sem a chave: ajuda a ver um conector configurado com o endereço errado
+    log('mcp 401', req.method, chaveNoCaminho ? 'chave no endereço' : bearer ? 'chave no cabeçalho' : 'sem chave', String(req.headers['user-agent'] || '').slice(0, 60));
+    return json(res, 401, { erro: 'chave do MCP inválida' }, { 'WWW-Authenticate': 'Bearer' });
+  }
   if (req.method === 'GET') { res.writeHead(405, { Allow: 'POST' }); return res.end(); } // sem fluxo SSE: tudo responde no próprio POST
   if (req.method === 'DELETE') { res.writeHead(204); return res.end(); }
   if (req.method !== 'POST') { res.writeHead(405, { Allow: 'POST' }); return res.end(); }

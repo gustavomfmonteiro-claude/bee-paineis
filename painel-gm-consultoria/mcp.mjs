@@ -334,10 +334,11 @@ export async function tratarMensagem(guarda, msg, log = () => {}) {
   switch (method) {
     case 'initialize': {
       const pedida = params.protocolVersion;
+      log('mcp initialize', `${params.clientInfo?.name || '?'} ${params.clientInfo?.version || ''}`.trim(), pedida || '');
       return resposta(id, { protocolVersion: VERSAO_PROTOCOLO.includes(pedida) ? pedida : VERSAO_PROTOCOLO[0], capabilities: { tools: { listChanged: false } }, serverInfo: INFO, instructions: INSTRUCOES });
     }
     case 'ping': return resposta(id, {});
-    case 'tools/list': return resposta(id, { tools: FERRAMENTAS });
+    case 'tools/list': log('mcp tools/list'); return resposta(id, { tools: FERRAMENTAS });
     case 'tools/call': {
       const nome = params.name; const args = params.arguments || {};
       if (!FERRAMENTAS.some((f) => f.name === nome)) return erroRpc(id, -32602, `Ferramenta desconhecida: ${nome}`);
