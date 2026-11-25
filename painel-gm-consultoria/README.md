@@ -23,8 +23,23 @@ navegador ── painel (public/index.html) ── server.mjs ── dados/dados
 | `exemplo.env` | Modelo do `.env` |
 | `Caddyfile.exemplo` | Bloco do Caddy para `gm.179-197-229-171.sslip.io` |
 | `conectar/` | JSON prontos para ligar o Claude ao MCP |
+| `publicar-vps.ps1` + `vps/instalar.sh` | Publicação na VPS da Hostinger pelo SSH `bee-vps` (com Caddy) |
+| `artifact/painel-claude-ai.html` | Versão do painel publicada no claude.ai (ligada ao conector) |
 
-## Subir no Docker
+## Publicar na VPS (Hostinger) — jeito rápido
+
+No Windows, dentro desta pasta, com o mesmo acesso SSH `bee-vps` dos outros painéis:
+
+```powershell
+.\publicar-vps.ps1
+```
+
+Ele envia os arquivos para `/opt/painel-gm-consultoria`, cria o `.env` na primeira vez (senha do painel e chave do MCP
+aleatórias), sobe o contêiner, põe `gm.179-197-229-171.sslip.io` no Caddy do jurflow (com cópia do Caddyfile e
+validação antes de recarregar) e mostra a senha, a URL do conector e o comando do Claude Code. A chave fica também em
+`~\.gm_mcp_token`. Para atualizar depois, é só rodar de novo: o `.env` e os dados são mantidos.
+
+## Subir no Docker à mão
 
 1. Na VPS, copie a pasta para `/opt/painel-gm-consultoria` e crie o `.env` a partir do `exemplo.env`:
 
@@ -75,6 +90,14 @@ claude mcp add --transport http -s user gm-consultoria https://gm.179-197-229-17
 **Claude Desktop pelo arquivo de configuração** (`claude_desktop_config.json`): use `conectar/claude_desktop_config.json`,
 que liga pelo `mcp-remote` (precisa do Node.js no computador). Troque `COLE_AQUI_O_MCP_TOKEN` pela chave.
 
+## Painel no claude.ai
+
+O painel publicado no claude.ai (https://claude.ai/artifact/6umu1PBkUXo9mS8tbK78De, fonte em `artifact/`) procura o
+conector **com o nome exato `GM Consultoria`**. Com ele ligado, lê e grava os dados da VPS (ferramentas `painel_obter`,
+`painel_salvar` e `painel_revisao`), confere a cada 20 s o que o Claude lançou pelo chat e usa a mesma revisão contra
+gravação por cima. Sem o conector, guarda na nuvem do próprio claude.ai e avisa como ligar. Na primeira abertura com
+o conector, o claude.ai pede para liberar o acesso do painel a ele.
+
 ## Ferramentas do MCP
 
 | Ferramenta | O que faz |
@@ -87,6 +110,7 @@ que liga pelo `mcp-remote` (precisa do Node.js no computador). Troque `COLE_AQUI
 | `listar_lancamentos` / `dar_baixa` / `desfazer_baixa` / `excluir_lancamento` | Consulta, pagamento/recebimento e correções |
 | `resumo_financeiro` / `fluxo_caixa` / `custos_por_categoria` | Números do mês ou de um período |
 | `listar_cadastros` / `salvar_cliente` / `salvar_servico` / `atualizar_empresa` | Cadastros usados na emissão |
+| `painel_obter` / `painel_salvar` / `painel_revisao` | Uso interno do painel do claude.ai |
 
 Exemplos no chat: *"registra essa nota"* (com a foto ou o XML anexado), *"emite a nota de consultoria de novembro
 para a Construtora Horizonte, R$ 12.500, com retenção de IR"*, *"quanto falta receber este mês?"*,

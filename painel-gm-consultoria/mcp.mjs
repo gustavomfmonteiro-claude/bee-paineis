@@ -97,6 +97,14 @@ const FERRAMENTAS = [
     inputSchema: { type: 'object', properties: { razao: s('Razão social'), fantasia: s('Nome fantasia'), cnpj: s('CNPJ'), im: s('Inscrição municipal'), regime: s('Regime', { enum: ['simples', 'presumido', 'real', 'mei'] }),
       endereco: s('Endereço'), cep: s('CEP'), municipio: s('Município'), uf: s('UF'), ibge: s('Código IBGE do município'), email: s('E-mail'), fone: s('Telefone'),
       aliqISS: n('ISS padrão %'), serie: s('Série'), proxNum: n('Próximo número de nota'), saldoInicial: n('Saldo inicial do caixa'), prazo: n('Prazo de recebimento em dias'), obs: s('Informações complementares padrão') } } },
+  // usadas pelo painel publicado no claude.ai (artifact) para ler e gravar estes mesmos dados
+  { name: 'painel_revisao', title: 'Revisão dos dados (painel)', annotations: SO_LEITURA,
+    description: 'Uso interno do painel no claude.ai: número da revisão atual dos dados. Não use na conversa.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'painel_obter', title: 'Obter dados (painel)', annotations: SO_LEITURA,
+    description: 'Uso interno do painel no claude.ai: todos os dados do painel com a revisão. Não use na conversa; prefira as outras ferramentas.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'painel_salvar', title: 'Salvar dados (painel)', annotations: { ...ESCRITA, destructiveHint: true },
+    description: 'Uso interno do painel no claude.ai: grava todos os dados do painel se a revisão base ainda for a atual. Nunca use na conversa.',
+    inputSchema: { type: 'object', required: ['dados'], properties: { dados: { type: 'object', description: 'Estado completo do painel' }, rev: { type: ['number', 'null'], description: 'Revisão de onde a página partiu' } } } },
 ];
 
 // ---------------- execução ----------------
@@ -305,6 +313,12 @@ function executar(guarda, nome, a = {}) {
       if (e.cnpj && e.cnpj.length !== 14) falha('CNPJ deve ter 14 dígitos.');
       return { empresa: e };
     });
+    case 'painel_revisao': { const at = guarda.ler(); return { rev: at ? at.dados.rev : null, salvoEm: at?.salvoEm || null }; }
+    case 'painel_obter': { const at = guarda.ler(); return at ? { existe: true, rev: at.dados.rev, salvoEm: at.salvoEm, dados: at.dados } : { existe: false, rev: null, dados: null }; }
+    case 'painel_salvar': {
+      if (!a.dados || typeof a.dados !== 'object' || !Array.isArray(a.dados.lanc) || !Array.isArray(a.dados.notas)) falha('dados inválidos: faltam lanc/notas.');
+      return guarda.substituir(a.dados, a.rev).then((r) => { if (r.conflito) falha(`conflito: os dados mudaram (revisão ${r.rev}). Recarregue.`); return { ok: true, rev: r.rev, salvoEm: new Date().toISOString() }; });
+    }
     default: falha(`Ferramenta desconhecida: ${nome}`);
   }
 }
