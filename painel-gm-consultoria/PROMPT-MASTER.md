@@ -50,7 +50,7 @@ Responda sempre em português do Brasil, com frases curtas e diretas.
 ```
 painel-gm-consultoria/
 ├── server.mjs            serve public/, /api/dados (com revisão), /api/rev, /mcp, /saude; login básico (PAINEL_SENHA)
-├── mcp.mjs               servidor MCP (Streamable HTTP, respostas JSON, sem sessão, JSON-RPC 2.0) — 20 ferramentas
+├── mcp.mjs               servidor MCP (Streamable HTTP, respostas JSON, sem sessão, JSON-RPC 2.0) — 21 ferramentas
 ├── regras.mjs            guarda de dados (fila de escrita, revisão, backup diário) e cálculos (NFS-e, ISS, retenções, XML)
 ├── public/index.html     o painel (página única, sem build)
 ├── artifact/painel-claude-ai.html   versão publicada no claude.ai (db, downloads, sample, mcp)
@@ -229,6 +229,7 @@ Streamable HTTP só com POST (GET → 405), respostas `application/json`, notifi
 | `listar_notas` | `tipo: saida` (NFS-e) ou `entrada` (notas de fornecedores, sem as provisões de ISS) |
 | `ver_nfse` / `cancelar_nfse` | detalhe + XML / cancelamento |
 | `dar_baixa` / `desfazer_baixa` / `excluir_lancamento` | por ids ou `numero_nfse`; data, forma, valor pago |
+| `editar_lancamento` | por id; só os campos informados (descrição, categoria, centro, valor, datas, contraparte, CNPJ, documento, forma); lançamento de NFS-e não muda valor, data nem cliente |
 | `fluxo_caixa` / `custos_por_categoria` | realizado/previsto, dia/mês / categorias, centros, fornecedores, vs período anterior |
 | `listar_cadastros` / `salvar_cliente` / `salvar_servico` / `atualizar_empresa` | cadastros |
 | `painel_revisao` / `painel_obter` / `painel_salvar` | uso interno do artifact do claude.ai (`painel_salvar` recusa com "conflito" se a revisão mudou) |

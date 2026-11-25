@@ -13,7 +13,7 @@ const INSTRUCOES = `Painel de Controle de Custos da GM Consultoria (uso pessoal 
 - Valores em reais; datas AAAA-MM-DD (fuso de Fortaleza). Sem período, use o mês atual.
 - Nota de ENTRADA = nota de fornecedor (um gasto): registrar_nota_entrada. Com o XML em mãos, passe-o no campo xml.
 - Nota de SAÍDA = NFS-e emitida pela GM: emitir_nfse. Antes de emitir, rode com simular=true, mostre o cálculo e só emita depois que o usuário confirmar.
-- Gastos e receitas avulsos: registrar_lancamento. Pagamentos e recebimentos: dar_baixa.
+- Gastos e receitas avulsos: registrar_lancamento. Pagamentos e recebimentos: dar_baixa. Correções (categoria, descrição, valor, datas): editar_lancamento, nunca excluir e lançar de novo.
 - A NFS-e gerada aqui não tem validade fiscal até ser assinada com o certificado A1 e transmitida à prefeitura.`;
 
 const s = (desc, extra = {}) => ({ type: 'string', description: desc, ...extra });
@@ -28,7 +28,7 @@ const FERRAMENTAS = [
     description: 'Números do período: entradas, saídas, resultado e margem, saldo em caixa, a receber, a pagar, atrasados e notas emitidas.',
     inputSchema: { type: 'object', properties: { ...PERIODO } } },
   { name: 'listar_lancamentos', title: 'Listar entradas e saídas', annotations: SO_LEITURA,
-    description: 'Lista lançamentos pela data de competência. Filtra por tipo, situação e texto. Devolve o id de cada um (usado em dar_baixa e excluir_lancamento).',
+    description: 'Lista lançamentos pela data de competência. Filtra por tipo, situação e texto. Devolve o id de cada um (usado em dar_baixa, editar_lancamento e excluir_lancamento).',
     inputSchema: { type: 'object', properties: { ...PERIODO, tipo: s('entrada ou saida', { enum: ['entrada', 'saida'] }), situacao: s('pago, pendente ou atrasado', { enum: ['pago', 'pendente', 'atrasado'] }), busca: s('Texto na descrição, fornecedor/cliente, nº do documento ou categoria'), limite: n('Máximo de itens (padrão 50)') } } },
   { name: 'registrar_lancamento', title: 'Registrar entrada ou saída', annotations: ESCRITA,
     description: 'Registra um gasto (saida) ou uma receita (entrada) avulsos. Pode repetir por vários meses (ex.: aluguel).',
@@ -76,6 +76,12 @@ const FERRAMENTAS = [
       data: s('Data do pagamento AAAA-MM-DD (padrão: hoje)'), forma: s('Forma', { enum: FORMAS }), valor: n('Valor efetivamente pago (só com um lançamento; juros/desconto)') } } },
   { name: 'desfazer_baixa', title: 'Desfazer baixa', annotations: ESCRITA,
     description: 'Volta um lançamento pago para pendente.', inputSchema: { type: 'object', required: ['id'], properties: { id: s('Id do lançamento') } } },
+  { name: 'editar_lancamento', title: 'Editar lançamento', annotations: ESCRITA,
+    description: 'Corrige um lançamento existente (id de listar_lancamentos): descrição, categoria, centro de custo, valor, datas, fornecedor/cliente, CNPJ, documento ou forma de pagamento. Só muda os campos informados. Para pagar/receber use dar_baixa; lançamentos de uma NFS-e não mudam valor, data nem cliente (cancele e emita de novo).',
+    inputSchema: { type: 'object', required: ['id'], properties: {
+      id: s('Id do lançamento'), descricao: s('Nova descrição'), categoria: s('Nova categoria (veja listar_cadastros; uma nova é criada se não existir)'), centro: s('Novo centro de custo'),
+      valor: n('Novo valor em reais'), data: s('Nova competência AAAA-MM-DD'), vencimento: s('Novo vencimento AAAA-MM-DD'), pago_em: s('Nova data de pagamento AAAA-MM-DD (só se já estiver pago)'),
+      contraparte: s('Fornecedor ou cliente'), cnpj: s('CNPJ/CPF da contraparte'), documento: s('Nº do documento/nota'), forma: s('Forma de pagamento', { enum: FORMAS }) } } },
   { name: 'excluir_lancamento', title: 'Excluir lançamento', annotations: { ...ESCRITA, destructiveHint: true },
     description: 'Exclui um lançamento. Confirme com o usuário antes.', inputSchema: { type: 'object', required: ['id'], properties: { id: s('Id do lançamento') } } },
   { name: 'fluxo_caixa', title: 'Fluxo de caixa', annotations: SO_LEITURA,
@@ -262,6 +268,30 @@ function executar(guarda, nome, a = {}) {
       const l = db.lanc.find((x) => x.id === a.id) || falha(`Lançamento ${a.id} não encontrado.`);
       l.status = 'pendente'; l.pagoEm = '';
       return { lancamento: resumoLanc(l) };
+    });
+    case 'editar_lancamento': return guarda.alterar((db) => {
+      const l = db.lanc.find((x) => x.id === a.id) || falha(`Lançamento ${a.id} não encontrado. Veja listar_lancamentos.`);
+      const antes = resumoLanc(l);
+      const campos = ['descricao', 'categoria', 'centro', 'valor', 'data', 'vencimento', 'pago_em', 'contraparte', 'cnpj', 'documento', 'forma'].filter((k) => a[k] != null && a[k] !== '');
+      if (!campos.length) falha('Informe ao menos um campo para mudar.');
+      if (l.notaId) { const bloq = campos.filter((k) => ['valor', 'data', 'contraparte', 'cnpj', 'documento'].includes(k)); if (bloq.length) falha(`Este lançamento é de uma NFS-e: ${bloq.join(', ')} não muda aqui. Cancele a nota (cancelar_nfse) e emita de novo.`); }
+      for (const k of ['data', 'vencimento', 'pago_em']) if (a[k] != null && a[k] !== '' && !dataValida(a[k])) falha(`${k} em AAAA-MM-DD.`);
+      if (a.pago_em && l.status !== 'pago') falha('Este lançamento ainda não foi pago: use dar_baixa.');
+      if (a.forma && !FORMAS.includes(a.forma)) falha(`forma deve ser uma de: ${FORMAS.join(', ')}.`);
+      let valor = null;
+      if (campos.includes('valor')) { valor = r2(lerValor(a.valor)); if (!(valor > 0)) falha('valor deve ser maior que zero.'); }
+      if (a.descricao) l.descricao = String(a.descricao);
+      if (a.categoria) { const cats = db.categorias[l.tipo]; if (!cats.includes(a.categoria)) cats.splice(Math.max(0, cats.length - (l.tipo === 'saida' ? 1 : 0)), 0, a.categoria); l.categoria = a.categoria; }
+      if (a.centro) { if (!db.centros.includes(a.centro)) db.centros.push(a.centro); l.centro = a.centro; }
+      if (valor != null) l.valor = valor;
+      if (a.data) l.data = a.data;
+      if (a.vencimento) l.venc = a.vencimento;
+      if (a.pago_em) l.pagoEm = a.pago_em;
+      if (a.contraparte) l.contraparte = String(a.contraparte);
+      if (a.cnpj) l.cnpj = soDig(a.cnpj);
+      if (a.documento) l.doc = String(a.documento);
+      if (a.forma) l.forma = a.forma;
+      return { antes, depois: resumoLanc(l), mensagem: `Lançamento "${l.descricao}" atualizado: ${campos.join(', ')}.` };
     });
     case 'excluir_lancamento': return guarda.alterar((db) => {
       const l = db.lanc.find((x) => x.id === a.id) || falha(`Lançamento ${a.id} não encontrado.`);

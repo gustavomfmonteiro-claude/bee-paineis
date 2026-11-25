@@ -108,6 +108,7 @@ o conector, o claude.ai pede para liberar o acesso do painel a ele.
 | `ver_nfse` / `cancelar_nfse` | Detalhe com XML (layout DPS) / cancelamento |
 | `registrar_lancamento` | Entrada ou saída avulsa, com repetição mensal |
 | `listar_lancamentos` / `dar_baixa` / `desfazer_baixa` / `excluir_lancamento` | Consulta, pagamento/recebimento e correções |
+| `editar_lancamento` | Corrige descrição, categoria, centro, valor, datas, fornecedor, documento ou forma (lançamento de NFS-e não muda valor, data nem cliente) |
 | `resumo_financeiro` / `fluxo_caixa` / `custos_por_categoria` | Números do mês ou de um período |
 | `listar_cadastros` / `salvar_cliente` / `salvar_servico` / `atualizar_empresa` | Cadastros usados na emissão |
 | `painel_obter` / `painel_salvar` / `painel_revisao` | Uso interno do painel do claude.ai |
