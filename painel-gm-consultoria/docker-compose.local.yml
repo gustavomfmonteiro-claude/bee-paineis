@@ -1,0 +1,16 @@
+# Para rodar no seu computador (sem o Caddy da VPS): docker compose -f docker-compose.local.yml up -d --build
+# Painel em http://localhost:3110 e MCP em http://localhost:3110/mcp
+services:
+  painel-gm-consultoria:
+    build: .
+    image: painel-gm-consultoria:latest
+    container_name: painel-gm-consultoria
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      TZ: America/Fortaleza
+      URL_PUBLICA: http://localhost:3110
+    ports:
+      - "127.0.0.1:3110:3110"
+    volumes:
+      - ./dados:/app/dados

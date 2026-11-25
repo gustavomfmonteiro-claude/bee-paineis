@@ -2,3 +2,6 @@
 dados/
 node_modules/
 .git
+conectar/
+*.exemplo
+exemplo.env

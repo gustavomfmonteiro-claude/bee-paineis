@@ -831,42 +831,60 @@ let db = null;
 const estado = { de: '', ate: '', preset: 'mes', ano: new Date().getFullYear(), aba: 'geral', fluxo: 'realizado', lTipo: 'todos', bTipo: 'todos', sel: new Set(), servidor: false, salvoEm: null };
 
 // ---------- persistência: servidor (se houver) + navegador ----------
+// O servidor guarda uma revisão (rev). O Claude, pelo MCP, grava no mesmo arquivo; a página confere a revisão a cada
+// 15 s e, se mudou e não há nada sendo salvo, recarrega. Se a página tentar gravar por cima de uma mudança do Claude,
+// o servidor recusa (409) e a página recarrega os dados do servidor.
 function salvarLocal() { try { localStorage.setItem(CHAVE, JSON.stringify(db)); } catch {} }
-let tSalvar = null;
+let tSalvar = null, salvando = false;
 function salvar() {
   salvarLocal();
   if (!estado.servidor) return;
   clearTimeout(tSalvar);
   marcaSync('salvando…', '');
+  salvando = true;
   tSalvar = setTimeout(async () => {
     try {
-      const r = await fetch('api/dados', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dados: db }) });
+      const r = await fetch('api/dados', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dados: db, rev: estado.rev }) });
+      if (r.status === 409) { salvando = false; await recarregarServidor('Os dados foram alterados pelo Claude: recarreguei. Refaça a última alteração, se ela sumiu.'); return; }
       if (!r.ok) throw new Error(r.status);
-      const j = await r.json(); estado.salvoEm = j.salvoEm;
+      const j = await r.json(); estado.salvoEm = j.salvoEm; estado.rev = j.rev; db.rev = j.rev;
       marcaSync('salvo no servidor', '');
     } catch { marcaSync('falha ao salvar · cópia no navegador', 'erro'); }
+    salvando = false;
   }, 500);
 }
 function marcaSync(txt, cls) { const s = $('#sync'); s.className = 'sync ' + (cls ?? (estado.servidor ? '' : 'local')); s.lastElementChild.textContent = txt; }
+async function recarregarServidor(aviso) {
+  const r = await fetch('api/dados', { cache: 'no-store' });
+  if (r.status !== 200) return;
+  const j = await r.json(); db = j.dados; estado.rev = j.rev; estado.salvoEm = j.salvoEm;
+  carregarCompletar(); salvarLocal(); render(); marcaSync('salvo no servidor', '');
+  if (aviso) toast(aviso);
+}
+async function vigiarServidor() {
+  if (!estado.servidor || salvando || document.hidden || $('#modal').classList.contains('on')) return;
+  try {
+    const r = await fetch('api/rev', { cache: 'no-store' }); if (!r.ok) return;
+    const { rev } = await r.json();
+    if (rev != null && rev !== estado.rev) await recarregarServidor('Painel atualizado com lançamentos feitos pelo Claude');
+  } catch {}
+}
 async function carregar() {
   let local = null;
   try { local = JSON.parse(localStorage.getItem(CHAVE) || 'null'); } catch {}
   try {
     if (location.protocol.startsWith('http')) {
       const r = await fetch('api/dados', { cache: 'no-store' });
-      if (r.status === 200) { const j = await r.json(); db = j.dados; estado.servidor = true; estado.salvoEm = j.salvoEm; }
-      else if (r.status === 404 && (r.headers.get('content-type') || '').includes('json')) { estado.servidor = true; }
+      if (r.status === 200) { const j = await r.json(); db = j.dados; estado.servidor = true; estado.salvoEm = j.salvoEm; estado.rev = j.rev; }
+      else if (r.status === 404 && (r.headers.get('content-type') || '').includes('json')) { estado.servidor = true; estado.rev = null; }
     }
   } catch {}
   if (!db) db = local || gerarExemplo();
-  // completa campos que versões antigas não tinham
-  const b = baseVazia();
-  db.empresa = Object.assign(b.empresa, db.empresa || {});
-  for (const k of ['clientes', 'servicos', 'notas', 'lanc', 'centros']) db[k] = db[k] || b[k];
-  db.categorias = Object.assign(b.categorias, db.categorias || {});
+  carregarCompletar();
   marcaSync(estado.servidor ? 'salvo no servidor' : 'salvo no navegador');
   if (estado.servidor && !estado.salvoEm) salvar();
   else salvarLocal();
+  if (estado.servidor) setInterval(vigiarServidor, 15000);
 }
 
 // ---------- regras ----------
@@ -1188,7 +1206,7 @@ function renderLanc() {
     return `<tr>
       <td><span class="tipo ${l.tipo}" title="${l.tipo === 'entrada' ? 'Entrada' : 'Saída'}">${l.tipo === 'entrada' ? '↑' : '↓'}</span></td>
       <td class="dt">${fdata(l.data)}</td><td class="dt">${fdata(l.venc)}</td>
-      <td><div class="tt">${esc(l.descricao)}${l.origem && l.origem !== 'manual' ? `<span class="origem">${l.origem.toUpperCase()}</span>` : ''}<small>${esc(l.contraparte || '')}${l.doc ? ' · nº ' + esc(l.doc) : ''}</small></div></td>
+      <td><div class="tt">${esc(l.descricao)}${l.origem && l.origem !== 'manual' ? `<span class="origem">${l.origem.startsWith('mcp') ? 'CLAUDE' : l.origem.toUpperCase()}</span>` : ''}<small>${esc(l.contraparte || '')}${l.doc ? ' · nº ' + esc(l.doc) : ''}</small></div></td>
       <td>${esc(l.categoria || '')}</td><td class="sub">${esc(l.centro || '')}</td>
       <td class="num ${l.tipo === 'entrada' ? 'ent' : 'sai'}">${l.tipo === 'entrada' ? '' : '−'}${num(l.valor)}</td>
       <td><span class="tag ${sit}" title="${l.status === 'pago' ? 'Baixado em ' + fdata(l.pagoEm) + ' · ' + (l.forma || '') : ''}">${sit === 'pago' ? (l.tipo === 'entrada' ? 'recebido' : 'pago') + ' ' + fdataC(l.pagoEm) : sit}</span></td>
@@ -1676,12 +1694,12 @@ function extrairCampos(t) {
   return c;
 }
 const PALAVRAS = [
+  [/aluguel|imobili|condom[ií]nio/i, 'Aluguel'],
   [/posto|combust|gasolina|diesel|etanol|uber|99\s?pop|estacionamento|ped[aá]gio|passagem/i, 'Combustível e deslocamento'],
   [/restaurante|lanchonete|padaria|aliment|refei[cç]|caf[eé]|ifood|pizz/i, 'Alimentação'],
   [/software|licen[cç]a|assinatura|google|microsoft|adobe|aws|nuvem|hospedagem|dom[ií]nio|saas/i, 'Software e sistemas'],
   [/energia|enel|coelce|internet|telefon|vivo|claro|oi\b|tim\b/i, 'Energia e internet'],
   [/papelaria|escrit[oó]rio|kalunga|toner|impress/i, 'Material de escritório'],
-  [/aluguel|imobili|condom[ií]nio/i, 'Aluguel'],
   [/an[uú]ncio|marketing|publicidade|meta\s|facebook|instagram|ads/i, 'Marketing'],
   [/contab|cont[aá]bil/i, 'Contabilidade'],
   [/tarifa|banco|bancária/i, 'Tarifas bancárias'],
@@ -1721,8 +1739,8 @@ $('#f-ocr').addEventListener('submit', (e) => {
 $('#f-ocr').addEventListener('reset', () => { setTimeout(() => { $$('.achado', $('#f-ocr')).forEach((x) => x.remove()); if (aguardarRegistro) { const r = aguardarRegistro; aguardarRegistro = null; r(); } }); });
 function renderOcrHist() {
   preencherSelects();
-  const l = lancPeriodo().filter((x) => x.tipo === 'saida' && (x.origem === 'ocr' || x.origem === 'xml')).sort((a, b) => b.data.localeCompare(a.data));
-  $('#ocr-hist').innerHTML = l.length ? l.map((x) => `<tr><td class="dt">${fdata(x.data)}</td><td><div class="tt">${esc(x.contraparte)}<small>${fdoc(x.cnpj || '')}</small></div></td><td class="mono">${esc(x.doc || '')}</td><td>${esc(x.categoria)}</td><td class="num sai">${num(x.valor)}</td><td><span class="tag ${situacao(x)}">${situacao(x)}</span></td><td><span class="origem" style="margin:0">${x.origem.toUpperCase()}</span></td></tr>`).join('') : '<tr><td colspan="7" class="vazio">Nenhuma nota lida no período</td></tr>';
+  const l = lancPeriodo().filter((x) => x.tipo === 'saida' && ['ocr', 'xml', 'mcp-nota'].includes(x.origem)).sort((a, b) => b.data.localeCompare(a.data));
+  $('#ocr-hist').innerHTML = l.length ? l.map((x) => `<tr><td class="dt">${fdata(x.data)}</td><td><div class="tt">${esc(x.contraparte)}<small>${fdoc(x.cnpj || '')}</small></div></td><td class="mono">${esc(x.doc || '')}</td><td>${esc(x.categoria)}</td><td class="num sai">${num(x.valor)}</td><td><span class="tag ${situacao(x)}">${situacao(x)}</span></td><td><span class="origem" style="margin:0">${x.origem === 'mcp-nota' ? 'CLAUDE' : x.origem.toUpperCase()}</span></td></tr>`).join('') : '<tr><td colspan="7" class="vazio">Nenhuma nota lida no período</td></tr>';
 }
 
 // =====================================================================
@@ -2027,10 +2045,10 @@ $('#arq-backup').addEventListener('change', async (e) => {
   const a = e.target.files[0]; if (!a) return; e.target.value = '';
   try { const d = JSON.parse(await a.text()); if (!d.lanc || !d.notas) throw new Error('arquivo não parece um backup do painel');
     if (!confirm(`Restaurar backup com ${d.notas.length} notas e ${d.lanc.length} lançamentos? Os dados atuais serão substituídos.`)) return;
-    db = d; await carregarCompletar(); salvar(); aplicarPreset('mes'); toast('Backup restaurado');
+    db = d; carregarCompletar(); db.rev = estado.rev; salvar(); aplicarPreset('mes'); toast('Backup restaurado');
   } catch (err) { toast('Não foi possível restaurar: ' + err.message); }
 });
-async function carregarCompletar() { const b = baseVazia(); db.empresa = Object.assign(b.empresa, db.empresa || {}); for (const k of ['clientes', 'servicos', 'notas', 'lanc', 'centros']) db[k] = db[k] || b[k]; db.categorias = Object.assign(b.categorias, db.categorias || {}); }
+function carregarCompletar() { const b = baseVazia(); db.empresa = Object.assign(b.empresa, db.empresa || {}); for (const k of ['clientes', 'servicos', 'notas', 'lanc', 'centros']) db[k] = db[k] || b[k]; db.categorias = Object.assign(b.categorias, db.categorias || {}); }
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && $('#modal').classList.contains('on')) return fecharModal();

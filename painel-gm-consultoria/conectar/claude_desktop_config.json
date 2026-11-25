@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "gm-consultoria": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote@0.16.4",
+        "https://gm.179-197-229-171.sslip.io/mcp",
+        "--header",
+        "Authorization:${GM_AUTH}"
+      ],
+      "env": {
+        "GM_AUTH": "Bearer COLE_AQUI_O_MCP_TOKEN"
+      }
+    }
+  }
+}

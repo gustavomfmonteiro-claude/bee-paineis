@@ -1,41 +1,56 @@
-// Painel de Controle de Custos · GM Consultoria
-// Serve a página (public/) e guarda os dados em dados/dados.json. Sem dependências.
-// A página também funciona sozinha (abrindo o index.html): aí os dados ficam só no navegador.
+// Painel de Controle de Custos · GM Consultoria (uso pessoal)
+// Um contêiner com três coisas, todas sobre o mesmo dados/dados.json:
+//   /            a página do painel (public/), com login básico se PAINEL_SENHA estiver no .env
+//   /api/dados   leitura e gravação da página (com revisão: quem gravar por cima de mudança alheia recebe 409)
+//   /mcp         servidor MCP para o Claude lançar e consultar pelo chat (chave MCP_TOKEN)
 //
-//   GET  /api/dados   → { dados, salvoEm }   (404 se ainda não houver nada salvo)
-//   PUT  /api/dados   ← { dados }            (grava com cópia de segurança diária em dados/backup/)
-//
-// Acesso: se PAINEL_SENHA estiver no .env, pede login básico (usuário PAINEL_USUARIO, padrão "gm").
+// A chave do MCP vai no cabeçalho "Authorization: Bearer <chave>" (Claude Code, Claude Desktop, .mcp.json)
+// ou no próprio endereço /mcp/<chave> (conector personalizado do claude.ai, que não manda cabeçalho).
+// Sem MCP_TOKEN no .env, o servidor cria uma chave em dados/mcp-token.txt e mostra o endereço no log.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { criarGuarda } from './regras.mjs';
+import { tratarMensagem } from './mcp.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PUB = path.join(DIR, 'public');
 const DADOS = path.join(DIR, 'dados');
-const ARQ = path.join(DADOS, 'dados.json');
-const BKP = path.join(DADOS, 'backup');
-fs.mkdirSync(BKP, { recursive: true });
+fs.mkdirSync(DADOS, { recursive: true });
+const guarda = criarGuarda(DADOS);
 
 const PORTA = Number(process.env.PORTA || 3110);
 const USUARIO = process.env.PAINEL_USUARIO || 'gm';
 const SENHA = process.env.PAINEL_SENHA || '';
-const LIMITE = 25 * 1024 * 1024; // corpo máximo do PUT
+const URL_PUBLICA = (process.env.URL_PUBLICA || `http://localhost:${PORTA}`).replace(/\/$/, '');
+const LIMITE = 25 * 1024 * 1024;
+
+const log = (...a) => console.log(new Date().toLocaleString('pt-BR', { timeZone: 'America/Fortaleza' }), ...a);
+
+function chaveMcp() {
+  if (process.env.MCP_TOKEN) return process.env.MCP_TOKEN.trim();
+  const arq = path.join(DADOS, 'mcp-token.txt');
+  if (fs.existsSync(arq)) return fs.readFileSync(arq, 'utf8').trim();
+  const t = crypto.randomBytes(24).toString('base64url');
+  fs.writeFileSync(arq, t + '\n', { mode: 0o600 });
+  return t;
+}
+const MCP_TOKEN = chaveMcp();
+const igual = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.png': 'image/png', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.ico': 'image/x-icon', '.json': 'application/json; charset=utf-8' };
-const log = (...a) => console.log(new Date().toLocaleString('pt-BR', { timeZone: 'America/Fortaleza' }), ...a);
-const json = (res, code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); };
+const json = (res, code, obj, extra = {}) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extra }); res.end(JSON.stringify(obj)); };
 
-function autorizado(req) {
+function loginOk(req) {
   if (!SENHA) return true;
   const [tipo, val] = String(req.headers.authorization || '').split(' ');
   if (tipo !== 'Basic' || !val) return false;
   const [u, ...s] = Buffer.from(val, 'base64').toString().split(':');
-  return u === USUARIO && s.join(':') === SENHA;
+  return igual(u, USUARIO) && igual(s.join(':'), SENHA);
 }
-
 function lerCorpo(req) {
   return new Promise((ok, falha) => {
     const partes = []; let tam = 0;
@@ -45,40 +60,57 @@ function lerCorpo(req) {
   });
 }
 
+async function rotaMcp(req, res, chaveNoCaminho) {
+  const bearer = String(req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!igual(chaveNoCaminho || bearer || '', MCP_TOKEN)) return json(res, 401, { erro: 'chave do MCP inválida' }, { 'WWW-Authenticate': 'Bearer' });
+  if (req.method === 'GET') { res.writeHead(405, { Allow: 'POST' }); return res.end(); } // sem fluxo SSE: tudo responde no próprio POST
+  if (req.method === 'DELETE') { res.writeHead(204); return res.end(); }
+  if (req.method !== 'POST') { res.writeHead(405, { Allow: 'POST' }); return res.end(); }
+  let corpo;
+  try { corpo = JSON.parse(await lerCorpo(req)); } catch { return json(res, 400, { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'JSON inválido' } }); }
+  const lote = Array.isArray(corpo);
+  const respostas = (await Promise.all((lote ? corpo : [corpo]).map((m) => tratarMensagem(guarda, m, log)))).filter(Boolean);
+  if (!respostas.length) { res.writeHead(202); return res.end(); }
+  json(res, 200, lote ? respostas : respostas[0]);
+}
+
 http.createServer(async (req, res) => {
   try {
-    if (!autorizado(req)) {
+    const url = new URL(req.url, 'http://x');
+    if (url.pathname === '/saude') return json(res, 200, { ok: true });
+    const mcp = url.pathname.match(/^\/mcp(?:\/([^/]+))?\/?$/);
+    if (mcp) return await rotaMcp(req, res, mcp[1] ? decodeURIComponent(mcp[1]) : '');
+
+    if (!loginOk(req)) {
       res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Painel GM Consultoria", charset="UTF-8"' });
       return res.end('Acesso restrito');
     }
-    const url = new URL(req.url, 'http://x');
+    if (url.pathname === '/api/rev') { const a = guarda.ler(); return json(res, 200, { rev: a ? a.dados.rev : null }); }
     if (url.pathname === '/api/dados') {
       if (req.method === 'GET') {
-        if (!fs.existsSync(ARQ)) return json(res, 404, { erro: 'sem dados' });
-        const st = fs.statSync(ARQ);
-        return json(res, 200, { dados: JSON.parse(fs.readFileSync(ARQ, 'utf8')), salvoEm: st.mtime.toISOString() });
+        const a = guarda.ler();
+        if (!a) return json(res, 404, { erro: 'sem dados' });
+        return json(res, 200, { dados: a.dados, salvoEm: a.salvoEm, rev: a.dados.rev });
       }
       if (req.method === 'PUT') {
         const corpo = JSON.parse(await lerCorpo(req));
         if (!corpo?.dados || typeof corpo.dados !== 'object') return json(res, 400, { erro: 'faltou { dados }' });
-        fs.mkdirSync(BKP, { recursive: true });
-        const dia = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
-        const bkp = path.join(BKP, `dados-${dia}.json`);
-        if (fs.existsSync(ARQ) && !fs.existsSync(bkp)) fs.copyFileSync(ARQ, bkp);
-        fs.writeFileSync(ARQ + '.tmp', JSON.stringify(corpo.dados));
-        fs.renameSync(ARQ + '.tmp', ARQ);
-        return json(res, 200, { ok: true, salvoEm: new Date().toISOString() });
+        const r = await guarda.substituir(corpo.dados, corpo.rev);
+        if (r.conflito) return json(res, 409, { erro: 'os dados mudaram (provavelmente pelo Claude); recarregue', rev: r.rev });
+        return json(res, 200, { ok: true, rev: r.rev, salvoEm: new Date().toISOString() });
       }
       return json(res, 405, { erro: 'método não aceito' });
     }
-    if (url.pathname === '/saude') return json(res, 200, { ok: true });
-    // arquivos estáticos
     const alvo = path.normalize(path.join(PUB, url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname)));
     if (!alvo.startsWith(PUB) || !fs.existsSync(alvo) || fs.statSync(alvo).isDirectory()) { res.writeHead(404); return res.end('não encontrado'); }
     res.writeHead(200, { 'Content-Type': TIPOS[path.extname(alvo)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
     fs.createReadStream(alvo).pipe(res);
   } catch (e) {
     log('erro', e.message);
-    json(res, 500, { erro: e.message });
+    if (!res.headersSent) json(res, 500, { erro: e.message });
   }
-}).listen(PORTA, () => log(`Painel GM Consultoria em http://localhost:${PORTA}${SENHA ? ' (com senha)' : ''}`));
+}).listen(PORTA, () => {
+  log(`Painel GM Consultoria em ${URL_PUBLICA}${SENHA ? ' (com senha)' : ' (sem senha: defina PAINEL_SENHA)'}`);
+  log(`MCP: ${URL_PUBLICA}/mcp  (cabeçalho Authorization: Bearer <MCP_TOKEN>)`);
+  if (!process.env.MCP_TOKEN) log(`Chave do MCP gerada em dados/mcp-token.txt · endereço para o claude.ai: ${URL_PUBLICA}/mcp/${MCP_TOKEN}`);
+});

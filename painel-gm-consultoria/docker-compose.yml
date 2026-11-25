@@ -1,6 +1,7 @@
-# Compose da VPS (vira /opt/painel-gm-consultoria/docker-compose.yml). Sem portas publicadas:
-# o acesso é pelo Caddy do jurflow (rede jurflow-prod_default), como os outros painéis.
-# O .env (fora do git) traz PAINEL_SENHA (e, se quiser, PAINEL_USUARIO).
+# Compose da VPS (vira /opt/painel-gm-consultoria/docker-compose.yml). Uso pessoal: um dono, uma chave.
+# Sem portas publicadas: o acesso é pelo Caddy do jurflow (rede jurflow-prod_default), como os outros painéis,
+# em https://gm.179-197-229-171.sslip.io (bloco pronto em Caddyfile.exemplo).
+# O .env (fora do git; modelo em exemplo.env) traz PAINEL_SENHA, MCP_TOKEN e URL_PUBLICA.
 services:
   painel-gm-consultoria:
     build: .

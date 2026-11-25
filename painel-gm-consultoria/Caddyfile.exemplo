@@ -1,0 +1,5 @@
+# Bloco para o Caddyfile do jurflow-caddy (depois: docker exec jurflow-caddy caddy reload --config /etc/caddy/Caddyfile)
+gm.179-197-229-171.sslip.io {
+	encode gzip
+	reverse_proxy painel-gm-consultoria:3110
+}
