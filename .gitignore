@@ -5,6 +5,7 @@
 !/README.md
 !/painel-bee/
 !/painel-pague-menos/
+!/painel-black/
 
 # Nunca versionar acessos nem dados coletados
 .env

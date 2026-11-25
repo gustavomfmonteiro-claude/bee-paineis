@@ -1,0 +1,20 @@
+# Compose da VPS (vira /opt/painel-black/docker-compose.yml). Sem portas publicadas:
+# o acesso é só pelo Caddy do jurflow (rede jurflow-prod_default), em https://black.179-197-229-171.sslip.io
+# O .env (fora do git) traz MCP_URL e MCP_AUTH, o mesmo acesso do MCP bee-franchising.
+services:
+  painel-black:
+    build: .
+    image: painel-black:latest
+    container_name: painel-black
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      TZ: America/Fortaleza
+    volumes:
+      - ./cache:/app/cache
+    networks:
+      - jurflow-prod_default
+
+networks:
+  jurflow-prod_default:
+    external: true

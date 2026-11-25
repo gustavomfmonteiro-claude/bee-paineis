@@ -1,0 +1,9 @@
+{
+  "name": "painel-black",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Conferência dos vencedores da promoção Black (prêmio diário do entregador) pelo MCP bee-franchising",
+  "type": "module",
+  "scripts": { "start": "node server.mjs" },
+  "engines": { "node": ">=20" }
+}

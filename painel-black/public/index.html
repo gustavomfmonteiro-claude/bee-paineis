@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Black Bee · Vencedores</title>
+<style>
+:root{
+  --bg:#070a10;--bg2:#0b111b;--glass:rgba(18,26,40,.72);--borda:rgba(120,160,220,.16);--borda2:rgba(245,197,24,.45);
+  --txt:#e9eef6;--sub:#8796ad;--bee:#f5c518;--bee2:#ffdd55;--ciano:#38d6ff;--ok:#2fe08a;--no:#ff5a6a;--wait:#8796ad;
+  --mono:ui-monospace,"Cascadia Code","JetBrains Mono",Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;color:var(--txt);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:
+    radial-gradient(900px 500px at 85% -10%,rgba(245,197,24,.13),transparent 60%),
+    radial-gradient(700px 500px at -10% 30%,rgba(56,214,255,.09),transparent 60%),
+    linear-gradient(rgba(120,160,220,.05) 1px,transparent 1px) 0 0/34px 34px,
+    linear-gradient(90deg,rgba(120,160,220,.05) 1px,transparent 1px) 0 0/34px 34px,var(--bg)}
+.wrap{max-width:1120px;margin:0 auto;padding:26px 16px 60px}
+header{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.logo{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-weight:900;font-size:22px;color:#111;
+  background:linear-gradient(135deg,var(--bee2),var(--bee));box-shadow:0 0 0 1px rgba(255,255,255,.15) inset,0 0 28px rgba(245,197,24,.45)}
+.tit h1{margin:0;font-size:24px;letter-spacing:.2px}
+.tit h1 span{color:var(--bee);text-shadow:0 0 18px rgba(245,197,24,.55)}
+.tit p{margin:2px 0 0;color:var(--sub);font-size:13px}
+.live{margin-left:auto;display:flex;align-items:center;gap:8px;font:12px var(--mono);color:var(--sub);border:1px solid var(--borda);border-radius:99px;padding:6px 12px;background:var(--glass)}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok);animation:pulso 1.8s infinite}
+@keyframes pulso{50%{opacity:.35}}
+.regras{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:22px 0 16px}
+.regra{background:var(--glass);border:1px solid var(--borda);border-radius:14px;padding:12px 14px;backdrop-filter:blur(8px);position:relative;overflow:hidden}
+.regra::after{content:"";position:absolute;inset:auto 0 0 0;height:2px;background:linear-gradient(90deg,transparent,var(--bee),transparent);opacity:.55}
+.regra .k{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1.2px}
+.regra .v{font:700 20px var(--mono);margin-top:2px}
+.regra .v small{font-size:12px;color:var(--sub);font-weight:500}
+.abas{display:flex;gap:6px;background:var(--glass);border:1px solid var(--borda);border-radius:14px;padding:5px;width:max-content;max-width:100%}
+.aba{background:none;border:0;color:var(--sub);padding:9px 16px;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer}
+.aba.on{background:linear-gradient(135deg,rgba(245,197,24,.22),rgba(245,197,24,.08));color:var(--txt);box-shadow:0 0 0 1px var(--borda2) inset}
+.painel{display:none;margin-top:16px}.painel.on{display:block}
+.barra{display:flex;flex-wrap:wrap;gap:10px;align-items:end;background:var(--glass);border:1px solid var(--borda);border-radius:16px;padding:14px;backdrop-filter:blur(8px)}
+.campo{flex:1 1 160px}
+.campo.q{flex:3 1 260px}
+label{display:block;font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+input{width:100%;background:rgba(5,8,13,.8);border:1px solid var(--borda);color:var(--txt);border-radius:10px;padding:11px 12px;font:15px var(--mono);color-scheme:dark}
+input:focus{outline:none;border-color:var(--bee);box-shadow:0 0 0 3px rgba(245,197,24,.18)}
+.btn{background:linear-gradient(135deg,var(--bee2),var(--bee));color:#111;border:0;border-radius:10px;padding:12px 22px;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 0 22px rgba(245,197,24,.35)}
+.btn:disabled{opacity:.55;cursor:wait}
+.dias{display:flex;gap:6px;flex-wrap:wrap}
+.dia{background:rgba(5,8,13,.6);border:1px solid var(--borda);color:var(--sub);border-radius:10px;padding:8px 11px;font:600 13px var(--mono);cursor:pointer;position:relative}
+.dia.on{color:#111;background:var(--bee);border-color:var(--bee);box-shadow:0 0 16px rgba(245,197,24,.45)}
+.dia .pt{position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;background:var(--wait)}
+.dia .pt.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)}.dia .pt.ld{background:var(--ciano);animation:pulso 1.2s infinite}
+#msg{margin:16px 2px;color:var(--sub);font-size:14px;min-height:20px}
+#msg.erro{color:var(--no)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+.kpi{background:var(--glass);border:1px solid var(--borda);border-radius:16px;padding:16px;position:relative;overflow:hidden}
+.kpi .k{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1.2px}
+.kpi .v{font:800 34px var(--mono);line-height:1.1;margin-top:6px}
+.kpi.dest{border-color:var(--borda2);box-shadow:0 0 30px rgba(245,197,24,.12) inset}
+.kpi.dest .v{color:var(--bee);text-shadow:0 0 20px rgba(245,197,24,.5)}
+.kpi .s{font-size:12px;color:var(--sub);margin-top:2px}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--sub);margin:26px 2px 10px;display:flex;align-items:center;gap:10px}
+h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--borda),transparent)}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.card{background:var(--glass);border:1px solid var(--borda);border-radius:14px;padding:13px 14px;cursor:pointer;transition:.18s;animation:entra .35s both}
+.card:hover{border-color:var(--borda2);transform:translateY(-2px);box-shadow:0 8px 26px rgba(0,0,0,.35),0 0 18px rgba(245,197,24,.12)}
+@keyframes entra{from{opacity:0;transform:translateY(6px)}}
+.card .top{display:flex;justify-content:space-between;gap:8px;align-items:start}
+.card .nome{font-weight:700;font-size:14px;line-height:1.25}
+.card .id{font:12px var(--mono);color:var(--sub)}
+.pos{font:800 12px var(--mono);color:#111;background:var(--bee);border-radius:7px;padding:2px 7px;height:max-content}
+.card.quase .pos{background:rgba(135,150,173,.25);color:var(--sub)}
+.mets{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.met{background:rgba(5,8,13,.55);border-radius:9px;padding:6px 8px;border:1px solid transparent}
+.met .k{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.8px}
+.met .v{font:700 15px var(--mono)}
+.met.ok .v{color:var(--ok)}.met.no{border-color:rgba(255,90,106,.45)}.met.no .v{color:var(--no)}
+.tabela{width:100%;border-collapse:separate;border-spacing:0 8px}
+.tabela td{background:var(--glass);border-top:1px solid var(--borda);border-bottom:1px solid var(--borda);padding:12px 14px;vertical-align:middle}
+.tabela td:first-child{border-left:1px solid var(--borda);border-radius:14px 0 0 14px}
+.tabela td:last-child{border-right:1px solid var(--borda);border-radius:0 14px 14px 0}
+.tabela tr.ganhou td{border-color:var(--borda2)}
+.dnum{font:800 18px var(--mono)}.dsem{font-size:12px;color:var(--sub)}
+.anel{display:flex;align-items:center;gap:10px}
+.anel svg{flex:none}
+.anel .v{font:700 16px var(--mono)}.anel .d{font-size:11.5px;color:var(--sub);line-height:1.3}
+.selo{font:800 12px var(--mono);letter-spacing:.6px;border-radius:9px;padding:7px 11px;display:inline-block;text-transform:uppercase}
+.selo.ok{background:var(--ok);color:#03200f;box-shadow:0 0 18px rgba(47,224,138,.45)}
+.selo.no{background:rgba(255,90,106,.14);color:var(--no);box-shadow:0 0 0 1px rgba(255,90,106,.4) inset}
+.selo.wait{background:rgba(135,150,173,.14);color:var(--sub)}
+.mais{background:none;border:0;color:var(--ciano);font-size:12px;font-weight:600;cursor:pointer;padding:6px 0 0}
+.lista{display:none;font:12px var(--mono);color:var(--sub);margin-top:6px;line-height:1.7}.lista.on{display:block}
+.perfil{display:flex;align-items:center;gap:16px;background:var(--glass);border:1px solid var(--borda2);border-radius:16px;padding:16px 18px;margin-top:14px;flex-wrap:wrap}
+.perfil .av{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:linear-gradient(135deg,rgba(56,214,255,.35),rgba(245,197,24,.35));border:1px solid var(--borda2)}
+.perfil h2{margin:0;font-size:19px}.perfil .sub{color:var(--sub);font:12.5px var(--mono)}
+.perfil .placar{margin-left:auto;text-align:right}
+.perfil .placar .n{font:800 34px var(--mono);color:var(--bee);text-shadow:0 0 18px rgba(245,197,24,.5);line-height:1}
+.perfil .placar .l{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px}
+.scan{height:2px;background:linear-gradient(90deg,transparent,var(--ciano),transparent);background-size:40% 100%;background-repeat:no-repeat;animation:scan 1.2s linear infinite;margin-top:10px;border-radius:2px;display:none}
+.scan.on{display:block}
+@keyframes scan{from{background-position:-40% 0}to{background-position:140% 0}}
+.vazio{color:var(--sub);font-size:14px;padding:18px;border:1px dashed var(--borda);border-radius:14px;text-align:center}
+.nota{margin-top:28px;font-size:12.5px;color:var(--sub);display:grid;gap:6px;border-left:2px solid var(--bee);padding-left:14px}
+.nota b{color:var(--txt)}
+@media (max-width:760px){
+  .regras,.kpis{grid-template-columns:1fr 1fr}.live{margin-left:0}
+  .tabela,.tabela tbody,.tabela tr,.tabela td{display:block}
+  .tabela tr{margin-bottom:10px;border:1px solid var(--borda);border-radius:14px;background:var(--glass)}
+  .tabela td,.tabela td:first-child,.tabela td:last-child{border:0;border-radius:0;background:none;padding:8px 14px}
+  .perfil .placar{margin-left:0;text-align:left}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">B</div>
+    <div class="tit"><h1>Black <span>Bee</span> · Conferência de vencedores</h1><p>Prêmio diário por entregador · dados direto da Bee pelo MCP</p></div>
+    <div class="live"><i></i><span id="relogio">conectado</span></div>
+  </header>
+
+  <div class="regras">
+    <div class="regra"><div class="k">Período do dia</div><div class="v">00h–23h59 <small>Brasília</small></div></div>
+    <div class="regra"><div class="k">Finalizadas</div><div class="v">≥ 10</div></div>
+    <div class="regra"><div class="k">Taxa de aceite</div><div class="v">≥ 70%</div></div>
+    <div class="regra"><div class="k">Cancelamentos</div><div class="v">≤ 5%</div></div>
+  </div>
+
+  <nav class="abas">
+    <button class="aba on" data-p="venc">Vencedores do dia</button>
+    <button class="aba" data-p="geral">Lista geral</button>
+    <button class="aba" data-p="ent">Conferir entregador</button>
+  </nav>
+
+  <section class="painel on" id="p-venc">
+    <div class="barra"><div style="flex:1 1 100%"><label>Dia</label><div class="dias" id="dias"></div></div></div>
+    <div class="scan" id="scanV"></div>
+    <div id="msgV" class="msg" style="margin:14px 2px;color:var(--sub)"></div>
+    <div id="outV"></div>
+  </section>
+
+  <section class="painel" id="p-geral">
+    <div class="barra" style="justify-content:space-between;align-items:center">
+      <div class="campo q"><label for="fg">Pesquisar na lista</label><input id="fg" autocomplete="off" placeholder="nome ou ID"></div>
+      <a class="btn" href="/api/geral.csv" style="text-decoration:none">Baixar CSV</a>
+    </div>
+    <div id="outG"></div>
+  </section>
+
+  <section class="painel" id="p-ent">
+    <form class="barra" id="f">
+      <div class="campo q"><label for="q">ID ou CPF do entregador</label><input id="q" inputmode="numeric" autocomplete="off" placeholder="ex.: 1185446" required></div>
+      <div class="campo"><label for="de">De</label><input id="de" type="date"></div>
+      <div class="campo"><label for="ate">Até</label><input id="ate" type="date"></div>
+      <button class="btn" id="btn">Conferir</button>
+    </form>
+    <div class="scan" id="scanE"></div>
+    <div id="msg"></div>
+    <div id="out"></div>
+  </section>
+
+  <div class="nota">
+    <div><b>Finalizadas e cancelamentos:</b> pedidos criados no dia que estão no nome do entregador. Cancelamento = cancelados ÷ (finalizados + cancelados).</div>
+    <div><b>Aceite (aproximado):</b> pedidos que ficaram com ele ÷ (esses + desistências). Desistência = o próprio entregador aceita e larga o pedido, que volta para "Buscando". A Bee não grava oferta recusada ou ignorada, então ela não entra na conta. O aceite oficial é o do painel da Bee.</div>
+    <div>Cada dia é lido inteiro uma vez (todos os pedidos + histórico dos que tiveram rebusca). O dia de hoje é relido de hora em hora e só vale depois da meia-noite.</div>
+  </div>
+</div>
+<script>
+const $ = (s) => document.querySelector(s);
+const SEM = ['dom','seg','ter','qua','qui','sex','sáb'];
+const semana = (d) => SEM[new Date(d + 'T12:00:00Z').getUTCDay()];
+const ddmm = (d) => d.slice(8) + '/' + d.slice(5, 7);
+const pct = (v) => v == null ? '—' : (Math.round(v * 10) / 10).toLocaleString('pt-BR') + '%';
+const hora = (iso) => iso ? new Date(iso).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza', hour: '2-digit', minute: '2-digit' }) : '';
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const guarda = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const le = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+let CFG, diaSel, tV, tE;
+
+function contar(el, alvo) {
+  const ini = performance.now(), dur = 700;
+  const passo = (t) => { const k = Math.min(1, (t - ini) / dur); el.textContent = Math.round(alvo * (1 - Math.pow(1 - k, 3))).toLocaleString('pt-BR'); if (k < 1) requestAnimationFrame(passo); };
+  requestAnimationFrame(passo);
+}
+function anel(v, meta, inverso, espera) {
+  const r = 15, C = 2 * Math.PI * r;
+  const frac = v == null ? 0 : Math.max(0, Math.min(1, v / 100));
+  const ok = v != null && (inverso ? v <= meta : v >= meta);
+  const cor = espera ? 'var(--wait)' : ok ? 'var(--ok)' : 'var(--no)';
+  return `<svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true"><circle cx="19" cy="19" r="${r}" fill="none" stroke="rgba(135,150,173,.18)" stroke-width="4"/>
+    <circle cx="19" cy="19" r="${r}" fill="none" stroke="${cor}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - frac)}" transform="rotate(-90 19 19)" style="transition:stroke-dashoffset .8s;filter:drop-shadow(0 0 4px ${cor})"/></svg>`;
+}
+
+// ---------- abas ----------
+document.querySelectorAll('.aba').forEach((b) => b.onclick = () => {
+  document.querySelectorAll('.aba').forEach((x) => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.painel').forEach((p) => p.classList.toggle('on', p.id === 'p-' + b.dataset.p));
+  guarda('black-aba', b.dataset.p);
+});
+
+// ---------- vencedores ----------
+async function status() {
+  const s = await fetch('/api/status').then((r) => r.json());
+  $('#dias').innerHTML = s.dias.map((d) => `<button class="dia${d.dia === diaSel ? ' on' : ''}" data-d="${d.dia}" title="${d.lido ? (d.fechado ? 'dia fechado e lido' : 'hoje, leitura parcial') : (d.leitura?.fase || 'na fila')}">
+    <span class="pt ${d.leitura && d.leitura.fase !== 'na fila' ? 'ld' : d.lido && d.fechado ? 'ok' : ''}"></span>${semana(d.dia)} ${ddmm(d.dia)}</button>`).join('');
+  document.querySelectorAll('.dia').forEach((b) => b.onclick = () => { diaSel = b.dataset.d; guarda('black-dia', diaSel); carregarV(); });
+  return s;
+}
+function cartao(x, i, quase) {
+  const m = (k, rot, v, ok) => `<div class="met ${ok ? 'ok' : 'no'}"><div class="k">${rot}</div><div class="v">${v}</div></div>`;
+  return `<div class="card${quase ? ' quase' : ''}" data-id="${x.id}" style="animation-delay:${Math.min(i, 30) * 25}ms">
+    <div class="top"><div><div class="nome">${esc(x.nome || 'Entregador ' + x.id)}</div><div class="id">ID ${x.id}</div></div><span class="pos">${quase ? '✗1' : '#' + (i + 1)}</span></div>
+    <div class="mets">${m('fin', 'Finaliz.', x.fin, x.ok.finalizadas)}${m('ac', 'Aceite', pct(x.aceite), x.ok.aceite)}${m('ca', 'Cancel.', pct(x.cancPct), x.ok.cancelamento)}</div></div>`;
+}
+async function carregarV() {
+  clearTimeout(tV);
+  const s = await status();
+  $('#scanV').classList.add('on');
+  const j = await fetch('/api/vencedores?dia=' + diaSel).then((r) => r.json());
+  $('#scanV').classList.remove('on');
+  if (!j.lido) {
+    const d = s.dias.find((x) => x.dia === diaSel), l = d?.leitura;
+    $('#msgV').textContent = l && l.fase !== 'na fila' ? `Lendo o dia ${ddmm(diaSel)}: ${l.fase}${l.total ? ` (${l.feito} de ${l.total})` : ` (${l.feito} páginas lidas)`}…` : `O dia ${ddmm(diaSel)} está na fila de leitura.`;
+    $('#outV').innerHTML = '';
+    tV = setTimeout(carregarV, 15000); return;
+  }
+  $('#msgV').textContent = j.fechado ? `Dia fechado · lido às ${hora(j.lidoEm)}` : `Hoje (parcial) · lido às ${hora(j.lidoEm)} · resultado só vale depois da meia-noite`;
+  $('#outV').innerHTML = `
+    <div class="kpis">
+      <div class="kpi dest"><div class="k">Vencedores</div><div class="v" data-n="${j.totais.vencedores}">0</div><div class="s">cumpriram os 3 critérios</div></div>
+      <div class="kpi"><div class="k">Entregadores ativos</div><div class="v" data-n="${j.entregadores}">0</div><div class="s">com pedido no dia</div></div>
+      <div class="kpi"><div class="k">Bateram 10 entregas</div><div class="v" data-n="${j.totais.atingiram10}">0</div><div class="s">critério de volume</div></div>
+      <div class="kpi"><div class="k">Por um critério</div><div class="v" data-n="${j.totais.quase ?? j.quase.length}">0</div><div class="s">ficaram de fora</div></div>
+    </div>
+    <h3>Vencedores · ${semana(j.dia)} ${ddmm(j.dia)}</h3>
+    ${j.vencedores.length ? `<div class="grade">${j.vencedores.map((x, i) => cartao(x, i)).join('')}</div>` : '<div class="vazio">Nenhum entregador cumpriu os três critérios neste dia.</div>'}
+    ${j.quase.length ? `<h3>Ficaram de fora por um critério${j.totais.quase > j.quase.length ? ` · ${j.quase.length} de ${j.totais.quase}` : ''}</h3><div class="grade">${j.quase.map((x, i) => cartao(x, i, true)).join('')}</div>` : ''}`;
+  document.querySelectorAll('.kpi .v[data-n]').forEach((el) => contar(el, +el.dataset.n));
+  document.querySelectorAll('.card').forEach((c) => c.onclick = () => { $('#q').value = c.dataset.id; $('#de').value = diaSel; $('#ate').value = diaSel; document.querySelector('.aba[data-p=ent]').click(); consultar(); });
+  if (!j.fechado) tV = setTimeout(carregarV, 120000);
+}
+
+// ---------- lista geral ----------
+let G = null, tG;
+async function carregarG() {
+  clearTimeout(tG);
+  G = await fetch('/api/geral').then((r) => r.json());
+  desenhaG();
+  tG = setTimeout(carregarG, 120000);
+}
+function desenhaG() {
+  if (!G) return;
+  const f = ($('#fg').value || '').trim().toLowerCase();
+  const lista = G.elegiveis.filter((e) => !f || e.id.includes(f) || (e.nome || '').toLowerCase().includes(f));
+  const lidos = G.dias.filter((d) => d.lido && d.fechado).length;
+  const chipDia = (d) => `<span class="selo ${d.parcial ? 'wait' : 'ok'}" style="padding:3px 7px;font-size:11px;margin:2px 4px 2px 0" title="${d.fin} finalizadas · aceite ${pct(d.aceite)} · cancel. ${pct(d.cancPct)}">${ddmm(d.dia)}</span>`;
+  $('#outG').innerHTML = `
+    <div class="kpis">
+      <div class="kpi dest"><div class="k">Entregadores elegíveis</div><div class="v" data-n="${G.totais.entregadores}">0</div><div class="s">venceram ao menos 1 dia</div></div>
+      <div class="kpi"><div class="k">Prêmios diários</div><div class="v" data-n="${G.totais.premios}">0</div><div class="s">soma de dias vencidos</div></div>
+      <div class="kpi"><div class="k">Dias varridos</div><div class="v">${lidos}<span style="font-size:16px;color:var(--sub)"> / ${G.dias.length}</span></div><div class="s">${ddmm(G.desde)} a ${ddmm(G.ate)} · fechados e lidos</div></div>
+      <div class="kpi"><div class="k">Por dia</div><div class="s" style="margin-top:8px;line-height:1.9">${G.dias.map((d) => `${ddmm(d.dia)}: <b style="color:var(--txt);font-family:var(--mono)">${d.lido ? d.vencedores : '…'}</b>`).join(' · ')}</div></div>
+    </div>
+    <h3>Elegíveis · ${lista.length}</h3>
+    ${lista.length ? `<table class="tabela"><tbody>${lista.map((e, i) => `<tr class="ganhou lin" data-id="${e.id}" style="cursor:pointer">
+      <td style="width:56px"><span class="pos">#${i + 1}</span></td>
+      <td><div style="font-weight:700">${esc(e.nome || 'Entregador ' + e.id)}</div><div class="dsem" style="font-family:var(--mono)">ID ${e.id}</div></td>
+      <td><div class="dnum" style="color:var(--bee)">${e.premios}</div><div class="dsem">dias premiados</div></td>
+      <td>${e.dias.map(chipDia).join('')}</td>
+      <td><div class="dnum">${e.fin}</div><div class="dsem">finalizadas</div></td></tr>`).join('')}</tbody></table>`
+      : '<div class="vazio">Nenhum elegível ainda nos dias já varridos.</div>'}`;
+  document.querySelectorAll('#outG .kpi .v[data-n]').forEach((el) => contar(el, +el.dataset.n));
+  document.querySelectorAll('#outG .lin').forEach((c) => c.onclick = () => { $('#q').value = c.dataset.id; $('#de').value = G.desde; $('#ate').value = CFG.ate < CFG.hoje ? CFG.ate : CFG.hoje; document.querySelector('.aba[data-p=ent]').click(); consultar(); });
+}
+$('#fg').oninput = desenhaG;
+
+// ---------- entregador ----------
+async function consultar(silencioso) {
+  const q = $('#q').value.trim(), de = $('#de').value, ate = $('#ate').value;
+  if (!q) return;
+  guarda('black-q', q);
+  clearTimeout(tE);
+  if (!silencioso) { $('#btn').disabled = true; $('#msg').className = ''; $('#msg').textContent = 'Consultando a Bee…'; $('#scanE').classList.add('on'); }
+  try {
+    const r = await fetch(`/api/entregador?q=${encodeURIComponent(q)}&de=${de}&ate=${ate}`);
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.erro || 'falha');
+    desenhaE(j); $('#msg').textContent = '';
+    if (j.dias.some((d) => !d.aceiteLido)) tE = setTimeout(() => consultar(true), 30000);
+  } catch (e) {
+    if (!silencioso) { $('#out').innerHTML = ''; $('#msg').className = 'erro'; $('#msg').textContent = e.message; }
+  } finally { $('#btn').disabled = false; $('#scanE').classList.remove('on'); }
+}
+function desenhaE(j) {
+  const e = j.entregador, fechados = j.dias.filter((d) => !d.parcial).length;
+  j.premiados = j.dias.filter((d) => d.premio && d.aceiteLido && !d.parcial).length;
+  const ini = (e.nome || '?').split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('');
+  const linhas = j.dias.map((d, i) => {
+    const esp = !d.aceiteLido;
+    let selo;
+    if (d.parcial) selo = '<span class="selo wait">Em andamento</span>';
+    else if (esp && d.ok.finalizadas && d.ok.cancelamento) selo = '<span class="selo wait">Falta o aceite</span>';
+    else if (esp) selo = '<span class="selo no">Não venceu</span>';
+    else selo = d.premio ?'<span class="selo ok">Vencedor</span>' : '<span class="selo no">Não venceu</span>';
+    const n = d.detalhe.desistencias.length + d.detalhe.cancelados.length;
+    const det = n ? `<br><button class="mais" type="button" data-i="${i}">ver ${n} ${n === 1 ? 'pedido' : 'pedidos'} ›</button><div class="lista" id="l${i}">${
+      d.detalhe.desistencias.map((x) => `${x.proprio ? 'DESISTIU' : 'RETIRADO PELA OPERAÇÃO'} · #${x.pedido} · ${esc(x.loja)} · ${hora(x.quando)}`).concat(
+      d.detalhe.cancelados.map((x) => `CANCELADO · #${x.pedido} · ${esc(x.loja)} · ${hora(x.quando)}`)).join('<br>')}</div>` : '';
+    const fin = Math.min(100, d.fin * 10);
+    return `<tr class="${d.premio && !d.parcial ? 'ganhou' : ''}">
+      <td><div class="dnum">${ddmm(d.dia)}</div><div class="dsem">${semana(d.dia)}${d.parcial ? ' · parcial' : ''}</div></td>
+      <td><div class="anel">${anel(fin, 100)}<div><div class="v">${d.fin}</div><div class="d">finalizadas${d.andamento ? ` · +${d.andamento} em curso` : ''}</div></div></div></td>
+      <td><div class="anel">${anel(esp ? null : d.aceite, 70, false, esp)}<div><div class="v">${esp ? '—' : pct(d.aceite)}</div><div class="d">${esp ? (d.emLeitura || 'na fila de leitura') : `${d.aceitas} aceitas · ${d.desistencias} desist.${d.retiradas ? ` · ${d.retiradas} retir.` : ''}`}</div></div></div></td>
+      <td><div class="anel">${anel(d.cancPct == null ? null : 100 - d.cancPct * 10, 50)}<div><div class="v">${pct(d.cancPct)}</div><div class="d">${d.canc} cancelados</div></div></div></td>
+      <td>${selo}${det}</td></tr>`;
+  }).join('');
+  $('#out').innerHTML = `
+    <div class="perfil"><div class="av">${esc(ini)}</div>
+      <div><h2>${esc(e.nome)}</h2><div class="sub">ID ${esc(e.id)}${e.franquia ? ' · ' + esc(e.franquia) : ''} · ${ddmm(j.de)} a ${ddmm(j.ate)}</div></div>
+      <div class="placar"><div class="n"><span data-n="${j.premiados}">0</span><span style="font-size:16px;color:var(--sub)"> / ${fechados}</span></div><div class="l">dias vencedores</div></div></div>
+    <table class="tabela"><tbody>${linhas}</tbody></table>`;
+  contar(document.querySelector('.placar [data-n]'), j.premiados);
+  document.querySelectorAll('.mais').forEach((b) => b.onclick = () => $('#l' + b.dataset.i).classList.toggle('on'));
+}
+$('#f').onsubmit = (ev) => { ev.preventDefault(); consultar(); };
+
+(async () => {
+  CFG = await fetch('/api/config').then((r) => r.json());
+  const ontem = new Date(Date.parse(CFG.hoje + 'T12:00:00Z') - 864e5).toISOString().slice(0, 10);
+  const padrao = ontem < CFG.desde ? CFG.desde : ontem > CFG.ate ? CFG.ate : ontem;
+  diaSel = le('black-dia') || padrao;
+  if (diaSel < CFG.desde || diaSel > CFG.hoje) diaSel = padrao;
+  $('#de').value = CFG.desde; $('#ate').value = CFG.ate < CFG.hoje ? CFG.ate : CFG.hoje;
+  const q = new URLSearchParams(location.search).get('q');
+  if (q) { $('#q').value = q; document.querySelector('.aba[data-p=ent]').click(); consultar(); }
+  else if (['ent', 'geral'].includes(le('black-aba'))) document.querySelector(`.aba[data-p=${le('black-aba')}]`).click();
+  if (le('black-q') && !q) $('#q').value = le('black-q');
+  carregarV(); carregarG();
+  setInterval(() => { $('#relogio').textContent = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) + ' · MCP Bee'; }, 1000);
+})();
+</script>
+</body>
+</html>
