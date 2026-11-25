@@ -78,9 +78,17 @@ async function rotaMcp(req, res, chaveNoCaminho) {
   json(res, 200, lote ? respostas : respostas[0]);
 }
 
+// registro de acesso (sem a chave do MCP; /saude e /api/rev ficam de fora porque repetem o tempo todo)
+function registrarAcesso(req, res, pathname) {
+  if (pathname === '/saude' || pathname === '/api/rev' || /\.(js|css|png|svg|ico|webp|woff2?)$/.test(pathname)) return;
+  const inicio = Date.now();
+  res.on('finish', () => log('http', req.method, pathname.replace(/^\/mcp\/[^/]+/, '/mcp/<chave>'), res.statusCode, `${Date.now() - inicio}ms`, String(req.headers['user-agent'] || '-').slice(0, 50)));
+}
+
 http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://x');
+    registrarAcesso(req, res, url.pathname);
     if (url.pathname === '/saude') return json(res, 200, { ok: true });
     // o MCP não usa OAuth (a chave vai no cabeçalho ou no endereço): a descoberta responde 404, sem pedir senha
     if (url.pathname.startsWith('/.well-known/')) return json(res, 404, { erro: 'não encontrado' });
