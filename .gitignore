@@ -6,6 +6,7 @@
 !/painel-bee/
 !/painel-pague-menos/
 !/painel-black/
+!/painel-gm-consultoria/
 
 # Nunca versionar acessos nem dados coletados
 .env

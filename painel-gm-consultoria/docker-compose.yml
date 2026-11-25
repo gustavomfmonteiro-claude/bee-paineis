@@ -1,0 +1,20 @@
+# Compose da VPS (vira /opt/painel-gm-consultoria/docker-compose.yml). Sem portas publicadas:
+# o acesso é pelo Caddy do jurflow (rede jurflow-prod_default), como os outros painéis.
+# O .env (fora do git) traz PAINEL_SENHA (e, se quiser, PAINEL_USUARIO).
+services:
+  painel-gm-consultoria:
+    build: .
+    image: painel-gm-consultoria:latest
+    container_name: painel-gm-consultoria
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      TZ: America/Fortaleza
+    volumes:
+      - ./dados:/app/dados
+    networks:
+      - jurflow-prod_default
+
+networks:
+  jurflow-prod_default:
+    external: true
