@@ -19,7 +19,10 @@ if ($LASTEXITCODE -ne 0) { throw 'Falha no envio.' }
 Remove-Item $pacote
 
 Write-Host 'Instalando (docker compose + Caddy)...'
-$saida = ssh -o BatchMode=yes bee-vps "mkdir -p $destino && tar -xzf /tmp/painel-gm-consultoria.tgz -C $destino && rm /tmp/painel-gm-consultoria.tgz && sed -i 's/\r$//' $destino/vps/instalar.sh && bash $destino/vps/instalar.sh"
+# O tar do Windows grava atributos (SCHILY.fflags) e permissoes do Windows: o tar da VPS ignora os dois,
+# e o chmod deixa os arquivos como 644/755 (o .env e a pasta dados continuam fechados).
+$extrair = "tar --warning=no-unknown-keyword --no-same-owner --no-same-permissions -xzf /tmp/painel-gm-consultoria.tgz -C $destino"
+$saida = ssh -o BatchMode=yes bee-vps "mkdir -p $destino && $extrair && rm /tmp/painel-gm-consultoria.tgz && chmod -R u+w,go-w $destino && sed -i 's/\r$//' $destino/vps/instalar.sh && bash $destino/vps/instalar.sh"
 if ($LASTEXITCODE -ne 0) { $saida; throw 'A instalacao falhou na VPS.' }
 
 $valores = @{}

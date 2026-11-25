@@ -21,7 +21,12 @@ fi
 mkdir -p dados
 
 docker network inspect jurflow-prod_default >/dev/null
-docker compose up -d --build >/dev/null
+# a saída do build vai para um log (o PowerShell 5 trata texto no stderr como erro); só aparece se falhar
+if ! docker compose up -d --build >/tmp/painel-gm-compose.log 2>&1; then
+  cat /tmp/painel-gm-compose.log
+  echo "COMPOSE_FALHOU"
+  exit 1
+fi
 sleep 3
 docker exec painel-gm-consultoria wget -qO- http://127.0.0.1:3110/saude >/dev/null && echo "CONTEINER_OK"
 
@@ -37,7 +42,8 @@ elif grep -q "$DOMINIO" "$ARQ"; then
   echo "CADDY_JA_TINHA"
 else
   cp -p "$ARQ" "$ARQ.bak-gm-$(date +%Y%m%d%H%M%S)"
-  printf '\n%s {\n\tencode gzip\n\treverse_proxy painel-gm-consultoria:3110\n}\n' "$DOMINIO" >> "$ARQ"
+  # ">>" grava no mesmo arquivo (mesmo inode): o Caddyfile é montado como arquivo no contêiner do Caddy
+  printf '\n%s {\n    encode gzip\n    reverse_proxy painel-gm-consultoria:3110\n}\n' "$DOMINIO" >> "$ARQ"
   if docker exec "$CADDY" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1 \
      && docker exec "$CADDY" caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1; then
     echo "CADDY_OK"
