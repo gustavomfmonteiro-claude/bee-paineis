@@ -30,18 +30,27 @@ const somaDia = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toI
 const dias = (de, ate) => { const o = []; for (let d = de; d <= ate; d = somaDia(d, 1)) o.push(d); return o; };
 const seg = (a, b) => (new Date(a) - new Date(b)) / 1000;
 
-// ---------- leitura das desistências do dia (franquias ativas inteiras) ----------
+// ---------- leitura do dia (franquias ativas inteiras) ----------
+// Versão 2 (25/11, pedido do usuário: "todas as modalidades finalizadas na data"): o dia conta as
+// finalizadas pela DATA DE FINALIZAÇÃO e as canceladas pela data do cancelamento, em qualquer modalidade
+// (agendada, D+1, Econômica, retorno, multi-paradas, transferência). Antes contava pela data de criação
+// e com a foto da listagem, o que deixava de fora agendados criados na véspera e pedidos ainda em curso.
+const VERSAO = 2;
 const arq = (dia) => path.join(CACHE, `desistencias-${dia}.json`);
-const lerCache = (dia) => { try { return JSON.parse(fs.readFileSync(arq(dia), 'utf8')); } catch { return null; } };
+const lerCache = (dia) => { try { const c = JSON.parse(fs.readFileSync(arq(dia), 'utf8')); return c.versao === VERSAO ? c : null; } catch { return null; } };
 const leitura = {}; // dia → { fase, feito, total, inicio }
 
-// O filtro de data do MCP corta pelo dia em UTC (pedido criado às 21h de Brasília já cai no dia seguinte).
-// Por isso cada dia de Brasília junta duas listagens UTC (dia e dia+1) e filtra pelo horário de Brasília.
-// A listagem de um dia UTC já encerrado fica em cache e serve aos dois dias de Brasília que a usam.
+// O filtro de data do MCP corta pelo dia em UTC. Um dia de Brasília D usa as listagens UTC de D-2 a D+1
+// (pedido agendado nasce na véspera ou antes). Cada listagem guarda a hora em que foi lida; para um dia
+// fechado ela só vale se foi lida 2 h depois do fim do dia, quando os status já estão finais.
 const arqLista = (d) => path.join(CACHE, `lista-utc-${d}.json`);
-async function listarUTC(d, st) {
-  const encerrado = Date.now() >= Date.parse(somaDia(d, 1) + 'T00:00:00Z') + 30 * 60e3;
-  if (encerrado) { try { return JSON.parse(fs.readFileSync(arqLista(d), 'utf8')); } catch {} }
+const fimDiaBR = (dia) => Date.parse(somaDia(dia, 1) + 'T03:00:00Z');
+async function listarUTC(d, st, precisaDepoisDe) {
+  try {
+    const c = JSON.parse(fs.readFileSync(arqLista(d), 'utf8'));
+    if (c.versao === VERSAO && Date.parse(c.lidoEm) >= precisaDepoisDe) return c.pedidos;
+  } catch {}
+  const lidoEm = new Date().toISOString();
   const pedidos = [];
   let prox = 1, fim = false;
   async function trab(tool) {
@@ -51,28 +60,37 @@ async function listarUTC(d, st) {
       if (!r.data?.length) { fim = true; break; }
       for (const o of r.data) pedidos.push({ id: o.id, criado: o.created_at, busca: o.searching, st: String(o.status),
         ent: o.deliveryman?.id != null ? String(o.deliveryman.id) : null, nome: o.deliveryman?.name || '',
-        loja: o.merchant?.name || '', cancEm: o.dates?.cancelled_at || null });
+        loja: o.merchant?.name || '', fimEm: o.dates?.finished_at || null, cancEm: o.dates?.cancelled_at || null });
       st.feito++;
       if (!r.meta?.next_page) fim = true;
     }
   }
   await Promise.all(VARRE.map(trab));
   const lista = [...new Map(pedidos.map((p) => [p.id, p])).values()];
-  if (encerrado) fs.writeFileSync(arqLista(d), JSON.stringify(lista));
+  fs.writeFileSync(arqLista(d), JSON.stringify({ versao: VERSAO, dia: d, lidoEm, pedidos: lista }));
   return lista;
 }
 async function listarDia(dia, st) {
-  const todos = [...await listarUTC(dia, st), ...await listarUTC(somaDia(dia, 1), st)];
-  return [...new Map(todos.filter((p) => diaBR(p.criado) === dia).map((p) => [p.id, p])).values()];
+  const fechado = dia < hojeBR();
+  const agora = Date.now();
+  const todos = [];
+  for (const d of [somaDia(dia, -2), somaDia(dia, -1), dia, somaDia(dia, 1)]) {
+    if (Date.parse(d + 'T00:00:00Z') > agora) continue; // dia UTC que ainda não começou
+    // dia fechado: lista lida 2 h depois do fim do dia; hoje: lista da última hora (a de D-2 vale como está)
+    const precisa = fechado ? fimDiaBR(dia) + 2 * 3600e3 : d === somaDia(dia, -2) ? 0 : agora - RELER_HOJE_MIN * 60e3;
+    todos.push(...await listarUTC(d, st, precisa));
+  }
+  return [...new Map(todos.map((p) => [p.id, p])).values()];
 }
+const doDia = (iso, dia) => !!iso && diaBR(iso) === dia;
 
 async function lerDesistencias(dia) {
   const st = leitura[dia] = { fase: 'listando pedidos', feito: 0, total: null, inicio: Date.now() };
   try {
     const pedidos = await listarDia(dia, st);
-    // Quem desiste faz o pedido voltar a "Buscando", e isso renova o searching. Sem essa marca
-    // não há rebusca (amostra de 80 pedidos no relatório de rebuscas: zero). Agendados também entram aqui.
-    const cand = pedidos.filter((p) => p.busca && p.criado && seg(p.busca, p.criado) > 60);
+    // Quem desiste faz o pedido voltar a "Buscando", e isso renova o searching. Lê o histórico dos pedidos
+    // cuja última busca foi neste dia e veio mais de 60 s depois da criação (inclui agendados soltos no dia).
+    const cand = pedidos.filter((p) => p.busca && p.criado && doDia(p.busca, dia) && seg(p.busca, p.criado) > 60);
     Object.assign(st, { fase: 'lendo históricos com rebusca', feito: 0, total: cand.length, listados: pedidos.length });
     const porEntregador = {};
     const fila = [...cand];
@@ -92,25 +110,24 @@ async function lerDesistencias(dia) {
     }
     await Promise.all(VARRE.map(trab));
     const fechado = dia < hojeBR();
-    // Placar de todos os entregadores do dia, pela mesma listagem (pedidos criados no dia, no nome dele)
+    // Placar do dia: finalizadas na data (qualquer modalidade), canceladas na data e, só hoje, as em curso criadas no dia
     const entregadores = {};
+    const conta = (p) => entregadores[p.ent] ||= { nome: p.nome, fin: 0, canc: 0, tot: 0, cancs: [] };
     for (const p of pedidos) {
-      if (!p.ent || diaBR(p.criado) !== dia) continue;
-      const e = entregadores[p.ent] ||= { nome: p.nome, fin: 0, canc: 0, tot: 0, cancs: [] };
-      e.tot++; if (p.st === '50') e.fin++; else if (p.st === '60') { e.canc++; e.cancs.push({ pedido: p.id, loja: p.loja, quando: p.cancEm }); }
+      if (!p.ent) continue;
+      if (p.st === '50' && doDia(p.fimEm, dia)) { const e = conta(p); e.fin++; e.tot++; }
+      else if (p.st === '60' && doDia(p.cancEm, dia)) { const e = conta(p); e.canc++; e.tot++; e.cancs.push({ pedido: p.id, loja: p.loja, quando: p.cancEm }); }
+      else if (p.st !== '50' && p.st !== '60' && doDia(p.criado, dia)) conta(p).tot++;
     }
-    const res = { dia, fechado, lidoEm: new Date().toISOString(), listados: pedidos.length, rebuscas: cand.length, porEntregador, entregadores };
+    const res = { versao: VERSAO, dia, fechado, lidoEm: new Date().toISOString(), listados: pedidos.length, rebuscas: cand.length, porEntregador, entregadores };
     fs.writeFileSync(arq(dia), JSON.stringify(res));
-    log('desistências', dia, fechado ? 'fechado' : 'parcial', pedidos.length, 'pedidos', cand.length, 'rebuscas');
+    log('dia lido', dia, fechado ? 'fechado' : 'parcial', pedidos.length, 'pedidos', cand.length, 'rebuscas');
     return res;
   } finally { delete leitura[dia]; }
 }
 
-// Saídas que aconteceram depois da meia-noite em pedidos criados na véspera ficam no cache da véspera;
-// por isso cada dia olha o próprio arquivo e o do dia anterior.
 function desistenciasDe(id, dia) {
-  const out = [];
-  for (const d of [somaDia(dia, -1), dia]) for (const s of lerCache(d)?.porEntregador?.[id] || []) if (diaBR(s.quando) === dia) out.push(s);
+  const out = (lerCache(dia)?.porEntregador?.[id] || []).filter((s) => diaBR(s.quando) === dia);
   return [...new Map(out.map((s) => [s.pedido + s.quando, s])).values()];
 }
 
@@ -118,7 +135,7 @@ let fila = Promise.resolve();
 function agendar() {
   const hoje = hojeBR();
   // ontem primeiro (é o dia que se confere), depois os outros dias fechados do mais novo ao mais velho, hoje por último
-  const alvo = dias(somaDia(DESDE, -1), ATE < hoje ? ATE : hoje).sort((a, b) => (a === hoje) - (b === hoje) || b.localeCompare(a));
+  const alvo = dias(DESDE, ATE < hoje ? ATE : hoje).sort((a, b) => (a === hoje) - (b === hoje) || b.localeCompare(a));
   for (const d of alvo) {
     const c = lerCache(d);
     const velho = !c || (!c.fechado && (d < hoje || Date.now() - Date.parse(c.lidoEm) > RELER_HOJE_MIN * 60e3));
@@ -163,7 +180,7 @@ async function consulta(q, de, ate) {
   const doCache = (dia) => { const c = lerCache(dia); return c?.fechado && c.entregadores ? c : null; };
   const faltam = dias(de, ate).filter((d) => !doCache(d));
   // +1 dia porque o filtro do MCP é por dia UTC (noite de Brasília cai no dia seguinte)
-  const peds = faltam.length ? await pedidosDoEntregador(ent.id, faltam[0], somaDia(faltam[faltam.length - 1], 1)) : [];
+  const peds = faltam.length ? await pedidosDoEntregador(ent.id, somaDia(faltam[0], -2), somaDia(faltam[faltam.length - 1], 1)) : [];
   const linhas = dias(de, ate).map((dia) => {
     const cc = doCache(dia);
     let p, fin, canc, andamento, cancelados;
@@ -171,11 +188,11 @@ async function consulta(q, de, ate) {
       const e = cc.entregadores[ent.id] || { fin: 0, canc: 0, tot: 0, cancs: [] };
       fin = e.fin; canc = e.canc; andamento = e.tot - e.fin - e.canc; p = { length: e.tot }; cancelados = e.cancs || [];
     } else {
-      p = peds.filter((x) => x.dia === dia);
-      fin = p.filter((x) => x.st === '50').length;
-      canc = p.filter((x) => x.st === '60').length;
-      andamento = p.length - fin - canc;
-      cancelados = p.filter((x) => x.st === '60').map((x) => ({ pedido: x.id, loja: x.loja, quando: x.canc }));
+      const f = peds.filter((x) => x.st === '50' && doDia(x.fim, dia));
+      const c = peds.filter((x) => x.st === '60' && doDia(x.canc, dia));
+      const a = peds.filter((x) => x.st !== '50' && x.st !== '60' && doDia(x.criado, dia));
+      fin = f.length; canc = c.length; andamento = a.length; p = { length: fin + canc + andamento };
+      cancelados = c.map((x) => ({ pedido: x.id, loja: x.loja, quando: x.canc }));
     }
     const desist = desistenciasDe(ent.id, dia);
     const propria = desist.filter((d) => d.proprio);
