@@ -264,13 +264,18 @@ async function carregarG() {
 function desenhaG() {
   if (!G) return;
   const f = ($('#fg').value || '').trim().toLowerCase();
+  const provDia = new Set(G.dias.filter((d) => d.lido && !d.fechado && d.dia < CFG.hoje).map((d) => d.dia));
+  const apurados = G.elegiveis.filter((e) => e.premios > 0);
+  const provEnt = G.elegiveis.filter((e) => e.dias.some((d) => provDia.has(d.dia)));
+  const provPremios = provEnt.reduce((s, e) => s + e.dias.filter((d) => provDia.has(d.dia)).length, 0);
+  const provValor = provEnt.reduce((s, e) => s + e.dias.filter((d) => provDia.has(d.dia)).reduce((t, d) => t + (d.premio || 0), 0), 0);
   const lista = G.elegiveis.filter((e) => !f || e.id.includes(f) || (e.nome || '').toLowerCase().includes(f));
   const lidos = G.dias.filter((d) => d.lido && d.fechado).length;
-  const chipDia = (d) => `<span class="selo ${d.parcial ? 'wait' : 'ok'}" style="padding:3px 7px;font-size:11px;margin:2px 4px 2px 0" title="${d.fin} finalizadas · aceite ${pct(d.aceite)} · cancel. ${pct(d.cancPct)}">${ddmm(d.dia)}</span>`;
+  const chipDia = (d) => `<span class="selo ${d.parcial ? 'wait' : 'ok'}" style="padding:3px 7px;font-size:11px;margin:2px 4px 2px 0" title="${provDia.has(d.dia) ? 'PROVISÓRIO (lendo as notificações do app) · ' : d.parcial ? 'hoje, parcial · ' : ''}${d.fin} finalizadas · aceite ${pct(d.aceite)} · cancel. ${pct(d.cancPct)}">${ddmm(d.dia)}${provDia.has(d.dia) ? ' prov.' : d.parcial ? ' hoje' : ''}</span>`;
   $('#outG').innerHTML = `
     <div class="kpis">
-      <div class="kpi dest"><div class="k">Entregadores elegíveis</div><div class="v" data-n="${G.totais.entregadores}">0</div><div class="s">venceram ao menos 1 dia</div></div>
-      <div class="kpi"><div class="k">A pagar (dias fechados)</div><div class="v" style="color:var(--ok)">${brl(G.totais.valor)}</div><div class="s">${G.totais.premios} prêmios diários</div></div>
+      <div class="kpi dest"><div class="k">Entregadores elegíveis</div><div class="v" data-n="${apurados.length}">0</div><div class="s">venceram ao menos 1 dia apurado${provEnt.length ? ` · <b style="color:var(--txt)">+${provEnt.length}</b> provisórios (lendo notificações)` : ''}</div></div>
+      <div class="kpi"><div class="k">A pagar (dias fechados)</div><div class="v" style="color:var(--ok)">${brl(G.totais.valor)}</div><div class="s">${G.totais.premios} prêmios diários${provPremios ? ` · provisório: ${provPremios} prêmios, ${brl(provValor)} (entra quando as notificações forem lidas)` : ''}</div></div>
       <div class="kpi"><div class="k">Dias apurados</div><div class="v">${lidos}<span style="font-size:16px;color:var(--sub)"> / ${G.dias.length}</span></div><div class="s">${ddmm(G.desde)} a ${ddmm(G.ate)} · só dias fechados entram no valor</div></div>
     </div>
     <h3>Valores apurados por dia</h3>
@@ -281,7 +286,7 @@ function desenhaG() {
       <td><div class="dnum">${brl(d.valor)}</div><div class="dsem">apurado</div></td></tr>`).join('')}
       <tr><td><div class="dnum">Total</div></td><td></td><td><div class="dnum">${G.totais.premios}</div><div class="dsem">prêmios</div></td><td><div class="dnum" style="color:var(--bee)">${brl(G.estimativa.apurado)}</div><div class="dsem">apurado</div></td></tr></tbody></table>`
       : '<div class="vazio">Nenhum dia fechado ainda.</div>'}
-    <h3>Elegíveis · ${lista.length}</h3>
+    <h3>Elegíveis · ${apurados.length} apurados${provEnt.length ? ` · ${lista.length - apurados.filter((e) => lista.includes(e)).length} só com dia provisório` : ''}</h3>
     ${lista.length ? `<table class="tabela"><tbody>${lista.map((e, i) => `<tr class="ganhou lin" data-id="${e.id}" style="cursor:pointer">
       <td style="width:56px"><span class="pos">#${i + 1}</span></td>
       <td><div style="font-weight:700">${esc(e.nome || 'Entregador ' + e.id)}</div><div class="dsem" style="font-family:var(--mono)">ID ${e.id}</div></td>
