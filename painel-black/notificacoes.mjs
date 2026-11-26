@@ -17,7 +17,7 @@ function vez() { // ritmo da rota REST; a cota é a mesma do MCP
   fila = p.catch(() => {});
   return p;
 }
-export async function notificacoesDoPedido(id) {
+async function buscarNotificacoes(id) {
   for (let t = 0; t < 8; t++) {
     await vez();
     let r;
@@ -29,14 +29,19 @@ export async function notificacoesDoPedido(id) {
     if (Number.isFinite(resta) && resta <= 3) await espera(8000); // cota do minuto quase no fim: deixa folga para o MCP
     if (r.status === 404) return [];
     if (!r.ok) throw new Error('notificações HTTP ' + r.status);
-    const j = await r.json();
-    // "1395877-HELDER BRAGA DE SOUSA " → id + nome; telefone e afins nunca são guardados
-    return (j.data || []).map((n) => {
-      const m = String(n.deliveryman || '').match(/^\s*(\d+)\s*-\s*(.*)$/);
-      return [m ? m[1] : null, m ? m[2].trim() : String(n.deliveryman || '').trim(), n.status_label, n.created_at, n.position ?? null];
-    });
+    return (await r.json()).data || [];
   }
   throw new Error('rota de notificações não respondeu');
+}
+// "1395877-HELDER BRAGA DE SOUSA " → id + nome; telefone e afins nunca são guardados
+const separa = (n) => { const m = String(n.deliveryman || '').match(/^\s*(\d+)\s*-\s*(.*)$/); return m ? [m[1], m[2].trim()] : [null, String(n.deliveryman || '').trim()]; };
+export async function notificacoesDoPedido(id) {
+  return (await buscarNotificacoes(id)).map((n) => { const [ent, nome] = separa(n); return [ent, nome, n.status_label, n.created_at, n.position ?? null]; });
+}
+// Forma completa, para a aba de evidências (mesmas colunas da tela da Bee)
+export async function notificacoesCompletas(id) {
+  return (await buscarNotificacoes(id)).map((n) => { const [ent, nome] = separa(n); return { ent, nome, veiculo: n.vehicle || '', distancia: n.distance_in_meters ?? null,
+    posicao: n.position ?? null, delay: n.delay ?? null, criada: n.created_at || null, envio: n.send_at || null, exclusao: n.deleted_at || null, situacao: n.status_label }; });
 }
 
 export const ENVIADA = new Set(['sent', 'received', 'accepted', 'refused']);
@@ -70,12 +75,18 @@ export async function lerNotificacoesDia({ dia, pedidos, arqPedidos, st, log }) 
   // Resumo
   const porEntregador = {}, porHora = Array.from({ length: 24 }, () => ({ enviadas: 0, aceitas: 0, recusadas: 0 }));
   const totais = { waiting_send: 0, sent: 0, received: 0, accepted: 0, refused: 0, send_error: 0, outras: 0 };
-  let pedidosComNotif = 0, pedidosAceitosPorNotif = 0, somaPosAceite = 0, nPosAceite = 0;
+  let aceitesForaDaNotif = 0, pedidosComNotif = 0, pedidosAceitosPorNotif = 0, somaPosAceite = 0, nPosAceite = 0;
   for (const p of alvo) {
-    const linhas = (cache[p.id]?.linhas || []).filter((l) => doDia(l[3]));
+    const linhas = (cache[p.id]?.linhas || []).filter((l) => doDia(l[3])).map((l) => [...l]); // cópia: a correção do aceite não mexe no cache
     if (!linhas.length) continue;
     pedidosComNotif++;
     let aceitou = false;
+    // Caso #55893486: o entregador aceitou, ficou com a entrega, mas a linha dele ficou "sent"/"received".
+    // Se ninguém aparece como Aceite e quem ficou com a entrega está na lista, a linha dele conta como aceite.
+    if (p.ent && !linhas.some((l) => l[2] === 'accepted')) {
+      const minha = [...linhas].reverse().find((l) => l[0] === p.ent && (l[2] === 'sent' || l[2] === 'received'));
+      if (minha) { minha[2] = 'accepted'; aceitesForaDaNotif++; }
+    }
     for (const [id, nome, sit, criado, pos] of linhas) {
       if (sit in totais) totais[sit]++; else totais.outras++;
       if (!id) continue;
@@ -96,7 +107,8 @@ export async function lerNotificacoesDia({ dia, pedidos, arqPedidos, st, log }) 
   }
   const enviadas = totais.sent + totais.received + totais.accepted + totais.refused;
   return {
-    porEntregador, porHora, totais, enviadas, pedidosLidos: alvo.length, pedidosComNotif, pedidosAceitosPorNotif,
+    porEntregador, porHora, totais, enviadas, pedidosLidos: alvo.length, pedidosComNotif, pedidosAceitosPorNotif, aceitesForaDaNotif,
+    pedidosSemLista: pedidos.filter((p) => !p.busca && p.ent && (doDia(p.fimEm) || doDia(p.cancEm) || doDia(p.criado))).length,
     posicaoMediaAceite: nPosAceite ? somaPosAceite / nPosAceite : null,
     notifPorPedido: pedidosComNotif ? enviadas / pedidosComNotif : null,
   };

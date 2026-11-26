@@ -14,6 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cliente, toolTela, saidasDeEntregador, ritmo } from './mcp.mjs';
 import { lerNotificacoesDia } from './notificacoes.mjs';
+import { criarEvidencias } from './evidencias.mjs';
 const VARRE = [cliente('v1'), cliente('v2'), cliente('v3')]; // sessões da varredura; o ritmo é único (mcp.mjs)
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -340,6 +341,8 @@ function geral() {
 }
 
 // ---------- servidor ----------
+const EV = criarEvidencias({ CACHE, toolTela, log });
+const corpo = (req) => new Promise((ok, erro) => { let b = ''; req.on('data', (c) => { b += c; if (b.length > 20000) req.destroy(); }); req.on('end', () => { try { ok(b ? JSON.parse(b) : {}); } catch (e) { erro(Object.assign(new Error('JSON inválido'), { codigo: 400 })); } }); });
 const json = (res, code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); };
 http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
@@ -362,6 +365,12 @@ http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="elegiveis-black.csv"' });
       return res.end('﻿' + linhas.join('\r\n'));
     }
+    if (u.pathname === '/api/evidencias') {
+      if (req.method === 'POST') { const b = await corpo(req); return json(res, 200, { casos: EV.adicionar(b.pedido, b.relato) }); }
+      if (req.method === 'DELETE') return json(res, 200, { casos: EV.remover(u.searchParams.get('pedido')) });
+      return json(res, 200, { casos: EV.lerCasos() });
+    }
+    if (u.pathname === '/api/evidencia') return json(res, 200, await EV.evidencia(u.searchParams.get('pedido'), u.searchParams.get('forcar') === '1'));
     if (u.pathname === '/api/notificacoes') {
       const dia = /^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get('dia')) ? u.searchParams.get('dia') : somaDia(hojeBR(), -1);
       const nt = lerNotif(dia);

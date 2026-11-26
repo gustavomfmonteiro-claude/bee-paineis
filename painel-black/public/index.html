@@ -103,6 +103,32 @@ h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--bo
 .vazio{color:var(--sub);font-size:14px;padding:18px;border:1px dashed var(--borda);border-radius:14px;text-align:center}
 .nota{margin-top:28px;font-size:12.5px;color:var(--sub);display:grid;gap:6px;border-left:2px solid var(--bee);padding-left:14px}
 .nota b{color:var(--txt)}
+.ev-leg{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px;color:var(--sub);margin:12px 2px}
+.ev-leg b{color:var(--txt)}
+.ev{background:var(--glass);border:1px solid var(--borda);border-radius:16px;padding:16px;margin-top:14px;animation:entra .35s both}
+.ev-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:start}
+.ev-top h4{margin:0;font:800 17px var(--mono)}
+.ev-top .sub{color:var(--sub);font-size:12.5px;margin-top:3px}
+.ev-rel{margin:12px 0 0;padding:10px 12px;border-left:3px solid var(--wait);background:rgba(5,8,13,.5);border-radius:0 10px 10px 0;font-size:13.5px;color:var(--txt)}
+.ev-rel small{display:block;color:var(--sub);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.ev-dg{margin-top:10px;padding:11px 13px;border-radius:12px;border:1px solid var(--borda);background:rgba(5,8,13,.45)}
+.ev-dg b{display:block;margin-bottom:3px}
+.ev-dg p{margin:0;font-size:13px;color:#c5cfdc;line-height:1.5}
+.ev-dg.agendado{border-color:rgba(56,214,255,.45)}.ev-dg.agendado b{color:var(--ciano)}
+.ev-dg.aceite-nao-gravado,.ev-dg.troca{border-color:rgba(245,197,24,.5)}.ev-dg.aceite-nao-gravado b,.ev-dg.troca b{color:var(--bee)}
+.ev-dg.sem-lista{border-color:rgba(135,150,173,.5)}
+.ev-dg.ok b{color:var(--ok)}.ev-dg.recusa b{color:var(--no)}
+.ev-tb{width:100%;border-collapse:collapse;margin-top:12px;font-size:12.5px}
+.ev-tb th{color:var(--sub);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.8px;text-align:left;padding:6px 8px;border-bottom:1px solid var(--borda)}
+.ev-tb td{padding:6px 8px;border-bottom:1px solid rgba(120,160,220,.08);font-family:var(--mono)}
+.ev-tb tr.dele td{background:rgba(245,197,24,.07)}
+.sit{font-weight:700;white-space:nowrap}.sit.waiting_send{color:var(--sub)}.sit.sent{color:var(--bee)}.sit.received{color:var(--ciano)}.sit.accepted{color:var(--ok)}.sit.refused{color:var(--no)}.sit.send_error{color:#ffb020}
+.ev-pass{margin-top:10px;font:12px var(--mono);color:var(--sub);line-height:1.8}
+.ev-pass b{color:var(--txt)}
+.ev-acoes{display:flex;gap:8px}
+.ev-acoes button{background:rgba(5,8,13,.6);border:1px solid var(--borda);color:var(--sub);border-radius:9px;padding:6px 10px;font-size:12px;cursor:pointer}
+.ev-acoes button:hover{color:var(--txt);border-color:var(--borda2)}
+@media (max-width:760px){.ev-tb{display:block;overflow-x:auto;white-space:nowrap}}
 @media (max-width:760px){
   .regras,.kpis{grid-template-columns:1fr 1fr}.live{margin-left:0}
   .tabela,.tabela tbody,.tabela tr,.tabela td{display:block}
@@ -132,6 +158,7 @@ h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--bo
     <button class="aba" data-p="geral">Lista geral</button>
     <button class="aba" data-p="ent">Conferir entregador</button>
     <button class="aba" data-p="notif">Notificações</button>
+    <button class="aba" data-p="evid">Evidências</button>
   </nav>
 
   <section class="painel on" id="p-venc">
@@ -154,6 +181,17 @@ h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--bo
     <div class="scan" id="scanN"></div>
     <div id="msgN" style="margin:14px 2px;color:var(--sub)"></div>
     <div id="outN"></div>
+  </section>
+
+  <section class="painel" id="p-evid">
+    <form class="barra" id="fe">
+      <div class="campo"><label for="ep">Entrega</label><input id="ep" inputmode="numeric" autocomplete="off" placeholder="ex.: 55919129" required></div>
+      <div class="campo q"><label for="er">Relato da equipe</label><input id="er" autocomplete="off" placeholder="o que foi visto na Lista de notificações"></div>
+      <button class="btn" id="ebtn">Adicionar caso</button>
+    </form>
+    <div class="ev-leg"><span><b>Agendado</b> na fila, não chegou a sair</span><span><b>Enviado</b> saiu, sem confirmação do celular</span><span><b>Recebido</b> chegou e ficou sem resposta</span><span><b>Aceite</b> aceitou pela notificação</span><span><b>Cancelado</b> recusou</span><span><b>Erro</b> falha no envio</span></div>
+    <div id="msgE" style="margin:12px 2px;color:var(--sub)"></div>
+    <div id="outE"></div>
   </section>
 
   <section class="painel" id="p-ent">
@@ -398,6 +436,71 @@ function desenhaN() {
   document.querySelectorAll('#outN .lin').forEach((c) => c.onclick = () => { $('#q').value = c.dataset.id; $('#de').value = diaN; $('#ate').value = diaN; document.querySelector('.aba[data-p=ent]').click(); consultar(); });
 }
 
+// ---------- evidências de notificações ----------
+const SIT = { waiting_send: ['🕓', 'Agendado'], sent: ['✓', 'Enviado'], received: ['✓✓', 'Recebido'], accepted: ['✔', 'Aceite'], refused: ['✕', 'Cancelado'], send_error: ['⚠', 'Erro'] };
+const STATUS = { '05': 'aguardando preparo', '07': 'agendada', '10': 'buscando entregador', '20': 'indo à origem', '25': 'na origem', '28': 'liberada', '30': 'indo ao destino', '32': 'paradas feitas', '35': 'no destino', '40': 'retornando', '50': 'finalizada', '60': 'cancelada' };
+let casosE = [];
+async function carregarE() {
+  const j = await fetch('/api/evidencias').then((r) => r.json());
+  casosE = j.casos || [];
+  $('#msgE').textContent = casosE.length ? `${casosE.length} caso(s) · lidos ao vivo da Bee (entrega e Lista de notificações)` : 'Nenhum caso ainda.';
+  $('#outE').innerHTML = casosE.map((c) => `<div class="ev" id="ev-${c.pedido}"><div class="ev-top"><div><h4>Entrega #${c.pedido}</h4><div class="sub">carregando…</div></div></div></div>`).join('');
+  for (const c of casosE) carregarCaso(c);
+}
+async function carregarCaso(c, forcar) {
+  const box = $('#ev-' + c.pedido);
+  try {
+    const r = await fetch('/api/evidencia?pedido=' + c.pedido + (forcar ? '&forcar=1' : ''));
+    const e = await r.json();
+    if (!r.ok) throw new Error(e.erro || 'falha');
+    box.innerHTML = desenhaCaso(c, e);
+  } catch (err) {
+    box.innerHTML = `<div class="ev-top"><div><h4>Entrega #${c.pedido}</h4><div class="sub" style="color:var(--no)">${esc(err.message)}</div></div>${acoesCaso(c)}</div>`;
+  }
+  box.querySelectorAll('[data-acao]').forEach((b) => b.onclick = async () => {
+    if (b.dataset.acao === 'atualizar') { box.querySelector('.sub').textContent = 'atualizando…'; carregarCaso(c, true); }
+    if (b.dataset.acao === 'remover' && confirm('Remover o caso #' + c.pedido + ' da lista de evidências?')) { await fetch('/api/evidencias?pedido=' + c.pedido, { method: 'DELETE' }); carregarE(); }
+  });
+}
+const acoesCaso = () => `<div class="ev-acoes"><button type="button" data-acao="atualizar">Atualizar</button><button type="button" data-acao="remover">Remover</button></div>`;
+const horaS = (iso) => iso ? new Date(iso).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+function desenhaCaso(c, e) {
+  const st = STATUS[e.status] || e.status;
+  const ent = e.entregador ? `${esc(e.entregador.nome)} (${e.entregador.id})` : 'sem entregador';
+  const linhas = e.notificacoes.map((n) => `<tr class="${e.entregador && n.ent === e.entregador.id ? 'dele' : ''}">
+    <td>${esc(n.ent || '')}-${esc((n.nome || '').slice(0, 26))}</td><td>${n.distancia == null ? '—' : n.distancia + ' m'}</td><td>${n.posicao ?? '—'}</td><td>${n.delay ?? '—'} s</td>
+    <td>${horaS(n.criada) || '—'}</td><td>${n.envio ? horaS(n.envio) : '<span style="color:var(--sub)">não saiu</span>'}</td><td>${horaS(n.exclusao) || '—'}</td>
+    <td><span class="sit ${n.situacao}">${(SIT[n.situacao] || ['', n.situacao]).join(' ')}</span></td></tr>`).join('');
+  const passos = [
+    e.criacao ? `<b>${horaS(e.criacao.quando)}</b> criada ${e.criacao.agendada ? '(agendada' + (e.criacao.horarioAgendamento ? ' para ' + e.criacao.horarioAgendamento.slice(11, 16) : '') + ')' : ''}${e.criacao.buscando ? ' · buscando desde ' + horaS(e.criacao.buscando) : ''}` : '',
+    ...e.passos.map((p) => {
+      const m = p.mudou, partes = [];
+      if (m.status) partes.push(`status ${STATUS[String(m.status[0]).padStart(2, '0')] || m.status[0]} → ${STATUS[String(m.status[1]).padStart(2, '0')] || m.status[1]}`);
+      if (m.entregador_id) partes.push(m.entregador_id[1] ? `entregador → ${m.entregador_id[1]}` : `entregador ${m.entregador_id[0]} saiu`);
+      if (m.sn_atribuida && m.sn_atribuida[1] === 'S') partes.push('marcada como atribuída');
+      return `<b>${horaS(p.quando)}</b> ${partes.join(' · ')} <span style="opacity:.75">— ${esc(p.quem)}</span>`;
+    }),
+  ].filter(Boolean);
+  return `<div class="ev-top"><div><h4>Entrega #${e.pedido}</h4>
+      <div class="sub">${esc(e.loja)} · ${st} · com ${ent}${e.datas.aceite ? ' · aceite ' + horaS(e.datas.aceite) : ''}${e.datas.finalizado ? ' · finalizada ' + horaS(e.datas.finalizado) : ''}</div></div>${acoesCaso(c)}</div>
+    ${c.relato ? `<div class="ev-rel"><small>Relato da equipe${c.criadoEm ? ' · ' + new Date(c.criadoEm).toLocaleString('pt-BR', { timeZone: 'America/Fortaleza', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}</small>${esc(c.relato)}</div>` : ''}
+    ${e.diagnostico.map((d) => `<div class="ev-dg ${d.tipo}"><b>${esc(d.titulo)}</b><p>${esc(d.texto)}</p></div>`).join('')}
+    ${e.notificacoes.length ? `<table class="ev-tb"><thead><tr><th>Entregador</th><th>Distância</th><th>Ordem</th><th>Delay</th><th>Criado</th><th>Envio</th><th>Exclusão</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table>
+      <div style="font-size:11.5px;color:var(--sub);margin-top:6px">Linha destacada = quem ficou com a entrega.</div>` : '<div class="vazio" style="margin-top:10px">Lista de notificações vazia na Bee.</div>'}
+    <div class="ev-pass">${passos.join('<br>')}</div>`;
+}
+$('#fe').onsubmit = async (ev) => {
+  ev.preventDefault();
+  $('#ebtn').disabled = true;
+  try {
+    const r = await fetch('/api/evidencias', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pedido: $('#ep').value, relato: $('#er').value }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.erro || 'falha');
+    $('#ep').value = ''; $('#er').value = '';
+    carregarE();
+  } catch (e) { $('#msgE').textContent = e.message; } finally { $('#ebtn').disabled = false; }
+};
+
 // ---------- entregador ----------
 async function consultar(silencioso) {
   const q = $('#q').value.trim(), de = $('#de').value, ate = $('#ate').value;
@@ -457,9 +560,9 @@ $('#f').onsubmit = (ev) => { ev.preventDefault(); consultar(); };
   $('#de').value = CFG.desde; $('#ate').value = CFG.ate < CFG.hoje ? CFG.ate : CFG.hoje;
   const q = new URLSearchParams(location.search).get('q');
   if (q) { $('#q').value = q; document.querySelector('.aba[data-p=ent]').click(); consultar(); }
-  else if (['ent', 'geral', 'notif'].includes(le('black-aba'))) document.querySelector(`.aba[data-p=${le('black-aba')}]`).click();
+  else if (['ent', 'geral', 'notif', 'evid'].includes(le('black-aba'))) document.querySelector(`.aba[data-p=${le('black-aba')}]`).click();
   if (le('black-q') && !q) $('#q').value = le('black-q');
-  carregarV(); carregarG(); carregarN();
+  carregarV(); carregarG(); carregarN(); carregarE();
   setInterval(() => { $('#relogio').textContent = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) + ' · MCP Bee'; }, 1000);
 })();
 </script>
