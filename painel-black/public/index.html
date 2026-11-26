@@ -117,7 +117,8 @@ h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--bo
 .ev-dg.agendado{border-color:rgba(56,214,255,.45)}.ev-dg.agendado b{color:var(--ciano)}
 .ev-dg.aceite-nao-gravado,.ev-dg.troca,.ev-dg.fora-da-lista{border-color:rgba(245,197,24,.5)}.ev-dg.aceite-nao-gravado b,.ev-dg.troca b,.ev-dg.fora-da-lista b{color:var(--bee)}
 .ev-dg.sem-lista{border-color:rgba(135,150,173,.5)}
-.ev-dg.ok b{color:var(--ok)}.ev-dg.recusa b{color:var(--no)}
+.ev-dg.ok b{color:var(--ok)}.ev-dg.rodadas,.ev-dg.posicao{border-color:rgba(56,214,255,.45)}.ev-dg.rodadas b,.ev-dg.posicao b{color:var(--ciano)}.ev-dg.aceite-sem-efeito{border-color:rgba(255,90,106,.5)}.ev-dg.aceite-sem-efeito b{color:var(--no)}
+.ev-tb tr.rod td{font:700 11px var(--mono);color:var(--ciano);text-transform:uppercase;letter-spacing:1px;padding-top:12px;border-bottom:1px solid rgba(56,214,255,.25)}.ev-dg.recusa b{color:var(--no)}
 .ev-tb{width:100%;border-collapse:collapse;margin-top:12px;font-size:12.5px}
 .ev-tb th{color:var(--sub);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.8px;text-align:left;padding:6px 8px;border-bottom:1px solid var(--borda)}
 .ev-tb td{padding:6px 8px;border-bottom:1px solid rgba(120,160,220,.08);font-family:var(--mono)}
@@ -467,7 +468,8 @@ const horaS = (iso) => iso ? new Date(iso).toLocaleTimeString('pt-BR', { timeZon
 function desenhaCaso(c, e) {
   const st = STATUS[e.status] || e.status;
   const ent = e.entregador ? `${esc(e.entregador.nome)} (${e.entregador.id})` : 'sem entregador';
-  const linhas = e.notificacoes.map((n) => `<tr class="${e.entregador && n.ent === e.entregador.id ? 'dele' : ''}">
+  const varias = e.notificacoes.some((n) => n.rodada > 1);
+  const linhas = e.notificacoes.map((n, i) => (varias && (i === 0 || n.rodada !== e.notificacoes[i - 1].rodada) ? `<tr class="rod"><td colspan="8">${n.rodada}ª rodada · ${horaS(n.criada)}</td></tr>` : '') + `<tr class="${e.entregador && n.ent === e.entregador.id ? 'dele' : ''}">
     <td>${esc(n.ent || '')}-${esc((n.nome || '').slice(0, 26))}</td><td>${n.distancia == null ? '—' : n.distancia + ' m'}</td><td>${n.posicao ?? '—'}</td><td>${n.delay ?? '—'} s</td>
     <td>${horaS(n.criada) || '—'}</td><td>${n.envio ? horaS(n.envio) : '<span style="color:var(--sub)">não saiu</span>'}</td><td>${horaS(n.exclusao) || '—'}</td>
     <td><span class="sit ${n.situacao}">${(SIT[n.situacao] || ['', n.situacao]).join(' ')}</span></td></tr>`).join('');
