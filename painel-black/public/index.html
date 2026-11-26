@@ -173,6 +173,7 @@ const semana = (d) => SEM[new Date(d + 'T12:00:00Z').getUTCDay()];
 const ddmm = (d) => d.slice(8) + '/' + d.slice(5, 7);
 const pct = (v) => v == null ? '—' : (Math.round(v * 10) / 10).toLocaleString('pt-BR') + '%';
 const hora = (iso) => iso ? new Date(iso).toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza', hour: '2-digit', minute: '2-digit' }) : '';
+const brl = (v) => v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const guarda = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 const le = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -228,12 +229,12 @@ async function carregarV() {
   $('#msgV').textContent = j.fechado ? `Dia fechado · lido às ${hora(j.lidoEm)}` : `Hoje (parcial) · lido às ${hora(j.lidoEm)} · resultado só vale depois da meia-noite`;
   $('#outV').innerHTML = `
     <div class="kpis">
-      <div class="kpi dest"><div class="k">Vencedores</div><div class="v" data-n="${j.totais.vencedores}">0</div><div class="s">cumpriram os 3 critérios</div></div>
+      <div class="kpi dest"><div class="k">Vencedores</div><div class="v" data-n="${j.totais.vencedores}">0</div><div class="s">cumpriram os 3 critérios · ${brl(j.premio)} cada · <b style="color:var(--bee)">${brl(j.totais.valor)}</b>${j.fechado ? '' : ' até agora'}</div></div>
       <div class="kpi"><div class="k">Entregadores ativos</div><div class="v" data-n="${j.entregadores}">0</div><div class="s">com pedido no dia</div></div>
       <div class="kpi"><div class="k">Bateram 10 entregas</div><div class="v" data-n="${j.totais.atingiram10}">0</div><div class="s">critério de volume</div></div>
       <div class="kpi"><div class="k">Por um critério</div><div class="v" data-n="${j.totais.quase ?? j.quase.length}">0</div><div class="s">ficaram de fora</div></div>
     </div>
-    <h3>Vencedores · ${semana(j.dia)} ${ddmm(j.dia)}</h3>
+    <h3>Vencedores · ${semana(j.dia)} ${ddmm(j.dia)} · prêmio ${brl(j.premio)}</h3>
     ${j.vencedores.length ? `<div class="grade">${j.vencedores.map((x, i) => cartao(x, i)).join('')}</div>` : '<div class="vazio">Nenhum entregador cumpriu os três critérios neste dia.</div>'}
     ${j.quase.length ? `<h3>Ficaram de fora por um critério${j.totais.quase > j.quase.length ? ` · ${j.quase.length} de ${j.totais.quase}` : ''}</h3><div class="grade">${j.quase.map((x, i) => cartao(x, i, true)).join('')}</div>` : ''}`;
   document.querySelectorAll('.kpi .v[data-n]').forEach((el) => contar(el, +el.dataset.n));
@@ -258,17 +259,24 @@ function desenhaG() {
   $('#outG').innerHTML = `
     <div class="kpis">
       <div class="kpi dest"><div class="k">Entregadores elegíveis</div><div class="v" data-n="${G.totais.entregadores}">0</div><div class="s">venceram ao menos 1 dia</div></div>
-      <div class="kpi"><div class="k">Prêmios diários</div><div class="v" data-n="${G.totais.premios}">0</div><div class="s">soma de dias vencidos</div></div>
-      <div class="kpi"><div class="k">Dias varridos</div><div class="v">${lidos}<span style="font-size:16px;color:var(--sub)"> / ${G.dias.length}</span></div><div class="s">${ddmm(G.desde)} a ${ddmm(G.ate)} · fechados e lidos</div></div>
-      <div class="kpi"><div class="k">Por dia</div><div class="s" style="margin-top:8px;line-height:1.9">${G.dias.map((d) => `${ddmm(d.dia)}: <b style="color:var(--txt);font-family:var(--mono)">${d.lido ? d.vencedores : '…'}</b>`).join(' · ')}</div></div>
+      <div class="kpi"><div class="k">A pagar (dias fechados)</div><div class="v" style="color:var(--ok)">${brl(G.totais.valor)}</div><div class="s">${G.totais.premios} prêmios diários</div></div>
+      <div class="kpi"><div class="k">Estimativa até ${ddmm(G.ate)}</div><div class="v">${brl(G.estimativa.total)}</div><div class="s">${lidos} dia(s) apurado(s) · média de ${G.estimativa.mediaVencedores == null ? '—' : Math.round(G.estimativa.mediaVencedores)} vencedores/dia nos demais</div></div>
     </div>
+    <h3>Valores por dia</h3>
+    <table class="tabela"><tbody>${G.estimativa.porDia.map((d) => `<tr class="${d.tipo === 'apurado' ? 'ganhou' : ''}">
+      <td><div class="dnum">${ddmm(d.dia)}</div><div class="dsem">${semana(d.dia)}</div></td>
+      <td><div class="dnum" style="color:var(--bee)">${brl(d.premio)}</div><div class="dsem">por vencedor</div></td>
+      <td><div class="dnum">${d.vencedores == null ? '—' : (d.tipo === 'apurado' ? '' : '≈ ') + d.vencedores}</div><div class="dsem">vencedores${d.tipo === 'hoje' && d.parcial != null ? ` (${d.parcial} até agora)` : ''}</div></td>
+      <td><div class="dnum">${d.valor == null ? '—' : (d.tipo === 'apurado' ? '' : '≈ ') + brl(d.valor)}</div><div class="dsem">${d.tipo === 'apurado' ? 'apurado' : d.tipo === 'hoje' ? 'hoje (estimado)' : 'estimado'}</div></td></tr>`).join('')}
+      <tr><td><div class="dnum">Total</div></td><td></td><td></td><td><div class="dnum" style="color:var(--bee)">${brl(G.estimativa.total)}</div><div class="dsem">${brl(G.estimativa.apurado)} apurado + estimativa</div></td></tr></tbody></table>
     <h3>Elegíveis · ${lista.length}</h3>
     ${lista.length ? `<table class="tabela"><tbody>${lista.map((e, i) => `<tr class="ganhou lin" data-id="${e.id}" style="cursor:pointer">
       <td style="width:56px"><span class="pos">#${i + 1}</span></td>
       <td><div style="font-weight:700">${esc(e.nome || 'Entregador ' + e.id)}</div><div class="dsem" style="font-family:var(--mono)">ID ${e.id}</div></td>
       <td><div class="dnum" style="color:var(--bee)">${e.premios}</div><div class="dsem">dias premiados</div></td>
       <td>${e.dias.map(chipDia).join('')}</td>
-      <td><div class="dnum">${e.fin}</div><div class="dsem">finalizadas</div></td></tr>`).join('')}</tbody></table>`
+      <td><div class="dnum">${e.fin}</div><div class="dsem">finalizadas</div></td>
+      <td><div class="dnum" style="color:var(--ok)">${brl(e.valor)}</div><div class="dsem">a receber</div></td></tr>`).join('')}</tbody></table>`
       : '<div class="vazio">Nenhum elegível ainda nos dias já varridos.</div>'}`;
   document.querySelectorAll('#outG .kpi .v[data-n]').forEach((el) => contar(el, +el.dataset.n));
   document.querySelectorAll('#outG .lin').forEach((c) => c.onclick = () => { $('#q').value = c.dataset.id; $('#de').value = G.desde; $('#ate').value = CFG.ate < CFG.hoje ? CFG.ate : CFG.hoje; document.querySelector('.aba[data-p=ent]').click(); consultar(); });
@@ -302,7 +310,7 @@ function desenhaE(j) {
     if (d.parcial) selo = '<span class="selo wait">Em andamento</span>';
     else if (esp && d.ok.finalizadas && d.ok.cancelamento) selo = '<span class="selo wait">Falta o aceite</span>';
     else if (esp) selo = '<span class="selo no">Não venceu</span>';
-    else selo = d.premio ?'<span class="selo ok">Vencedor</span>' : '<span class="selo no">Não venceu</span>';
+    else selo = d.premio ? `<span class="selo ok">Vencedor · ${brl(d.valorPremio)}</span>` : '<span class="selo no">Não venceu</span>';
     const n = d.detalhe.desistencias.length + d.detalhe.cancelados.length;
     const det = n ? `<br><button class="mais" type="button" data-i="${i}">ver ${n} ${n === 1 ? 'pedido' : 'pedidos'} ›</button><div class="lista" id="l${i}">${
       d.detalhe.desistencias.map((x) => `${x.proprio ? 'DESISTIU' : 'RETIRADO PELA OPERAÇÃO'} · #${x.pedido} · ${esc(x.loja)} · ${hora(x.quando)}`).concat(
@@ -318,7 +326,7 @@ function desenhaE(j) {
   $('#out').innerHTML = `
     <div class="perfil"><div class="av">${esc(ini)}</div>
       <div><h2>${esc(e.nome)}</h2><div class="sub">ID ${esc(e.id)}${e.franquia ? ' · ' + esc(e.franquia) : ''} · ${ddmm(j.de)} a ${ddmm(j.ate)}</div></div>
-      <div class="placar"><div class="n"><span data-n="${j.premiados}">0</span><span style="font-size:16px;color:var(--sub)"> / ${fechados}</span></div><div class="l">dias vencedores</div></div></div>
+      <div class="placar"><div class="n"><span data-n="${j.premiados}">0</span><span style="font-size:16px;color:var(--sub)"> / ${fechados}</span></div><div class="l">dias vencedores · <b style="color:var(--ok)">${brl(j.valor)}</b></div></div></div>
     <table class="tabela"><tbody>${linhas}</tbody></table>`;
   contar(document.querySelector('.placar [data-n]'), j.premiados);
   document.querySelectorAll('.mais').forEach((b) => b.onclick = () => $('#l' + b.dataset.i).classList.toggle('on'));

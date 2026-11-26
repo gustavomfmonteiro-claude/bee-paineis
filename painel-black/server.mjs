@@ -18,10 +18,16 @@ const DIR = path.dirname(fileURLToPath(import.meta.url));
 const CACHE = path.join(DIR, 'cache');
 fs.mkdirSync(CACHE, { recursive: true });
 const PORTA = Number(process.env.PORTA || 3095);
-const DESDE = process.env.BLACK_DESDE || '2026-11-23';
+const DESDE = process.env.BLACK_DESDE || '2026-11-24'; // 23/11 retirado da Black a pedido do usuário (26/11)
 const ATE = process.env.BLACK_ATE || '2026-11-30';
 const RELER_HOJE_MIN = Number(process.env.RELER_HOJE_MIN || 60);
 const META = { finalizadas: 10, aceite: 70, cancelamento: 5 };
+// Prêmio por vencedor em cada dia (pedido do usuário em 26/11): R$ 50 em 24, 25, 26 e 30/11; R$ 100 em 27, 28 e 29/11.
+// BLACK_PREMIOS no ambiente substitui, no formato "2026-11-24=50,2026-11-27=100".
+const PREMIO = process.env.BLACK_PREMIOS
+  ? Object.fromEntries(process.env.BLACK_PREMIOS.split(',').map((x) => x.split('=')).map(([d, v]) => [d.trim(), Number(v)]))
+  : { '2026-11-24': 50, '2026-11-25': 50, '2026-11-26': 50, '2026-11-27': 100, '2026-11-28': 100, '2026-11-29': 100, '2026-11-30': 50 };
+const premioDia = (dia) => PREMIO[dia] || 0;
 
 const log = (...a) => console.log(new Date().toLocaleString('pt-BR', { timeZone: 'America/Fortaleza' }), ...a);
 const diaBR = (iso) => new Date(new Date(iso).getTime() - 3 * 3600e3).toISOString().slice(0, 10);
@@ -221,10 +227,12 @@ async function consulta(q, de, ate) {
     const c = lerCache(dia);
     return { dia, parcial: dia === hoje, fin, canc, andamento, aceitas, desistencias: propria.length,
       retiradas: desist.length - propria.length, aceite, cancPct, ok, premio: ok.finalizadas && ok.aceite && ok.cancelamento,
+      valorPremio: premioDia(dia), valor: ok.finalizadas && ok.aceite && ok.cancelamento && !!c && dia !== hoje ? premioDia(dia) : 0,
       aceiteLido: !!c, aceiteFechado: !!c?.fechado, lidoEm: c?.lidoEm || null, emLeitura: leitura[dia]?.fase || null,
       detalhe: { desistencias: desist, cancelados } };
   });
-  return { entregador: ent, de, ate, meta: META, dias: linhas, premiados: linhas.filter((l) => l.premio && l.aceiteLido && !l.parcial).length };
+  return { entregador: ent, de, ate, meta: META, dias: linhas, premiados: linhas.filter((l) => l.premio && l.aceiteLido && !l.parcial).length,
+    valor: linhas.reduce((s, l) => s + l.valor, 0) };
 }
 
 // ---------- vencedores do dia ----------
@@ -236,7 +244,7 @@ function avaliar({ fin, canc, tot }, desist) {
 }
 function vencedores(dia) {
   const c = lerCache(dia);
-  if (!c?.entregadores) return { dia, lido: false, leitura: leitura[dia] || null };
+  if (!c?.entregadores) return { dia, lido: false, premio: premioDia(dia), leitura: leitura[dia] || null };
   const todos = new Set([...Object.keys(c.entregadores), ...Object.keys(c.porEntregador || {})]);
   const lista = [];
   for (const id of todos) {
@@ -249,9 +257,9 @@ function vencedores(dia) {
   const ganhou = lista.filter((x) => x.falhas === 0);
   // "quase": falhou num critério só e chegou perto do volume (bateu 10, ou ficou em 8–9 cumprindo o resto)
   const quase = lista.filter((x) => x.falhas === 1 && (x.ok.finalizadas || x.fin >= META.finalizadas - 2));
-  return { dia, lido: true, fechado: c.fechado, lidoEm: c.lidoEm, entregadores: lista.length, vencedores: ganhou,
+  return { dia, lido: true, fechado: c.fechado, lidoEm: c.lidoEm, entregadores: lista.length, vencedores: ganhou, premio: premioDia(dia),
     quase: quase.slice(0, 60),
-    totais: { vencedores: ganhou.length, quase: quase.length, entregas: lista.reduce((s, x) => s + x.fin, 0), atingiram10: lista.filter((x) => x.ok.finalizadas).length } };
+    totais: { vencedores: ganhou.length, valor: ganhou.length * premioDia(dia), quase: quase.length, entregas: lista.reduce((s, x) => s + x.fin, 0), atingiram10: lista.filter((x) => x.ok.finalizadas).length } };
 }
 
 // Lista geral: todos os dias da Black já lidos, um entregador por linha com os dias em que venceu.
@@ -262,17 +270,32 @@ function geral() {
   const diasInfo = lista.map((dia) => {
     const v = vencedores(dia);
     if (v.lido) for (const x of v.vencedores) {
-      const e = porId[x.id] ||= { id: x.id, nome: x.nome, dias: [], fin: 0 };
+      const e = porId[x.id] ||= { id: x.id, nome: x.nome, dias: [], fin: 0, valor: 0 };
       if (!e.nome && x.nome) e.nome = x.nome;
-      e.dias.push({ dia, fin: x.fin, aceite: x.aceite, cancPct: x.cancPct, parcial: !v.fechado });
+      e.dias.push({ dia, fin: x.fin, aceite: x.aceite, cancPct: x.cancPct, parcial: !v.fechado, premio: premioDia(dia) });
       e.fin += x.fin;
+      if (v.fechado) e.valor += premioDia(dia);
     }
-    return { dia, lido: v.lido, fechado: !!v.fechado, vencedores: v.lido ? v.totais.vencedores : null };
+    return { dia, lido: v.lido, fechado: !!v.fechado, vencedores: v.lido ? v.totais.vencedores : null, premio: premioDia(dia) };
   });
+  // Estimativa do período: dia fechado = valor apurado; hoje, dia ainda não lido e dias futuros =
+  // média de vencedores dos dias fechados × prêmio do dia (hoje nunca abaixo do parcial já apurado).
+  const fechados = diasInfo.filter((d) => d.lido && d.fechado);
+  const media = fechados.length ? fechados.reduce((s, d) => s + d.vencedores, 0) / fechados.length : null;
+  const porDia = dias(DESDE, ATE).map((dia) => {
+    const d = diasInfo.find((x) => x.dia === dia);
+    if (d?.lido && d.fechado) return { dia, premio: premioDia(dia), vencedores: d.vencedores, valor: d.vencedores * premioDia(dia), tipo: 'apurado' };
+    const parcial = d?.lido ? d.vencedores : 0;
+    const est = media == null ? null : Math.max(parcial, Math.round(media));
+    return { dia, premio: premioDia(dia), vencedores: est, parcial: d?.lido ? parcial : null, valor: est == null ? null : est * premioDia(dia), tipo: dia === hoje ? 'hoje' : 'estimado' };
+  });
+  const apurado = porDia.filter((d) => d.tipo === 'apurado').reduce((s, d) => s + d.valor, 0);
+  const estimativa = { mediaVencedores: media, porDia, apurado,
+    total: porDia.every((d) => d.valor != null) ? porDia.reduce((s, d) => s + d.valor, 0) : null };
   const elegiveis = Object.values(porId).map((e) => ({ ...e, premios: e.dias.filter((d) => !d.parcial).length }))
     .sort((a, b) => b.premios - a.premios || b.fin - a.fin);
-  return { desde: DESDE, ate: ATE, dias: diasInfo, elegiveis,
-    totais: { entregadores: elegiveis.length, premios: elegiveis.reduce((s, e) => s + e.premios, 0) } };
+  return { desde: DESDE, ate: ATE, dias: diasInfo, elegiveis, estimativa,
+    totais: { entregadores: elegiveis.length, premios: elegiveis.reduce((s, e) => s + e.premios, 0), valor: apurado } };
 }
 
 // ---------- servidor ----------
@@ -284,7 +307,7 @@ http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
       return res.end(fs.readFileSync(path.join(DIR, 'public', 'index.html')));
     }
-    if (u.pathname === '/api/config') return json(res, 200, { desde: DESDE, ate: ATE, hoje: hojeBR(), meta: META, ritmoMs: ritmo() });
+    if (u.pathname === '/api/config') return json(res, 200, { desde: DESDE, ate: ATE, hoje: hojeBR(), meta: META, premios: PREMIO, ritmoMs: ritmo() });
     if (u.pathname === '/api/status') {
       const lista = dias(DESDE, ATE < hojeBR() ? ATE : hojeBR()).map((d) => { const c = lerCache(d); return { dia: d, lido: !!c, fechado: !!c?.fechado, lidoEm: c?.lidoEm || null, pedidos: c?.listados ?? null, leitura: leitura[d] || null }; });
       return json(res, 200, { dias: lista });
@@ -292,9 +315,9 @@ http.createServer(async (req, res) => {
     if (u.pathname === '/api/geral') return json(res, 200, geral());
     if (u.pathname === '/api/geral.csv') {
       const g = geral();
-      const linhas = [['ID', 'Entregador', 'Dias premiados', 'Dias', 'Finalizadas nos dias premiados'].join(';'),
+      const linhas = [['ID', 'Entregador', 'Dias premiados', 'Dias', 'Finalizadas nos dias premiados', 'Valor a receber (R$)'].join(';'),
         ...g.elegiveis.map((e) => [e.id, '"' + (e.nome || '').replace(/"/g, "'") + '"', e.premios,
-          e.dias.filter((d) => !d.parcial).map((d) => d.dia.slice(8) + '/' + d.dia.slice(5, 7)).join(' '), e.fin].join(';'))];
+          e.dias.filter((d) => !d.parcial).map((d) => d.dia.slice(8) + '/' + d.dia.slice(5, 7)).join(' '), e.fin, e.valor.toFixed(2).replace('.', ',')].join(';'))];
       res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="elegiveis-black.csv"' });
       return res.end('﻿' + linhas.join('\r\n'));
     }
