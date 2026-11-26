@@ -260,15 +260,16 @@ function desenhaG() {
     <div class="kpis">
       <div class="kpi dest"><div class="k">Entregadores elegíveis</div><div class="v" data-n="${G.totais.entregadores}">0</div><div class="s">venceram ao menos 1 dia</div></div>
       <div class="kpi"><div class="k">A pagar (dias fechados)</div><div class="v" style="color:var(--ok)">${brl(G.totais.valor)}</div><div class="s">${G.totais.premios} prêmios diários</div></div>
-      <div class="kpi"><div class="k">Estimativa até ${ddmm(G.ate)}</div><div class="v">${brl(G.estimativa.total)}</div><div class="s">${lidos} dia(s) apurado(s) · média de ${G.estimativa.mediaVencedores == null ? '—' : Math.round(G.estimativa.mediaVencedores)} vencedores/dia nos demais</div></div>
+      <div class="kpi"><div class="k">Dias apurados</div><div class="v">${lidos}<span style="font-size:16px;color:var(--sub)"> / ${G.dias.length}</span></div><div class="s">${ddmm(G.desde)} a ${ddmm(G.ate)} · só dias fechados entram no valor</div></div>
     </div>
-    <h3>Valores por dia</h3>
-    <table class="tabela"><tbody>${G.estimativa.porDia.map((d) => `<tr class="${d.tipo === 'apurado' ? 'ganhou' : ''}">
+    <h3>Valores apurados por dia</h3>
+    ${G.estimativa.porDia.some((d) => d.tipo === 'apurado') ? `<table class="tabela"><tbody>${G.estimativa.porDia.filter((d) => d.tipo === 'apurado').map((d) => `<tr class="ganhou">
       <td><div class="dnum">${ddmm(d.dia)}</div><div class="dsem">${semana(d.dia)}</div></td>
       <td><div class="dnum" style="color:var(--bee)">${brl(d.premio)}</div><div class="dsem">por vencedor</div></td>
-      <td><div class="dnum">${d.vencedores == null ? '—' : (d.tipo === 'apurado' ? '' : '≈ ') + d.vencedores}</div><div class="dsem">vencedores${d.tipo === 'hoje' && d.parcial != null ? ` (${d.parcial} até agora)` : ''}</div></td>
-      <td><div class="dnum">${d.valor == null ? '—' : (d.tipo === 'apurado' ? '' : '≈ ') + brl(d.valor)}</div><div class="dsem">${d.tipo === 'apurado' ? 'apurado' : d.tipo === 'hoje' ? 'hoje (estimado)' : 'estimado'}</div></td></tr>`).join('')}
-      <tr><td><div class="dnum">Total</div></td><td></td><td></td><td><div class="dnum" style="color:var(--bee)">${brl(G.estimativa.total)}</div><div class="dsem">${brl(G.estimativa.apurado)} apurado + estimativa</div></td></tr></tbody></table>
+      <td><div class="dnum">${d.vencedores}</div><div class="dsem">vencedores</div></td>
+      <td><div class="dnum">${brl(d.valor)}</div><div class="dsem">apurado</div></td></tr>`).join('')}
+      <tr><td><div class="dnum">Total</div></td><td></td><td><div class="dnum">${G.totais.premios}</div><div class="dsem">prêmios</div></td><td><div class="dnum" style="color:var(--bee)">${brl(G.estimativa.apurado)}</div><div class="dsem">apurado</div></td></tr></tbody></table>`
+      : '<div class="vazio">Nenhum dia fechado ainda.</div>'}
     <h3>Elegíveis · ${lista.length}</h3>
     ${lista.length ? `<table class="tabela"><tbody>${lista.map((e, i) => `<tr class="ganhou lin" data-id="${e.id}" style="cursor:pointer">
       <td style="width:56px"><span class="pos">#${i + 1}</span></td>
