@@ -209,7 +209,7 @@ h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--bo
 
   <div class="nota">
     <div><b>Finalizadas e cancelamentos:</b> todas as modalidades (agendada, D+1, Econômica, retorno, multi-paradas, transferência) finalizadas ou canceladas na data, no nome do entregador, mesmo que o pedido tenha sido criado na véspera. Cancelamento = cancelados ÷ (finalizados + cancelados).</div>
-    <div><b>Aceite:</b> corridas aceitas ÷ notificações do app no dia, lidas da "Lista de notificações" de cada entrega. Conta como notificação o que chegou a ser enviado (Enviado, Recebido, Aceite, Cancelado); "Agendado" nunca saiu (outro entregador aceitou antes) e "Erro" falhou no envio. Quem não recebeu notificação no dia (só pedidos pré-atribuídos pela loja ou pela torre) cumpre o critério.</div>
+    <div><b>Aceite:</b> corridas que o entregador pegou no dia (pela notificação, pela lista do app ou pré-atribuídas) ÷ notificações do app enviadas a ele no dia, com limite de 100%. As notificações vêm da "Lista de notificações" de cada entrega. Conta como notificação o que chegou a ser enviado (Enviado, Recebido, Aceite, Cancelado); "Agendado" nunca saiu (outro entregador aceitou antes) e "Erro" falhou no envio. Quem não recebeu notificação no dia (só pedidos pré-atribuídos pela loja ou pela torre) cumpre o critério.</div>
     <div>Cada dia é lido inteiro uma vez (todos os pedidos + histórico dos que tiveram rebusca). O dia de hoje é relido de hora em hora e só vale depois da meia-noite.</div>
   </div>
 </div>
@@ -397,10 +397,10 @@ function desenhaN() {
   const maxH = Math.max(1, ...N.porHora.map((h) => h.enviadas));
   const f = filtroN.trim().toLowerCase();
   const lista = N.entregadores.filter((e) => !f || e.id.includes(f) || (e.nome || '').toLowerCase().includes(f))
-    .sort((a, b) => ordemN === 'aceite' ? (a.aceite ?? 999) - (b.aceite ?? 999) : ordemN === 'recusadas' ? b.recusadas - a.recusadas : b.enviadas - a.enviadas);
+    .sort((a, b) => ordemN === 'aceite' ? (a.aceiteBlack ?? 999) - (b.aceiteBlack ?? 999) : ordemN === 'recusadas' ? b.recusadas - a.recusadas : b.enviadas - a.enviadas);
   $('#outN').innerHTML = `
     <div class="kpis">
-      <div class="kpi dest"><div class="k">Taxa de aceite geral</div><div class="v">${p(t.accepted)}</div><div class="s">${t.accepted.toLocaleString('pt-BR')} aceites em ${env.toLocaleString('pt-BR')} notificações</div></div>
+      <div class="kpi dest"><div class="k">Aceite das notificações</div><div class="v">${p(t.accepted)}</div><div class="s">${t.accepted.toLocaleString('pt-BR')} aceites em ${env.toLocaleString('pt-BR')} notificações</div></div>
       <div class="kpi"><div class="k">Notificações enviadas</div><div class="v" data-n="${env}">0</div><div class="s">${N.notifPorPedido == null ? '—' : N.notifPorPedido.toFixed(1).replace('.', ',')} por entrega · ${N.pedidosComNotif.toLocaleString('pt-BR')} entregas</div></div>
       <div class="kpi"><div class="k">Recusadas</div><div class="v" style="color:var(--no)">${p(t.refused)}</div><div class="s">${t.refused.toLocaleString('pt-BR')} vezes que o entregador recusou</div></div>
       <div class="kpi"><div class="k">Sem resposta</div><div class="v" style="color:var(--bee)">${p(semResp)}</div><div class="s">${semResp.toLocaleString('pt-BR')} expiraram · ${t.waiting_send.toLocaleString('pt-BR')} agendadas não saíram · ${t.send_error} erros</div></div>
@@ -419,14 +419,15 @@ function desenhaN() {
       <div style="display:flex;gap:4px;margin-top:4px">${N.porHora.map((h, i) => `<div style="flex:1;text-align:center;font:10px var(--mono);color:var(--sub)">${i % 3 === 0 ? i + 'h' : ''}</div>`).join('')}</div>
       <div style="font-size:12px;color:var(--sub);margin-top:6px"><i style="display:inline-block;width:10px;height:10px;background:rgba(245,197,24,.85);border-radius:3px;margin-right:6px"></i>notificações enviadas &nbsp; <i style="display:inline-block;width:10px;height:10px;background:rgba(47,224,138,.75);border-radius:3px;margin-right:6px"></i>parte aceita</div>
     </div>
-    <h3>Entregadores · ${N.entregadores.length} notificados · ${N.abaixoMeta} abaixo de ${N.meta}%</h3>
+    <h3>Entregadores · ${N.entregadores.length} notificados · ${N.abaixoMeta} abaixo de ${N.meta}% no critério da Black</h3>
     <div class="barra" style="margin-bottom:8px">
       <div class="campo q"><label for="fn">Pesquisar</label><input id="fn" autocomplete="off" placeholder="nome ou ID" value="${esc(filtroN)}"></div>
       <div class="campo"><label>Ordenar</label><div class="dias">${[['enviadas', 'Mais notificados'], ['aceite', 'Menor aceite'], ['recusadas', 'Mais recusas']].map(([k, r]) => `<button class="dia${ordemN === k ? ' on' : ''}" data-o="${k}">${r}</button>`).join('')}</div></div>
     </div>
     <table class="tabela"><tbody>${lista.slice(0, 300).map((e) => `<tr class="lin" data-id="${e.id}" style="cursor:pointer">
       <td><div style="font-weight:700">${esc(e.nome || 'Entregador ' + e.id)}</div><div class="dsem" style="font-family:var(--mono)">ID ${e.id}${e.fin != null ? ' · ' + e.fin + ' finalizadas' : ''}</div></td>
-      <td><div class="anel">${anel(e.aceite, N.meta)}<div><div class="v">${pct(e.aceite)}</div><div class="d">${e.aceitas} de ${e.enviadas} aceitas</div></div></div></td>
+      <td><div class="anel">${anel(e.aceiteBlack, N.meta)}<div><div class="v">${pct(e.aceiteBlack)}</div><div class="d">critério Black: ${e.corridas} corridas ÷ ${e.enviadas} notificações</div></div></div></td>
+      <td><div class="dnum" style="color:var(--ok)">${e.aceitas}</div><div class="dsem">aceitas pela notificação (${pct(e.aceite)})</div></td>
       <td><div class="dnum" style="color:var(--no)">${e.recusadas}</div><div class="dsem">recusadas</div></td>
       <td><div class="dnum" style="color:var(--bee)">${e.semResposta}</div><div class="dsem">sem resposta</div></td>
       <td><div class="dnum">${e.agendadas}</div><div class="dsem">agendadas não saíram${e.erros ? ` · ${e.erros} erros` : ''}</div></td></tr>`).join('')}</tbody></table>
@@ -539,7 +540,7 @@ function desenhaE(j) {
     return `<tr class="${d.premio && !d.parcial ? 'ganhou' : ''}">
       <td><div class="dnum">${ddmm(d.dia)}</div><div class="dsem">${semana(d.dia)}${d.parcial ? ' · parcial' : ''}</div></td>
       <td><div class="anel">${anel(fin, 100)}<div><div class="v">${d.fin}</div><div class="d">finalizadas${d.andamento ? ` · +${d.andamento} em curso` : ''}</div></div></div></td>
-      <td><div class="anel">${anel(esp ? null : d.semNotif ? 100 : d.aceite, 70, false, esp)}<div><div class="v">${esp ? '—' : d.semNotif ? 'sem notificação' : pct(d.aceite)}</div><div class="d">${esp ? (d.emLeitura || 'na fila de leitura') : d.semNotif ? 'só pedidos pré-atribuídos' : `${d.notif.aceitas} de ${d.notif.enviadas} notificações · ${d.notif.recusadas} recusadas · ${d.notif.semResposta} sem resposta`}${!esp && d.desistencias ? ` · ${d.desistencias} desist.` : ''}</div></div></div></td>
+      <td><div class="anel">${anel(esp ? null : d.semNotif ? 100 : d.aceite, 70, false, esp)}<div><div class="v">${esp ? '—' : d.semNotif ? 'sem notificação' : pct(d.aceite)}</div><div class="d">${esp ? (d.emLeitura || 'na fila de leitura') : d.semNotif ? 'só pedidos pré-atribuídos' : `${d.notif.corridas} corridas ÷ ${d.notif.enviadas} notificações · ${d.notif.aceitas} aceitas pela notificação · ${d.notif.recusadas} recusadas`}${!esp && d.desistencias ? ` · ${d.desistencias} desist.` : ''}</div></div></div></td>
       <td><div class="anel">${anel(d.cancPct == null ? null : 100 - d.cancPct * 10, 50)}<div><div class="v">${pct(d.cancPct)}</div><div class="d">${d.canc} cancelados</div></div></div></td>
       <td>${selo}${det}</td></tr>`;
   }).join('');

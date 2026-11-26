@@ -3,7 +3,9 @@
 //
 // Critérios do dia (00h00–23h59, Brasília):
 //   ≥ 10 entregas finalizadas · aceite ≥ 70% · cancelamentos ≤ 5%
-// Aceite (desde 26/11, pedido do usuário): corridas aceitas ÷ notificações do app no dia, lidas da
+// Aceite (regra B, escolhida pelo usuário em 26/11): corridas que o entregador pegou no dia (de qualquer jeito:
+//   notificação, lista do app ou pré-atribuída) ÷ notificações do app enviadas a ele no dia, com teto de 100%.
+//   As notificações vêm da
 //   "Lista de notificações" de cada entrega (GET /api/orders/{id}/notifications, ver notificacoes.mjs).
 //   Quem não recebeu nenhuma notificação no dia (só pedidos pré-atribuídos) cumpre o critério.
 //   As desistências (aceitou e largou) continuam lidas e aparecem como informação.
@@ -249,7 +251,7 @@ async function consulta(q, de, ate) {
     const propria = desist.filter((d) => d.proprio);
     const aceitas = p.length;
     const nt = lerNotif(dia);
-    const av = avaliar({ fin, canc }, nt?.porEntregador?.[ent.id]);
+    const av = avaliar({ fin, canc, tot: aceitas }, nt?.porEntregador?.[ent.id]);
     const aceite = nt ? av.aceite : null;
     const cancPct = av.cancPct;
     const ok = { ...av.ok, aceite: !!nt && av.ok.aceite };
@@ -274,13 +276,14 @@ function avaliarProvisorio({ fin, canc, tot }, desist) {
   return { aceite, semNotif: false, provisorio: true, notif: null, cancPct, ok, falhas: Object.values(ok).filter((v) => !v).length };
 }
 const NOTIF_VAZIA = { enviadas: 0, aceitas: 0, recusadas: 0, recebidas: 0, semRecibo: 0, erros: 0, agendadas: 0 };
-function avaliar({ fin, canc }, n) {
+function avaliar({ fin, canc, tot }, n) {
   n = n || NOTIF_VAZIA;
   const semNotif = !n.enviadas;
-  const aceite = semNotif ? null : (100 * n.aceitas) / n.enviadas;
+  const corridas = tot ?? fin + canc;
+  const aceite = semNotif ? null : Math.min(100, (100 * corridas) / n.enviadas); // regra B
   const cancPct = fin + canc ? (100 * canc) / (fin + canc) : null;
   const ok = { finalizadas: fin >= META.finalizadas, aceite: semNotif || aceite >= META.aceite, cancelamento: cancPct != null && cancPct <= META.cancelamento };
-  return { aceite, semNotif, notif: { enviadas: n.enviadas, aceitas: n.aceitas, recusadas: n.recusadas, semResposta: n.recebidas + n.semRecibo, erros: n.erros },
+  return { aceite, semNotif, notif: { corridas, enviadas: n.enviadas, aceitas: n.aceitas, recusadas: n.recusadas, semResposta: n.recebidas + n.semRecibo, erros: n.erros },
     cancPct, ok, falhas: Object.values(ok).filter((v) => !v).length };
 }
 function vencedores(dia) {
@@ -377,11 +380,12 @@ http.createServer(async (req, res) => {
       if (!nt) return json(res, 200, { dia, lido: false, leitura: leitura[dia] || null });
       const c = lerCache(dia);
       const entregadores = Object.entries(nt.porEntregador).map(([id, e]) => ({ id, nome: e.nome || c?.entregadores?.[id]?.nome || '', ...e,
-        semResposta: e.recebidas + e.semRecibo, aceite: e.enviadas ? (100 * e.aceitas) / e.enviadas : null, fin: c?.entregadores?.[id]?.fin ?? null }))
+        semResposta: e.recebidas + e.semRecibo, aceite: e.enviadas ? (100 * e.aceitas) / e.enviadas : null, fin: c?.entregadores?.[id]?.fin ?? null,
+        corridas: c?.entregadores?.[id]?.tot ?? 0, aceiteBlack: e.enviadas ? Math.min(100, (100 * (c?.entregadores?.[id]?.tot ?? 0)) / e.enviadas) : null }))
         .filter((e) => e.enviadas || e.erros).sort((a, b) => b.enviadas - a.enviadas);
       const { porEntregador, ...resto } = nt;
       return json(res, 200, { lido: true, ...resto, meta: META.aceite, entregadores,
-        abaixoMeta: entregadores.filter((e) => e.aceite != null && e.aceite < META.aceite).length });
+        abaixoMeta: entregadores.filter((e) => e.aceiteBlack != null && e.aceiteBlack < META.aceite).length });
     }
     if (u.pathname === '/api/vencedores') {
       const dia = /^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get('dia')) ? u.searchParams.get('dia') : somaDia(hojeBR(), -1);
