@@ -82,7 +82,7 @@ export function criarEvidencias({ CACHE, toolTela, log }) {
       const quemAceitou = aceita || minha;
       const fim = agendadas[0]?.exclusao;
       diag.push({ tipo: 'agendado', titulo: `${agendadas.length} notificação(ões) como "Agendado" = estavam na fila e não chegaram a sair`,
-        texto: `A Bee notifica em fila: o 1º da lista recebe na hora e os seguintes ficam agendados com atraso crescente (coluna Delay: ${agendadas.slice(0, 3).map((n) => n.delay + ' s').join(', ')}${agendadas.length > 3 ? '…' : ''}). ${quemAceitou.nome} aceitou${aceiteEm ? ` às ${BR(aceiteEm)}` : ''}${quemAceitou.envio && aceiteEm ? `, ${dt(quemAceitou.envio, aceiteEm)} s depois de receber` : ''}, e a fila foi encerrada às ${BR(fim)}, antes do horário de envio das demais. Por isso elas ficam "Agendado" (a hora de envio 21:00:00 na tela é só um valor vazio). Agendado não conta como notificação para ninguém.` });
+        texto: `A Bee notifica em fila: o 1º da lista recebe na hora e os seguintes ficam agendados com atraso crescente (coluna Delay: ${agendadas.slice(0, 3).map((n) => n.delay + ' s').join(', ')}${agendadas.length > 3 ? '…' : ''}). A entrega foi aceita por ${ent ? ent.nome : quemAceitou.nome}${aceiteEm ? ` às ${BR(aceiteEm)}` : ''}${minha?.envio && aceiteEm ? `, ${dt(minha.envio, aceiteEm)} s depois de receber a notificação` : ent && !minha ? ' (sem ter sido notificado)' : ''}, e a fila foi encerrada às ${BR(fim)}, antes do horário de envio das demais. Por isso elas ficam "Agendado" (a hora de envio 21:00:00 na tela é só um valor vazio). Agendado não conta como notificação para ninguém.` });
     }
     if (ent && minha && !aceita && (minha.situacao === 'sent' || minha.situacao === 'received')) {
       diag.push({ tipo: 'aceite-nao-gravado', titulo: `Quem ficou com a entrega aparece como "${SITUACAO[minha.situacao]}", não como "Aceite"`,
@@ -90,7 +90,16 @@ export function criarEvidencias({ CACHE, toolTela, log }) {
     }
     if (aceita && ent && aceita.ent === ent.id && !diag.some((x) => x.tipo === 'agendado'))
       diag.push({ tipo: 'ok', titulo: 'Aceite registrado na notificação', texto: `${ent.nome} aceitou pela notificação${aceiteEm && aceita.envio ? `, ${dt(aceita.envio, aceiteEm)} s depois de receber` : ''}.` });
-    if (aceita && ent && aceita.ent !== ent.id)
+    // Caso #55909218: quem ficou com a entrega não está na lista e aceitou pelo próprio app = pegou direto da
+    // lista de entregas disponíveis, sem notificação. Se alguém aparece como Aceite, chegou depois (perdeu a corrida).
+    const foraDaLista = ent && notifs.length && !notifs.some((n) => n.ent === ent.id);
+    if (foraDaLista && atribuicao && /deliveryman/.test(atribuicao.tipo)) {
+      const fimFila = notifs.map((n) => n.exclusao).filter(Boolean).sort().pop();
+      diag.push({ tipo: 'fora-da-lista', titulo: 'Quem ficou com a entrega não foi notificado: pegou direto da lista de entregas do app',
+        texto: `${ent.nome} (${ent.id}) aceitou às ${BR(aceiteEm || atribuicao.quando)} pelo próprio app${criacao?.buscando ? `, ${dt(iso(criacao.buscando), aceiteEm || iso(atribuicao.quando))} s depois de a entrega entrar em "Buscando"` : ''}, sem estar na fila de notificação (a Bee só notifica os ${notifs.length} da lista, mas a entrega também aparece para quem abre a lista de disponíveis no app). `
+          + (aceita ? `${aceita.nome} (${aceita.ent}) aparece como "Aceite" porque respondeu à notificação, mas a entrega já tinha dono; a fila só foi encerrada às ${BR(fimFila)}, ${dt(aceiteEm || iso(atribuicao.quando), fimFila)} s depois. ` : '')
+          + `No painel Black: o aceite de ${aceita ? aceita.nome.split(' ')[0] : 'quem respondeu'} conta para ele; para ${ent.nome.split(' ')[0]} a entrega não conta nem a favor nem contra o aceite, porque ele não foi notificado.` });
+    } else if (aceita && ent && aceita.ent !== ent.id)
       diag.push({ tipo: 'troca', titulo: 'Quem aceitou pela notificação não é quem ficou com a entrega', texto: `${aceita.nome} (${aceita.ent}) aparece como Aceite, mas a entrega está com ${ent.nome} (${ent.id}). Houve troca de entregador depois do aceite (ver histórico).` });
     const recusas = notifs.filter((n) => n.situacao === 'refused').length;
     if (recusas) diag.push({ tipo: 'recusa', titulo: `${recusas} recusa(s)`, texto: '"Cancelado" na lista = o entregador recebeu e recusou a oferta. Conta como notificação não aceita no painel Black.' });
