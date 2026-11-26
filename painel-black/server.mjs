@@ -45,10 +45,10 @@ const leitura = {}; // dia → { fase, feito, total, inicio }
 // fechado ela só vale se foi lida 2 h depois do fim do dia, quando os status já estão finais.
 const arqLista = (d) => path.join(CACHE, `lista-utc-${d}.json`);
 const fimDiaBR = (dia) => Date.parse(somaDia(dia, 1) + 'T03:00:00Z');
-async function listarUTC(d, st, precisaDepoisDe) {
+async function listarUTC(d, st, precisaDepoisDe, franq) {
   try {
     const c = JSON.parse(fs.readFileSync(arqLista(d), 'utf8'));
-    if (c.versao === VERSAO && Date.parse(c.lidoEm) >= precisaDepoisDe) return c.pedidos;
+    if (c.versao === VERSAO && Date.parse(c.lidoEm) >= precisaDepoisDe && (!c.franquias || c.franquias === franq)) return c.pedidos;
   } catch {}
   const lidoEm = new Date().toISOString();
   const pedidos = [];
@@ -66,11 +66,12 @@ async function listarUTC(d, st, precisaDepoisDe) {
     }
   }
   await Promise.all(VARRE.map(trab));
+  await conferirFranquias(franq); // seleção mudou no meio: a listagem não presta, não grava
   const lista = [...new Map(pedidos.map((p) => [p.id, p])).values()];
-  fs.writeFileSync(arqLista(d), JSON.stringify({ versao: VERSAO, dia: d, lidoEm, pedidos: lista }));
+  fs.writeFileSync(arqLista(d), JSON.stringify({ versao: VERSAO, dia: d, lidoEm, franquias: franq, pedidos: lista }));
   return lista;
 }
-async function listarDia(dia, st) {
+async function listarDia(dia, st, franq) {
   const fechado = dia < hojeBR();
   const agora = Date.now();
   const todos = [];
@@ -78,16 +79,31 @@ async function listarDia(dia, st) {
     if (Date.parse(d + 'T00:00:00Z') > agora) continue; // dia UTC que ainda não começou
     // dia fechado: lista lida 2 h depois do fim do dia; hoje: lista da última hora (a de D-2 vale como está)
     const precisa = fechado ? fimDiaBR(dia) + 2 * 3600e3 : d === somaDia(dia, -2) ? 0 : agora - RELER_HOJE_MIN * 60e3;
-    todos.push(...await listarUTC(d, st, precisa));
+    todos.push(...await listarUTC(d, st, precisa, franq));
   }
   return [...new Map(todos.map((p) => [p.id, p])).values()];
 }
 const doDia = (iso, dia) => !!iso && diaBR(iso) === dia;
 
+// Em 25/11 a seleção de franquias do acesso do MCP mudou no meio de uma leitura (a Bee respondia
+// "Registro não encontrado nas suas franquias ativas") e 23 e 24/11 saíram pela metade. Agora a leitura
+// confere a seleção antes e depois; se Fortaleza (7) sumiu ou a seleção mudou, nada é gravado e o dia volta à fila.
+async function franquiasAtivas() {
+  const r = await VARRE[0]('list_active_franchises', {});
+  return (r.franchise_ids || []).map(Number).sort((a, b) => a - b).join(',');
+}
+async function conferirFranquias(antes) {
+  const agora = await franquiasAtivas();
+  if (!agora.split(',').includes('7')) throw new Error('acesso do MCP sem Fortaleza (7) selecionada: ' + agora);
+  if (antes != null && agora !== antes) throw new Error('seleção de franquias mudou durante a leitura: ' + antes + ' → ' + agora);
+  return agora;
+}
+
 async function lerDesistencias(dia) {
   const st = leitura[dia] = { fase: 'listando pedidos', feito: 0, total: null, inicio: Date.now() };
   try {
-    const pedidos = await listarDia(dia, st);
+    const franq = await conferirFranquias();
+    const pedidos = await listarDia(dia, st, franq);
     // Quem desiste faz o pedido voltar a "Buscando", e isso renova o searching. Lê o histórico dos pedidos
     // cuja última busca foi neste dia e veio mais de 60 s depois da criação (inclui agendados soltos no dia).
     const cand = pedidos.filter((p) => p.busca && p.criado && doDia(p.busca, dia) && seg(p.busca, p.criado) > 60);
@@ -119,7 +135,8 @@ async function lerDesistencias(dia) {
       else if (p.st === '60' && doDia(p.cancEm, dia)) { const e = conta(p); e.canc++; e.tot++; e.cancs.push({ pedido: p.id, loja: p.loja, quando: p.cancEm }); }
       else if (p.st !== '50' && p.st !== '60' && doDia(p.criado, dia)) conta(p).tot++;
     }
-    const res = { versao: VERSAO, dia, fechado, lidoEm: new Date().toISOString(), listados: pedidos.length, rebuscas: cand.length, porEntregador, entregadores };
+    await conferirFranquias(franq);
+    const res = { versao: VERSAO, dia, fechado, franquias: franq, lidoEm: new Date().toISOString(), listados: pedidos.length, rebuscas: cand.length, porEntregador, entregadores };
     fs.writeFileSync(arq(dia), JSON.stringify(res));
     log('dia lido', dia, fechado ? 'fechado' : 'parcial', pedidos.length, 'pedidos', cand.length, 'rebuscas');
     return res;
