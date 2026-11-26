@@ -15,6 +15,8 @@ function servidor() {
   return srv;
 }
 const srv = servidor();
+// O mesmo acesso também é aceito nas rotas REST da Bee (ex.: GET /api/orders/{id}/notifications, só leitura)
+export const ACESSO = { api: new URL(srv.url).origin + '/api', auth: srv.headers?.Authorization };
 const H = { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', ...(srv.headers || {}) };
 const espera = (ms) => new Promise((s) => setTimeout(s, ms));
 

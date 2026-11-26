@@ -131,6 +131,7 @@ h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--bo
     <button class="aba on" data-p="venc">Vencedores do dia</button>
     <button class="aba" data-p="geral">Lista geral</button>
     <button class="aba" data-p="ent">Conferir entregador</button>
+    <button class="aba" data-p="notif">Notificações</button>
   </nav>
 
   <section class="painel on" id="p-venc">
@@ -148,6 +149,13 @@ h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--bo
     <div id="outG"></div>
   </section>
 
+  <section class="painel" id="p-notif">
+    <div class="barra"><div style="flex:1 1 100%"><label>Dia</label><div class="dias" id="diasN"></div></div></div>
+    <div class="scan" id="scanN"></div>
+    <div id="msgN" style="margin:14px 2px;color:var(--sub)"></div>
+    <div id="outN"></div>
+  </section>
+
   <section class="painel" id="p-ent">
     <form class="barra" id="f">
       <div class="campo q"><label for="q">ID ou CPF do entregador</label><input id="q" inputmode="numeric" autocomplete="off" placeholder="ex.: 1185446" required></div>
@@ -162,7 +170,7 @@ h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--bo
 
   <div class="nota">
     <div><b>Finalizadas e cancelamentos:</b> todas as modalidades (agendada, D+1, Econômica, retorno, multi-paradas, transferência) finalizadas ou canceladas na data, no nome do entregador, mesmo que o pedido tenha sido criado na véspera. Cancelamento = cancelados ÷ (finalizados + cancelados).</div>
-    <div><b>Aceite (aproximado):</b> pedidos que ficaram com ele ÷ (esses + desistências). Desistência = o próprio entregador aceita e larga o pedido, que volta para "Buscando". A Bee não grava oferta recusada ou ignorada, então ela não entra na conta. O aceite oficial é o do painel da Bee.</div>
+    <div><b>Aceite:</b> corridas aceitas ÷ notificações do app no dia, lidas da "Lista de notificações" de cada entrega. Conta como notificação o que chegou a ser enviado (Enviado, Recebido, Aceite, Cancelado); "Agendado" nunca saiu (outro entregador aceitou antes) e "Erro" falhou no envio. Quem não recebeu notificação no dia (só pedidos pré-atribuídos pela loja ou pela torre) cumpre o critério.</div>
     <div>Cada dia é lido inteiro uma vez (todos os pedidos + histórico dos que tiveram rebusca). O dia de hoje é relido de hora em hora e só vale depois da meia-noite.</div>
   </div>
 </div>
@@ -212,7 +220,7 @@ function cartao(x, i, quase) {
   const m = (k, rot, v, ok) => `<div class="met ${ok ? 'ok' : 'no'}"><div class="k">${rot}</div><div class="v">${v}</div></div>`;
   return `<div class="card${quase ? ' quase' : ''}" data-id="${x.id}" style="animation-delay:${Math.min(i, 30) * 25}ms">
     <div class="top"><div><div class="nome">${esc(x.nome || 'Entregador ' + x.id)}</div><div class="id">ID ${x.id}</div></div><span class="pos">${quase ? '✗1' : '#' + (i + 1)}</span></div>
-    <div class="mets">${m('fin', 'Finaliz.', x.fin, x.ok.finalizadas)}${m('ac', 'Aceite', pct(x.aceite), x.ok.aceite)}${m('ca', 'Cancel.', pct(x.cancPct), x.ok.cancelamento)}</div></div>`;
+    <div class="mets">${m('fin', 'Finaliz.', x.fin, x.ok.finalizadas)}${m('ac', 'Aceite', x.semNotif ? 'sem notif.' : pct(x.aceite), x.ok.aceite)}${m('ca', 'Cancel.', pct(x.cancPct), x.ok.cancelamento)}</div></div>`;
 }
 async function carregarV() {
   clearTimeout(tV);
@@ -226,7 +234,10 @@ async function carregarV() {
     $('#outV').innerHTML = '';
     tV = setTimeout(carregarV, 15000); return;
   }
-  $('#msgV').textContent = j.fechado ? `Dia fechado · lido às ${hora(j.lidoEm)}` : `Hoje (parcial) · lido às ${hora(j.lidoEm)} · resultado só vale depois da meia-noite`;
+  const ln = j.leituraNotif;
+  $('#msgV').textContent = j.provisorio
+    ? `Aceite provisório (regra antiga, por desistências): lendo as notificações do app${ln && !/fila/.test(ln.fase) ? ` · ${ln.fase}${ln.total ? ` ${ln.feito} de ${ln.total}` : ''}` : ' · na fila'}. O dia só entra no valor depois disso.`
+    : j.fechado ? `Dia fechado · aceite pelas notificações do app · lido às ${hora(j.lidoEm)}` : `Hoje (parcial) · lido às ${hora(j.lidoEm)} · resultado só vale depois da meia-noite`;
   $('#outV').innerHTML = `
     <div class="kpis">
       <div class="kpi dest"><div class="k">Vencedores</div><div class="v" data-n="${j.totais.vencedores}">0</div><div class="s">cumpriram os 3 critérios · ${brl(j.premio)} cada · <b style="color:var(--bee)">${brl(j.totais.valor)}</b>${j.fechado ? '' : ' até agora'}</div></div>
@@ -284,6 +295,73 @@ function desenhaG() {
 }
 $('#fg').oninput = desenhaG;
 
+// ---------- relatório de notificações ----------
+let diaN = null, N = null, tN, filtroN = '', ordemN = 'enviadas';
+async function carregarN() {
+  clearTimeout(tN);
+  const s = await fetch('/api/status').then((r) => r.json());
+  if (!diaN) diaN = diaSel;
+  $('#diasN').innerHTML = s.dias.map((d) => `<button class="dia${d.dia === diaN ? ' on' : ''}" data-d="${d.dia}"><span class="pt ${d.leitura && !/fila/.test(d.leitura.fase) ? 'ld' : d.lido && d.fechado ? 'ok' : ''}"></span>${semana(d.dia)} ${ddmm(d.dia)}</button>`).join('');
+  document.querySelectorAll('#diasN .dia').forEach((b) => b.onclick = () => { diaN = b.dataset.d; carregarN(); });
+  $('#scanN').classList.add('on');
+  N = await fetch('/api/notificacoes?dia=' + diaN).then((r) => r.json());
+  $('#scanN').classList.remove('on');
+  if (!N.lido) {
+    const l = s.dias.find((x) => x.dia === diaN)?.leitura;
+    $('#msgN').textContent = l && !/fila/.test(l.fase) ? `Lendo ${ddmm(diaN)}: ${l.fase}${l.total ? ` (${l.feito} de ${l.total})` : ''}…` : `O dia ${ddmm(diaN)} está na fila de leitura.`;
+    $('#outN').innerHTML = ''; tN = setTimeout(carregarN, 15000); return;
+  }
+  $('#msgN').textContent = (N.fechado ? 'Dia fechado' : 'Hoje (parcial)') + ' · lido às ' + hora(N.lidoEm);
+  desenhaN();
+  if (!N.fechado) tN = setTimeout(carregarN, 120000);
+}
+function desenhaN() {
+  const t = N.totais, env = N.enviadas, p = (v) => env ? pct(100 * v / env) : '—';
+  const semResp = t.sent + t.received;
+  const barra = [['Aceite', t.accepted, 'var(--ok)'], ['Cancelado (recusou)', t.refused, 'var(--no)'], ['Recebido sem resposta', t.received, 'var(--bee)'], ['Enviado sem recibo', t.sent, 'var(--wait)']];
+  const maxH = Math.max(1, ...N.porHora.map((h) => h.enviadas));
+  const f = filtroN.trim().toLowerCase();
+  const lista = N.entregadores.filter((e) => !f || e.id.includes(f) || (e.nome || '').toLowerCase().includes(f))
+    .sort((a, b) => ordemN === 'aceite' ? (a.aceite ?? 999) - (b.aceite ?? 999) : ordemN === 'recusadas' ? b.recusadas - a.recusadas : b.enviadas - a.enviadas);
+  $('#outN').innerHTML = `
+    <div class="kpis">
+      <div class="kpi dest"><div class="k">Taxa de aceite geral</div><div class="v">${p(t.accepted)}</div><div class="s">${t.accepted.toLocaleString('pt-BR')} aceites em ${env.toLocaleString('pt-BR')} notificações</div></div>
+      <div class="kpi"><div class="k">Notificações enviadas</div><div class="v" data-n="${env}">0</div><div class="s">${N.notifPorPedido == null ? '—' : N.notifPorPedido.toFixed(1).replace('.', ',')} por entrega · ${N.pedidosComNotif.toLocaleString('pt-BR')} entregas</div></div>
+      <div class="kpi"><div class="k">Recusadas</div><div class="v" style="color:var(--no)">${p(t.refused)}</div><div class="s">${t.refused.toLocaleString('pt-BR')} vezes que o entregador recusou</div></div>
+      <div class="kpi"><div class="k">Sem resposta</div><div class="v" style="color:var(--bee)">${p(semResp)}</div><div class="s">${semResp.toLocaleString('pt-BR')} expiraram · ${t.waiting_send.toLocaleString('pt-BR')} agendadas não saíram · ${t.send_error} erros</div></div>
+    </div>
+    <h3>Para onde vão as notificações</h3>
+    <div class="kpi" style="padding:14px 16px">
+      <div style="display:flex;height:16px;border-radius:8px;overflow:hidden;background:rgba(135,150,173,.15)">${barra.map(([r, v, c]) => v ? `<div title="${r}: ${v}" style="width:${100 * v / Math.max(1, env)}%;background:${c}"></div>` : '').join('')}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12.5px;color:var(--sub)">${barra.map(([r, v, c]) => `<span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${c};margin-right:6px"></i>${r}: <b style="color:var(--txt);font-family:var(--mono)">${p(v)}</b> (${v.toLocaleString('pt-BR')})</span>`).join('')}</div>
+      <div style="margin-top:10px;font-size:12.5px;color:var(--sub)">Quem aceita está, em média, na posição <b style="color:var(--txt);font-family:var(--mono)">${N.posicaoMediaAceite == null ? '—' : (N.posicaoMediaAceite + 1).toFixed(1).replace('.', ',')}ª</b> da fila de notificação · ${N.pedidosAceitosPorNotif.toLocaleString('pt-BR')} entregas aceitas por notificação</div>
+    </div>
+    <h3>Notificações por hora</h3>
+    <div class="kpi" style="padding:14px 16px">
+      <div style="display:flex;align-items:flex-end;gap:4px;height:130px">${N.porHora.map((h, i) => `<div title="${i}h: ${h.enviadas} notificações · aceite ${h.enviadas ? pct(100 * h.aceitas / h.enviadas) : '—'}" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%">
+        <div style="height:${100 * h.enviadas / maxH}%;min-height:${h.enviadas ? 2 : 0}px;background:linear-gradient(180deg,rgba(245,197,24,.85),rgba(245,197,24,.25));border-radius:4px 4px 0 0;position:relative">
+        <div style="position:absolute;left:0;right:0;bottom:0;height:${h.enviadas ? 100 * h.aceitas / h.enviadas : 0}%;background:rgba(47,224,138,.75);border-radius:0"></div></div></div>`).join('')}</div>
+      <div style="display:flex;gap:4px;margin-top:4px">${N.porHora.map((h, i) => `<div style="flex:1;text-align:center;font:10px var(--mono);color:var(--sub)">${i % 3 === 0 ? i + 'h' : ''}</div>`).join('')}</div>
+      <div style="font-size:12px;color:var(--sub);margin-top:6px"><i style="display:inline-block;width:10px;height:10px;background:rgba(245,197,24,.85);border-radius:3px;margin-right:6px"></i>notificações enviadas &nbsp; <i style="display:inline-block;width:10px;height:10px;background:rgba(47,224,138,.75);border-radius:3px;margin-right:6px"></i>parte aceita</div>
+    </div>
+    <h3>Entregadores · ${N.entregadores.length} notificados · ${N.abaixoMeta} abaixo de ${N.meta}%</h3>
+    <div class="barra" style="margin-bottom:8px">
+      <div class="campo q"><label for="fn">Pesquisar</label><input id="fn" autocomplete="off" placeholder="nome ou ID" value="${esc(filtroN)}"></div>
+      <div class="campo"><label>Ordenar</label><div class="dias">${[['enviadas', 'Mais notificados'], ['aceite', 'Menor aceite'], ['recusadas', 'Mais recusas']].map(([k, r]) => `<button class="dia${ordemN === k ? ' on' : ''}" data-o="${k}">${r}</button>`).join('')}</div></div>
+    </div>
+    <table class="tabela"><tbody>${lista.slice(0, 300).map((e) => `<tr class="lin" data-id="${e.id}" style="cursor:pointer">
+      <td><div style="font-weight:700">${esc(e.nome || 'Entregador ' + e.id)}</div><div class="dsem" style="font-family:var(--mono)">ID ${e.id}${e.fin != null ? ' · ' + e.fin + ' finalizadas' : ''}</div></td>
+      <td><div class="anel">${anel(e.aceite, N.meta)}<div><div class="v">${pct(e.aceite)}</div><div class="d">${e.aceitas} de ${e.enviadas} aceitas</div></div></div></td>
+      <td><div class="dnum" style="color:var(--no)">${e.recusadas}</div><div class="dsem">recusadas</div></td>
+      <td><div class="dnum" style="color:var(--bee)">${e.semResposta}</div><div class="dsem">sem resposta</div></td>
+      <td><div class="dnum">${e.agendadas}</div><div class="dsem">agendadas não saíram${e.erros ? ` · ${e.erros} erros` : ''}</div></td></tr>`).join('')}</tbody></table>
+    ${lista.length > 300 ? `<div class="vazio">Mostrando 300 de ${lista.length}. Use a pesquisa.</div>` : ''}`;
+  document.querySelectorAll('#outN .kpi .v[data-n]').forEach((el) => contar(el, +el.dataset.n));
+  const fn = $('#fn'); fn.oninput = () => { filtroN = fn.value; desenhaN(); const g = $('#fn'); g.focus(); g.setSelectionRange(g.value.length, g.value.length); };
+  document.querySelectorAll('#outN [data-o]').forEach((b) => b.onclick = () => { ordemN = b.dataset.o; desenhaN(); });
+  document.querySelectorAll('#outN .lin').forEach((c) => c.onclick = () => { $('#q').value = c.dataset.id; $('#de').value = diaN; $('#ate').value = diaN; document.querySelector('.aba[data-p=ent]').click(); consultar(); });
+}
+
 // ---------- entregador ----------
 async function consultar(silencioso) {
   const q = $('#q').value.trim(), de = $('#de').value, ate = $('#ate').value;
@@ -320,7 +398,7 @@ function desenhaE(j) {
     return `<tr class="${d.premio && !d.parcial ? 'ganhou' : ''}">
       <td><div class="dnum">${ddmm(d.dia)}</div><div class="dsem">${semana(d.dia)}${d.parcial ? ' · parcial' : ''}</div></td>
       <td><div class="anel">${anel(fin, 100)}<div><div class="v">${d.fin}</div><div class="d">finalizadas${d.andamento ? ` · +${d.andamento} em curso` : ''}</div></div></div></td>
-      <td><div class="anel">${anel(esp ? null : d.aceite, 70, false, esp)}<div><div class="v">${esp ? '—' : pct(d.aceite)}</div><div class="d">${esp ? (d.emLeitura || 'na fila de leitura') : `${d.aceitas} aceitas · ${d.desistencias} desist.${d.retiradas ? ` · ${d.retiradas} retir.` : ''}`}</div></div></div></td>
+      <td><div class="anel">${anel(esp ? null : d.semNotif ? 100 : d.aceite, 70, false, esp)}<div><div class="v">${esp ? '—' : d.semNotif ? 'sem notificação' : pct(d.aceite)}</div><div class="d">${esp ? (d.emLeitura || 'na fila de leitura') : d.semNotif ? 'só pedidos pré-atribuídos' : `${d.notif.aceitas} de ${d.notif.enviadas} notificações · ${d.notif.recusadas} recusadas · ${d.notif.semResposta} sem resposta`}${!esp && d.desistencias ? ` · ${d.desistencias} desist.` : ''}</div></div></div></td>
       <td><div class="anel">${anel(d.cancPct == null ? null : 100 - d.cancPct * 10, 50)}<div><div class="v">${pct(d.cancPct)}</div><div class="d">${d.canc} cancelados</div></div></div></td>
       <td>${selo}${det}</td></tr>`;
   }).join('');
@@ -343,9 +421,9 @@ $('#f').onsubmit = (ev) => { ev.preventDefault(); consultar(); };
   $('#de').value = CFG.desde; $('#ate').value = CFG.ate < CFG.hoje ? CFG.ate : CFG.hoje;
   const q = new URLSearchParams(location.search).get('q');
   if (q) { $('#q').value = q; document.querySelector('.aba[data-p=ent]').click(); consultar(); }
-  else if (['ent', 'geral'].includes(le('black-aba'))) document.querySelector(`.aba[data-p=${le('black-aba')}]`).click();
+  else if (['ent', 'geral', 'notif'].includes(le('black-aba'))) document.querySelector(`.aba[data-p=${le('black-aba')}]`).click();
   if (le('black-q') && !q) $('#q').value = le('black-q');
-  carregarV(); carregarG();
+  carregarV(); carregarG(); carregarN();
   setInterval(() => { $('#relogio').textContent = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Fortaleza' }) + ' · MCP Bee'; }, 1000);
 })();
 </script>

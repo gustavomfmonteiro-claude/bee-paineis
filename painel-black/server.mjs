@@ -3,15 +3,17 @@
 //
 // Critérios do dia (00h00–23h59, Brasília):
 //   ≥ 10 entregas finalizadas · aceite ≥ 70% · cancelamentos ≤ 5%
-// Aceite (aproximado): pedidos que ficaram com ele ÷ (esses + desistências).
-//   Desistência = o histórico do pedido mostra o próprio entregador saindo dele (volta para "Buscando").
-//   Oferta recusada/ignorada não fica registrada em lugar nenhum da API, então não entra.
+// Aceite (desde 26/11, pedido do usuário): corridas aceitas ÷ notificações do app no dia, lidas da
+//   "Lista de notificações" de cada entrega (GET /api/orders/{id}/notifications, ver notificacoes.mjs).
+//   Quem não recebeu nenhuma notificação no dia (só pedidos pré-atribuídos) cumpre o critério.
+//   As desistências (aceitou e largou) continuam lidas e aparecem como informação.
 // Cancelamentos: cancelados no nome dele ÷ (finalizados + cancelados no nome dele).
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cliente, toolTela, saidasDeEntregador, ritmo } from './mcp.mjs';
+import { lerNotificacoesDia } from './notificacoes.mjs';
 const VARRE = [cliente('v1'), cliente('v2'), cliente('v3')]; // sessões da varredura; o ritmo é único (mcp.mjs)
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -45,6 +47,17 @@ const VERSAO = 2;
 const arq = (dia) => path.join(CACHE, `desistencias-${dia}.json`);
 const lerCache = (dia) => { try { const c = JSON.parse(fs.readFileSync(arq(dia), 'utf8')); return c.versao === VERSAO ? c : null; } catch { return null; } };
 const leitura = {}; // dia → { fase, feito, total, inicio }
+const VERSAO_NOTIF = 1;
+const arqNotif = (dia) => path.join(CACHE, `notif-${dia}.json`);
+const arqNotifPedidos = (dia) => path.join(CACHE, `notif-pedidos-${dia}.json`);
+const lerNotif = (dia) => { try { const c = JSON.parse(fs.readFileSync(arqNotif(dia), 'utf8')); return c.versao === VERSAO_NOTIF ? c : null; } catch { return null; } };
+async function gravarNotif(dia, pedidos, st) {
+  const r = await lerNotificacoesDia({ dia, pedidos, arqPedidos: arqNotifPedidos(dia), st, log });
+  const res = { versao: VERSAO_NOTIF, dia, fechado: dia < hojeBR(), lidoEm: new Date().toISOString(), ...r };
+  fs.writeFileSync(arqNotif(dia), JSON.stringify(res));
+  log('notificações', dia, res.fechado ? 'fechado' : 'parcial', r.pedidosComNotif, 'pedidos com notificação', r.enviadas, 'enviadas');
+  return res;
+}
 
 // O filtro de data do MCP corta pelo dia em UTC. Um dia de Brasília D usa as listagens UTC de D-2 a D+1
 // (pedido agendado nasce na véspera ou antes). Cada listagem guarda a hora em que foi lida; para um dia
@@ -77,14 +90,15 @@ async function listarUTC(d, st, precisaDepoisDe, franq) {
   fs.writeFileSync(arqLista(d), JSON.stringify({ versao: VERSAO, dia: d, lidoEm, franquias: franq, pedidos: lista }));
   return lista;
 }
-async function listarDia(dia, st, franq) {
+async function listarDia(dia, st, franq, qualquerCache = false) {
   const fechado = dia < hojeBR();
   const agora = Date.now();
   const todos = [];
   for (const d of [somaDia(dia, -2), somaDia(dia, -1), dia, somaDia(dia, 1)]) {
     if (Date.parse(d + 'T00:00:00Z') > agora) continue; // dia UTC que ainda não começou
     // dia fechado: lista lida 2 h depois do fim do dia; hoje: lista da última hora (a de D-2 vale como está)
-    const precisa = fechado ? fimDiaBR(dia) + 2 * 3600e3 : d === somaDia(dia, -2) ? 0 : agora - RELER_HOJE_MIN * 60e3;
+    // só para notificações: serve qualquer listagem guardada (usa só id, criado e busca)
+    const precisa = qualquerCache && fs.existsSync(arqLista(d)) ? 0 : fechado ? fimDiaBR(dia) + 2 * 3600e3 : d === somaDia(dia, -2) ? 0 : agora - RELER_HOJE_MIN * 60e3;
     todos.push(...await listarUTC(d, st, precisa, franq));
   }
   return [...new Map(todos.map((p) => [p.id, p])).values()];
@@ -145,6 +159,7 @@ async function lerDesistencias(dia) {
     const res = { versao: VERSAO, dia, fechado, franquias: franq, lidoEm: new Date().toISOString(), listados: pedidos.length, rebuscas: cand.length, porEntregador, entregadores };
     fs.writeFileSync(arq(dia), JSON.stringify(res));
     log('dia lido', dia, fechado ? 'fechado' : 'parcial', pedidos.length, 'pedidos', cand.length, 'rebuscas');
+    await gravarNotif(dia, pedidos, st);
     return res;
   } finally { delete leitura[dia]; }
 }
@@ -152,6 +167,15 @@ async function lerDesistencias(dia) {
 function desistenciasDe(id, dia) {
   const out = (lerCache(dia)?.porEntregador?.[id] || []).filter((s) => diaBR(s.quando) === dia);
   return [...new Map(out.map((s) => [s.pedido + s.quando, s])).values()];
+}
+
+async function lerNotifDia(dia) {
+  const st = leitura[dia] = { fase: 'listando pedidos', feito: 0, total: null, inicio: Date.now() };
+  try {
+    const franq = await conferirFranquias();
+    const pedidos = await listarDia(dia, st, franq, true);
+    await gravarNotif(dia, pedidos, st);
+  } finally { delete leitura[dia]; }
 }
 
 let fila = Promise.resolve();
@@ -162,7 +186,10 @@ function agendar() {
   for (const d of alvo) {
     const c = lerCache(d);
     const velho = !c || (!c.fechado && (d < hoje || Date.now() - Date.parse(c.lidoEm) > RELER_HOJE_MIN * 60e3));
-    if (velho && !leitura[d]) { leitura[d] = { fase: 'na fila' }; fila = fila.then(() => lerDesistencias(d)).catch((e) => log('erro dia', d, String(e).slice(0, 200))); }
+    if (velho && !leitura[d]) { leitura[d] = { fase: 'na fila' }; fila = fila.then(() => lerDesistencias(d)).catch((e) => log('erro dia', d, String(e).slice(0, 200))); continue; }
+    const n = lerNotif(d);
+    const notifVelha = !n || (!n.fechado && (d < hoje || Date.now() - Date.parse(n.lidoEm) > RELER_HOJE_MIN * 60e3));
+    if (!velho && notifVelha && !leitura[d]) { leitura[d] = { fase: 'na fila (notificações)' }; fila = fila.then(() => lerNotifDia(d)).catch((e) => log('erro notificações', d, String(e).slice(0, 200))); }
   }
 }
 
@@ -220,13 +247,14 @@ async function consulta(q, de, ate) {
     const desist = desistenciasDe(ent.id, dia);
     const propria = desist.filter((d) => d.proprio);
     const aceitas = p.length;
-    const lido = !!lerCache(dia);
-    const aceite = lido && aceitas + propria.length ? (100 * aceitas) / (aceitas + propria.length) : null;
-    const cancPct = fin + canc ? (100 * canc) / (fin + canc) : null;
-    const ok = { finalizadas: fin >= META.finalizadas, aceite: aceite != null && aceite >= META.aceite, cancelamento: cancPct != null && cancPct <= META.cancelamento };
-    const c = lerCache(dia);
+    const nt = lerNotif(dia);
+    const av = avaliar({ fin, canc }, nt?.porEntregador?.[ent.id]);
+    const aceite = nt ? av.aceite : null;
+    const cancPct = av.cancPct;
+    const ok = { ...av.ok, aceite: !!nt && av.ok.aceite };
+    const c = nt && lerCache(dia) ? nt : null; // o aceite só vale com as notificações lidas
     return { dia, parcial: dia === hoje, fin, canc, andamento, aceitas, desistencias: propria.length,
-      retiradas: desist.length - propria.length, aceite, cancPct, ok, premio: ok.finalizadas && ok.aceite && ok.cancelamento,
+      retiradas: desist.length - propria.length, aceite, semNotif: !!nt && av.semNotif, notif: av.notif, cancPct, ok, premio: ok.finalizadas && ok.aceite && ok.cancelamento,
       valorPremio: premioDia(dia), valor: ok.finalizadas && ok.aceite && ok.cancelamento && !!c && dia !== hoje ? premioDia(dia) : 0,
       aceiteLido: !!c, aceiteFechado: !!c?.fechado, lidoEm: c?.lidoEm || null, emLeitura: leitura[dia]?.fase || null,
       detalhe: { desistencias: desist, cancelados } };
@@ -236,28 +264,41 @@ async function consulta(q, de, ate) {
 }
 
 // ---------- vencedores do dia ----------
-function avaliar({ fin, canc, tot }, desist) {
+// Enquanto as notificações do dia não foram lidas, o aceite sai provisório pela regra antiga
+// (pedidos ÷ pedidos + desistências) e a tela avisa; o dia não entra no valor apurado.
+function avaliarProvisorio({ fin, canc, tot }, desist) {
   const aceite = tot + desist ? (100 * tot) / (tot + desist) : null;
   const cancPct = fin + canc ? (100 * canc) / (fin + canc) : null;
   const ok = { finalizadas: fin >= META.finalizadas, aceite: aceite != null && aceite >= META.aceite, cancelamento: cancPct != null && cancPct <= META.cancelamento };
-  return { aceite, cancPct, ok, falhas: Object.values(ok).filter((v) => !v).length };
+  return { aceite, semNotif: false, provisorio: true, notif: null, cancPct, ok, falhas: Object.values(ok).filter((v) => !v).length };
+}
+const NOTIF_VAZIA = { enviadas: 0, aceitas: 0, recusadas: 0, recebidas: 0, semRecibo: 0, erros: 0, agendadas: 0 };
+function avaliar({ fin, canc }, n) {
+  n = n || NOTIF_VAZIA;
+  const semNotif = !n.enviadas;
+  const aceite = semNotif ? null : (100 * n.aceitas) / n.enviadas;
+  const cancPct = fin + canc ? (100 * canc) / (fin + canc) : null;
+  const ok = { finalizadas: fin >= META.finalizadas, aceite: semNotif || aceite >= META.aceite, cancelamento: cancPct != null && cancPct <= META.cancelamento };
+  return { aceite, semNotif, notif: { enviadas: n.enviadas, aceitas: n.aceitas, recusadas: n.recusadas, semResposta: n.recebidas + n.semRecibo, erros: n.erros },
+    cancPct, ok, falhas: Object.values(ok).filter((v) => !v).length };
 }
 function vencedores(dia) {
   const c = lerCache(dia);
+  const nt = lerNotif(dia);
   if (!c?.entregadores) return { dia, lido: false, premio: premioDia(dia), leitura: leitura[dia] || null };
-  const todos = new Set([...Object.keys(c.entregadores), ...Object.keys(c.porEntregador || {})]);
+  const todos = new Set(Object.keys(c.entregadores));
   const lista = [];
   for (const id of todos) {
-    const e = c.entregadores[id] || { nome: '', fin: 0, canc: 0, tot: 0 };
+    const e = c.entregadores[id];
+    if (!e.tot) continue;
     const d = desistenciasDe(id, dia).filter((x) => x.proprio).length;
-    if (!e.tot && !d) continue;
-    lista.push({ id, nome: e.nome, fin: e.fin, canc: e.canc, aceitas: e.tot, desistencias: d, ...avaliar(e, d) });
+    lista.push({ id, nome: e.nome, fin: e.fin, canc: e.canc, pedidos: e.tot, desistencias: d, ...(nt ? avaliar(e, nt.porEntregador[id]) : avaliarProvisorio(e, d)) });
   }
   lista.sort((a, b) => a.falhas - b.falhas || b.fin - a.fin);
   const ganhou = lista.filter((x) => x.falhas === 0);
   // "quase": falhou num critério só e chegou perto do volume (bateu 10, ou ficou em 8–9 cumprindo o resto)
   const quase = lista.filter((x) => x.falhas === 1 && (x.ok.finalizadas || x.fin >= META.finalizadas - 2));
-  return { dia, lido: true, fechado: c.fechado, lidoEm: c.lidoEm, entregadores: lista.length, vencedores: ganhou, premio: premioDia(dia),
+  return { dia, lido: true, provisorio: !nt, leituraNotif: nt ? null : leitura[dia] || null, fechado: !!(c.fechado && nt?.fechado), diaFechado: c.fechado, lidoEm: nt && nt.lidoEm < c.lidoEm ? nt.lidoEm : c.lidoEm, semNotif: ganhou.filter((x) => x.semNotif).length, entregadores: lista.length, vencedores: ganhou, premio: premioDia(dia),
     quase: quase.slice(0, 60),
     totais: { vencedores: ganhou.length, valor: ganhou.length * premioDia(dia), quase: quase.length, entregas: lista.reduce((s, x) => s + x.fin, 0), atingiram10: lista.filter((x) => x.ok.finalizadas).length } };
 }
@@ -309,7 +350,7 @@ http.createServer(async (req, res) => {
     }
     if (u.pathname === '/api/config') return json(res, 200, { desde: DESDE, ate: ATE, hoje: hojeBR(), meta: META, premios: PREMIO, ritmoMs: ritmo() });
     if (u.pathname === '/api/status') {
-      const lista = dias(DESDE, ATE < hojeBR() ? ATE : hojeBR()).map((d) => { const c = lerCache(d); return { dia: d, lido: !!c, fechado: !!c?.fechado, lidoEm: c?.lidoEm || null, pedidos: c?.listados ?? null, leitura: leitura[d] || null }; });
+      const lista = dias(DESDE, ATE < hojeBR() ? ATE : hojeBR()).map((d) => { const c = lerCache(d), n = lerNotif(d); return { dia: d, lido: !!c && !!n, fechado: !!c?.fechado && !!n?.fechado, lidoEm: c?.lidoEm || null, pedidos: c?.listados ?? null, leitura: leitura[d] || null }; });
       return json(res, 200, { dias: lista });
     }
     if (u.pathname === '/api/geral') return json(res, 200, geral());
@@ -320,6 +361,18 @@ http.createServer(async (req, res) => {
           e.dias.filter((d) => !d.parcial).map((d) => d.dia.slice(8) + '/' + d.dia.slice(5, 7)).join(' '), e.fin, e.valor.toFixed(2).replace('.', ',')].join(';'))];
       res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="elegiveis-black.csv"' });
       return res.end('﻿' + linhas.join('\r\n'));
+    }
+    if (u.pathname === '/api/notificacoes') {
+      const dia = /^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get('dia')) ? u.searchParams.get('dia') : somaDia(hojeBR(), -1);
+      const nt = lerNotif(dia);
+      if (!nt) return json(res, 200, { dia, lido: false, leitura: leitura[dia] || null });
+      const c = lerCache(dia);
+      const entregadores = Object.entries(nt.porEntregador).map(([id, e]) => ({ id, nome: e.nome || c?.entregadores?.[id]?.nome || '', ...e,
+        semResposta: e.recebidas + e.semRecibo, aceite: e.enviadas ? (100 * e.aceitas) / e.enviadas : null, fin: c?.entregadores?.[id]?.fin ?? null }))
+        .filter((e) => e.enviadas || e.erros).sort((a, b) => b.enviadas - a.enviadas);
+      const { porEntregador, ...resto } = nt;
+      return json(res, 200, { lido: true, ...resto, meta: META.aceite, entregadores,
+        abaixoMeta: entregadores.filter((e) => e.aceite != null && e.aceite < META.aceite).length });
     }
     if (u.pathname === '/api/vencedores') {
       const dia = /^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get('dia')) ? u.searchParams.get('dia') : somaDia(hojeBR(), -1);
