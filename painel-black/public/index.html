@@ -89,6 +89,21 @@ h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--bo
 .selo.ok{background:var(--ok);color:#03200f;box-shadow:0 0 18px rgba(47,224,138,.45)}
 .selo.no{background:rgba(255,90,106,.14);color:var(--no);box-shadow:0 0 0 1px rgba(255,90,106,.4) inset}
 .selo.wait{background:rgba(135,150,173,.14);color:var(--sub)}
+.mod-fundo{position:fixed;inset:0;background:rgba(3,5,9,.72);backdrop-filter:blur(4px);z-index:50;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.mod-fundo.on{display:flex}
+.mod{background:var(--bg2);border:1px solid var(--borda2);border-radius:18px;padding:18px;width:100%;max-width:880px;animation:entra .25s both}
+.mod-top{display:flex;justify-content:space-between;gap:12px;align-items:start}
+.mod-top h3{margin:0;font-size:19px}
+.mod-top .sub{color:var(--sub);font-size:12.5px;margin-top:3px;font-family:var(--mono)}
+.mod-x{background:rgba(5,8,13,.6);border:1px solid var(--borda);color:var(--txt);border-radius:10px;width:34px;height:34px;font-size:18px;cursor:pointer;flex:none}
+.mod-res{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:14px}
+.mod-res div{background:var(--glass);border:1px solid var(--borda);border-radius:12px;padding:10px 12px}
+.mod-res b{display:block;font:800 20px var(--mono)}
+.mod-res span{font-size:11.5px;color:var(--sub)}
+.mod-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.mod-acoes button{background:rgba(5,8,13,.6);border:1px solid var(--borda);color:var(--txt);border-radius:10px;padding:8px 12px;font-size:12.5px;cursor:pointer}
+.mod-acoes button:hover{border-color:var(--borda2)}
+.ev-tb tr.agd td{opacity:.55}
 .mais{background:none;border:0;color:var(--ciano);font-size:12px;font-weight:600;cursor:pointer;padding:6px 0 0}
 .lista{display:none;font:12px var(--mono);color:var(--sub);margin-top:6px;line-height:1.7}.lista.on{display:block}
 .perfil{display:flex;align-items:center;gap:16px;background:var(--glass);border:1px solid var(--borda2);border-radius:16px;padding:16px 18px;margin-top:14px;flex-wrap:wrap}
@@ -213,6 +228,7 @@ h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--bo
     <div>Cada dia é lido inteiro uma vez (todos os pedidos + histórico dos que tiveram rebusca). O dia de hoje é relido de hora em hora e só vale depois da meia-noite.</div>
   </div>
 </div>
+<div class="mod-fundo" id="modN"><div class="mod" role="dialog" aria-modal="true" aria-labelledby="modT"><div id="modC"></div></div></div>
 <script>
 const $ = (s) => document.querySelector(s);
 const SEM = ['dom','seg','ter','qua','qui','sex','sáb'];
@@ -255,6 +271,44 @@ async function status() {
   document.querySelectorAll('.dia').forEach((b) => b.onclick = () => { diaSel = b.dataset.d; guarda('black-dia', diaSel); carregarV(); });
   return s;
 }
+// ---------- quadro: entregas que notificaram o entregador ----------
+const RES = { accepted: 'aceitou', refused: 'recusou', received: 'recebeu e não respondeu', sent: 'enviada, celular não confirmou', waiting_send: 'não chegou a sair (agendada)', send_error: 'erro no envio' };
+async function abrirNotif(id, dia, nome) {
+  const m = $('#modN'), c = $('#modC');
+  c.innerHTML = `<div class="mod-top"><div><h3 id="modT">${esc(nome || 'Entregador ' + id)}</h3><div class="sub">ID ${id} · ${ddmm(dia)} · carregando notificações…</div></div><button class="mod-x" type="button" aria-label="Fechar">×</button></div>`;
+  m.classList.add('on');
+  c.querySelector('.mod-x').onclick = fecharNotif;
+  try {
+    const j = await fetch(`/api/notif-entregador?id=${id}&dia=${dia}`).then((r) => r.json());
+    const env = j.entregas.filter((e) => ['sent', 'received', 'accepted', 'refused'].includes(e.situacao));
+    const n = (k) => j.entregas.filter((e) => e.situacao === k).length;
+    const ac = n('accepted'), rc = n('refused'), sr = n('received') + n('sent'), ag = n('waiting_send');
+    const taxa = env.length ? Math.min(100, 100 * j.corridas / env.length) : null;
+    const ord = [...j.entregas].sort((a, b) => (a.situacao === 'waiting_send') - (b.situacao === 'waiting_send') || a.quando.localeCompare(b.quando));
+    const linhas = ord.map((e) => `<tr class="${e.situacao === 'waiting_send' ? 'agd' : ''}"><td>${horaS(e.quando)}</td><td>#${e.pedido}</td><td>${esc((e.loja || '').slice(0, 30))}</td><td>${e.posicao == null ? '—' : e.posicao + 1 + 'º'}</td>
+      <td><span class="sit ${e.situacao}">${(SIT[e.situacao] || ['', e.situacao]).join(' ')}</span> <span style="color:var(--sub);font-family:var(--sans,inherit)">${RES[e.situacao] || ''}${e.corrigido ? ' (aceite não gravado na Bee, contado)' : ''}</span></td>
+      <td>${e.ficouCom === 'ele' ? '<b style="color:var(--ok)">com ele</b>' : e.ficouCom ? esc(e.ficouCom) : '—'}</td></tr>`).join('');
+    c.innerHTML = `<div class="mod-top"><div><h3 id="modT">${esc(nome || 'Entregador ' + id)}</h3><div class="sub">ID ${id} · ${ddmm(dia)}${j.lido ? '' : ' · notificações do dia ainda em leitura'}</div></div><button class="mod-x" type="button" aria-label="Fechar">×</button></div>
+      <div class="mod-res">
+        <div><b style="color:${taxa == null || taxa >= 70 ? 'var(--ok)' : 'var(--no)'}">${taxa == null ? 'sem notif.' : pct(taxa)}</b><span>critério Black: ${j.corridas} corridas ÷ ${env.length} notificações</span></div>
+        <div><b>${env.length}</b><span>notificações recebidas</span></div>
+        <div><b style="color:var(--ok)">${ac}</b><span>aceitou</span></div>
+        <div><b style="color:var(--no)">${rc}</b><span>recusou</span></div>
+        <div><b style="color:var(--bee)">${sr}</b><span>sem resposta / sem confirmação</span></div>
+        <div><b style="color:var(--sub)">${ag}</b><span>na fila, não chegaram a sair</span></div>
+      </div>
+      ${j.entregas.length ? `<table class="ev-tb"><thead><tr><th>Hora</th><th>Entrega</th><th>Loja</th><th>Fila</th><th>Resultado</th><th>Ficou com</th></tr></thead><tbody>${linhas}</tbody></table>
+        <div style="font-size:11.5px;color:var(--sub);margin-top:6px">Fila = posição dele na rodada de notificação (1º = mais perto). Linhas apagadas: ele estava na fila, mas a entrega foi pega antes de chegar a vez dele, então não contam como notificação.</div>`
+        : `<div class="vazio" style="margin-top:12px">${j.lido ? 'Nenhuma entrega notificou este entregador no dia: as corridas dele foram pegas pela lista do app ou pré-atribuídas.' : 'As notificações deste dia ainda estão sendo lidas.'}</div>`}
+      <div class="mod-acoes"><button type="button" data-a="hist">Ver o histórico do entregador</button></div>`;
+    c.querySelector('.mod-x').onclick = fecharNotif;
+    c.querySelector('[data-a=hist]').onclick = () => { fecharNotif(); $('#q').value = id; $('#de').value = dia; $('#ate').value = dia; document.querySelector('.aba[data-p=ent]').click(); consultar(); };
+  } catch (err) { c.querySelector('.sub').textContent = 'Falha ao carregar: ' + err.message; }
+}
+function fecharNotif() { $('#modN').classList.remove('on'); }
+$('#modN').onclick = (ev) => { if (ev.target.id === 'modN') fecharNotif(); };
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') fecharNotif(); });
+
 function cartao(x, i, quase) {
   const m = (k, rot, v, ok) => `<div class="met ${ok ? 'ok' : 'no'}"><div class="k">${rot}</div><div class="v">${v}</div></div>`;
   return `<div class="card${quase ? ' quase' : ''}" data-id="${x.id}" style="animation-delay:${Math.min(i, 30) * 25}ms">
@@ -288,7 +342,7 @@ async function carregarV() {
     ${j.vencedores.length ? `<div class="grade">${j.vencedores.map((x, i) => cartao(x, i)).join('')}</div>` : '<div class="vazio">Nenhum entregador cumpriu os três critérios neste dia.</div>'}
     ${j.quase.length ? `<h3>Ficaram de fora por um critério${j.totais.quase > j.quase.length ? ` · ${j.quase.length} de ${j.totais.quase}` : ''}</h3><div class="grade">${j.quase.map((x, i) => cartao(x, i, true)).join('')}</div>` : ''}`;
   document.querySelectorAll('.kpi .v[data-n]').forEach((el) => contar(el, +el.dataset.n));
-  document.querySelectorAll('.card').forEach((c) => c.onclick = () => { $('#q').value = c.dataset.id; $('#de').value = diaSel; $('#ate').value = diaSel; document.querySelector('.aba[data-p=ent]').click(); consultar(); });
+  document.querySelectorAll('.card').forEach((c) => c.onclick = () => abrirNotif(c.dataset.id, diaSel, c.querySelector('.nome')?.textContent));
   if (!j.fechado) tV = setTimeout(carregarV, 120000);
 }
 
@@ -435,7 +489,7 @@ function desenhaN() {
   document.querySelectorAll('#outN .kpi .v[data-n]').forEach((el) => contar(el, +el.dataset.n));
   const fn = $('#fn'); fn.oninput = () => { filtroN = fn.value; desenhaN(); const g = $('#fn'); g.focus(); g.setSelectionRange(g.value.length, g.value.length); };
   document.querySelectorAll('#outN [data-o]').forEach((b) => b.onclick = () => { ordemN = b.dataset.o; desenhaN(); });
-  document.querySelectorAll('#outN .lin').forEach((c) => c.onclick = () => { $('#q').value = c.dataset.id; $('#de').value = diaN; $('#ate').value = diaN; document.querySelector('.aba[data-p=ent]').click(); consultar(); });
+  document.querySelectorAll('#outN .lin').forEach((c) => c.onclick = () => abrirNotif(c.dataset.id, diaN, c.querySelector('td div')?.textContent));
 }
 
 // ---------- evidências de notificações ----------
@@ -542,7 +596,7 @@ function desenhaE(j) {
       <td><div class="anel">${anel(fin, 100)}<div><div class="v">${d.fin}</div><div class="d">finalizadas${d.andamento ? ` · +${d.andamento} em curso` : ''}</div></div></div></td>
       <td><div class="anel">${anel(esp ? null : d.semNotif ? 100 : d.aceite, 70, false, esp)}<div><div class="v">${esp ? '—' : d.semNotif ? 'sem notificação' : pct(d.aceite)}</div><div class="d">${esp ? (d.emLeitura || 'na fila de leitura') : d.semNotif ? 'só pedidos pré-atribuídos' : `${d.notif.corridas} corridas ÷ ${d.notif.enviadas} notificações · ${d.notif.aceitas} aceitas pela notificação · ${d.notif.recusadas} recusadas`}${!esp && d.desistencias ? ` · ${d.desistencias} desist.` : ''}</div></div></div></td>
       <td><div class="anel">${anel(d.cancPct == null ? null : 100 - d.cancPct * 10, 50)}<div><div class="v">${pct(d.cancPct)}</div><div class="d">${d.canc} cancelados</div></div></div></td>
-      <td>${selo}${det}</td></tr>`;
+      <td>${selo}${det}${d.aceiteLido && !d.semNotif ? `<br><button class="mais" type="button" data-nd="${d.dia}">ver notificações ›</button>` : ''}</td></tr>`;
   }).join('');
   $('#out').innerHTML = `
     <div class="perfil"><div class="av">${esc(ini)}</div>
@@ -550,7 +604,8 @@ function desenhaE(j) {
       <div class="placar"><div class="n"><span data-n="${j.premiados}">0</span><span style="font-size:16px;color:var(--sub)"> / ${fechados}</span></div><div class="l">dias vencedores · <b style="color:var(--ok)">${brl(j.valor)}</b></div></div></div>
     <table class="tabela"><tbody>${linhas}</tbody></table>`;
   contar(document.querySelector('.placar [data-n]'), j.premiados);
-  document.querySelectorAll('.mais').forEach((b) => b.onclick = () => $('#l' + b.dataset.i).classList.toggle('on'));
+  document.querySelectorAll('.mais[data-i]').forEach((b) => b.onclick = () => $('#l' + b.dataset.i).classList.toggle('on'));
+  document.querySelectorAll('.mais[data-nd]').forEach((b) => b.onclick = () => abrirNotif(e.id, b.dataset.nd, e.nome));
 }
 $('#f').onsubmit = (ev) => { ev.preventDefault(); consultar(); };
 

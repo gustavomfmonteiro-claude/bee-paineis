@@ -387,6 +387,34 @@ http.createServer(async (req, res) => {
       return json(res, 200, { lido: true, ...resto, meta: META.aceite, entregadores,
         abaixoMeta: entregadores.filter((e) => e.aceiteBlack != null && e.aceiteBlack < META.aceite).length });
     }
+    if (u.pathname === '/api/notif-entregador') { // entregas que notificaram o entregador no dia (só cache, sem MCP)
+      const dia = u.searchParams.get('dia'), id = String(u.searchParams.get('id') || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dia) || !/^\d+$/.test(id)) return json(res, 400, { erro: 'dia e id obrigatórios' });
+      let cache = {};
+      try { cache = JSON.parse(fs.readFileSync(arqNotifPedidos(dia), 'utf8')); } catch { return json(res, 200, { dia, id, lido: false, entregas: [] }); }
+      const ped = {};
+      for (const d of [somaDia(dia, -2), somaDia(dia, -1), dia, somaDia(dia, 1)]) {
+        try { for (const p of JSON.parse(fs.readFileSync(arqLista(d), 'utf8')).pedidos) ped[p.id] = p; } catch {}
+      }
+      const doDiaN = (iso) => !!iso && new Date(Date.parse(iso) - 3 * 3600e3).toISOString().slice(0, 10) === dia;
+      const entregas = [];
+      for (const [pid, v] of Object.entries(cache)) {
+        const linhas = (v.linhas || []).filter((l) => doDiaN(l[3])).map((l) => [...l]);
+        if (!linhas.some((l) => String(l[0]) === id)) continue;
+        const p = ped[pid] || {};
+        // mesma correção da contagem: aceite que ficou "Enviado/Recebido" de quem ficou com a entrega
+        if (p.ent && !linhas.some((l) => l[2] === 'accepted')) {
+          const m = [...linhas].reverse().find((l) => l[0] === p.ent && (l[2] === 'sent' || l[2] === 'received'));
+          if (m) { m[2] = 'accepted'; m[5] = 'corrigido'; }
+        }
+        for (const l of linhas.filter((l) => String(l[0]) === id))
+          entregas.push({ pedido: pid, quando: l[3], posicao: l[4], situacao: l[2], corrigido: l[5] === 'corrigido', loja: p.loja || '', status: p.st || '',
+            ficouCom: p.ent ? (p.ent === id ? 'ele' : `${p.nome || ''} (${p.ent})`) : null });
+      }
+      entregas.sort((a, b) => a.quando.localeCompare(b.quando));
+      const c = lerCache(dia);
+      return json(res, 200, { dia, id, lido: !!lerNotif(dia), corridas: c?.entregadores?.[id]?.tot ?? 0, fin: c?.entregadores?.[id]?.fin ?? 0, entregas });
+    }
     if (u.pathname === '/api/vencedores') {
       const dia = /^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get('dia')) ? u.searchParams.get('dia') : somaDia(hojeBR(), -1);
       return json(res, 200, vencedores(dia));
