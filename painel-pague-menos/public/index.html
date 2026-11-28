@@ -2091,13 +2091,27 @@ function desenharBlack() {
 
 // A página recarrega sozinha quando chega coleta nova
 const vivo = $('#vivo');
+// Se o servidor responder com erro (ex.: container reiniciando), o navegador desiste do EventSource para sempre
+// (readyState CLOSED). Aqui a página reabre sozinha, com espera crescente até 30 s, e recarrega os dados ao voltar.
+let esAtual = null, esEspera = 2e3, esTimer = null, esCaiu = false;
 function ligar() {
-  const es = new EventSource('/api/eventos');
-  es.onopen = () => { vivo.className = 'vivo on'; vivo.lastElementChild.textContent = 'conectado'; };
+  clearTimeout(esTimer);
+  try { esAtual?.close(); } catch {}
+  const es = (esAtual = new EventSource('/api/eventos'));
+  es.onopen = () => {
+    vivo.className = 'vivo on'; vivo.lastElementChild.textContent = 'conectado'; esEspera = 2e3;
+    if (esCaiu) { esCaiu = false; carregarBuscando().catch(() => {}).finally(carregar); }
+  };
   es.onmessage = () => carregar();
   es.addEventListener('buscando', () => carregarBuscando());
-  es.onerror = () => { vivo.className = 'vivo'; vivo.lastElementChild.textContent = 'reconectando'; };
+  es.onerror = () => {
+    vivo.className = 'vivo'; vivo.lastElementChild.textContent = 'reconectando'; esCaiu = true;
+    if (es.readyState === EventSource.CLOSED) { esTimer = setTimeout(ligar, esEspera); esEspera = Math.min(esEspera * 2, 30e3); }
+  };
 }
+// aba que volta do segundo plano ou rede que volta: reconecta na hora se estiver caído
+document.addEventListener('visibilitychange', () => { if (!document.hidden && esAtual?.readyState === EventSource.CLOSED) ligar(); });
+window.addEventListener('online', () => { if (esAtual?.readyState !== EventSource.OPEN) ligar(); });
 mostrarAba();
 carregarBuscando().catch(() => {}).finally(carregar);
 carregarEvolucao();
